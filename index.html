@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Trade Manager</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#171c26">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trade Manager">
+
+<style>
+:root{
+  --bg:#171c26;
+  --panel:#232a38;
+  --panel2:#1c222f;
+  --header:#0c0f16;
+  --border:#3a4356;
+  --teal:#2bbfa4;
+  --teal-dark:#1a8f7a;
+  --orange:#f0a83c;
+  --red:#e3576a;
+  --text:#e8ecf3;
+  --muted:#8b93a7;
+  --mono:'SFMono-Regular',Consolas,'Roboto Mono',Menlo,monospace;
+}
+
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+*{-webkit-tap-highlight-color:transparent;}
+button,input,select{touch-action:manipulation; font-family:inherit;}
+button:disabled{opacity:.4; cursor:not-allowed;}
+
+/* ---------------- UNIFIED BUTTON SYSTEM ---------------- */
+button{ font-family:inherit; }
+.btn{
+  border:none; border-radius:8px; cursor:pointer; font-weight:700;
+  transition:filter .15s ease, transform .08s ease, background-color .15s ease, border-color .15s ease;
+}
+.btn:active:not(:disabled){ transform:scale(.97); }
+.btn:disabled{ transform:none; }
+.btn-secondary{
+  background:#3a4356; color:#fff; border:1px solid var(--border);
+  padding:12px 14px; font-size:13.5px;
+}
+.btn-secondary:hover:not(:disabled){ background:#454f64; border-color:#586179; }
+.btn-sm{ padding:7px; font-size:11.5px; border-radius:6px; }
+
+.actions button:hover:not(:disabled){ filter:brightness(1.08); }
+.modetabs button, .risklevels button, .optionsmenu summary, .sessionpill,
+.histbtns button, .logbtn, .copybtn, #copyStakeBtn{
+  transition:filter .15s ease, transform .08s ease, background-color .15s ease;
+}
+.modetabs button:hover, .risklevels button:hover:not(.active), .optionsmenu summary:hover, .sessionpill:hover,
+.histbtns button:hover:not(:disabled), .logbtn:hover:not(:disabled), #copyStakeBtn:hover:not(:disabled),
+.copybtn:hover:not(:disabled):not(.copied){ filter:brightness(1.1); }
+.sessionpill:active:not(:disabled), .optionsmenu summary:active:not(:disabled),
+.histbtns button:active:not(:disabled), .logbtn:active:not(:disabled),
+.copybtn:active:not(:disabled), #copyStakeBtn:active:not(:disabled){ transform:scale(.97); }
+
+body{
+  margin:0;
+  background:#0d1017;
+  font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+  color:var(--text);
+  padding:24px;
+}
+
+.app{
+  max-width:1400px;
+  margin:0 auto;
+  background:var(--bg);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  border:1px solid #000;
+}
+
+.titlebar{
+  position:sticky; top:0; z-index:200;
+  display:grid; grid-template-columns:1fr minmax(0,auto) 1fr; align-items:center; gap:10px;
+  background:var(--header);
+  padding:14px 16px;
+  letter-spacing:1px;
+  font-weight:800;
+  font-size:20px;
+  border-bottom:2px solid #000;
+  border-radius:18px 18px 0 0;
+}
+.titlebar-title{text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+/* ---------------- MODE TABS ---------------- */
+.modetabs{display:flex; gap:10px; padding:14px 16px 0;}
+.modetabs button{
+  flex:1; padding:13px 6px; border-radius:10px; border:1px solid var(--border);
+  background:#252c3a; color:var(--muted); font-weight:800; font-size:13.5px; cursor:pointer;
+}
+.modetabs button .t2{display:block; font-size:10.5px; font-weight:600; color:var(--muted); margin-top:2px;}
+.modetabs button.active{background:var(--teal); color:#062820; border-color:transparent;}
+.modetabs button.active .t2{color:#0b3b30;}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr .8fr;
+  gap:14px;
+  padding:16px;
+}
+.grid > .panel{margin-bottom:0;}
+
+/* ---------------- PANELS ---------------- */
+.panel{
+  background:var(--panel);
+  border-radius:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  margin-bottom:14px;
+}
+.panel:last-child{margin-bottom:0;}
+.panel-title{
+  text-align:center;
+  background:#333c4e;
+  padding:8px;
+  border-radius:6px;
+  font-weight:700;
+  letter-spacing:.5px;
+  margin-bottom:10px;
+  font-size:12.5px;
+}
+
+/* ---------------- TABLE ---------------- */
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{background:#2c3444; padding:8px 4px; font-size:10.5px; color:var(--muted); text-transform:uppercase;}
+td{padding:6px 4px; text-align:center; border-bottom:1px solid #2a3140; font-family:var(--mono);}
+td:nth-child(2){font-family:inherit;}
+.badge{display:inline-block; width:26px; padding:3px 0; border-radius:4px; font-weight:700;}
+.badge.W{background:var(--teal); color:#08281f;}
+.badge.L{background:var(--red); color:#3a0812;}
+.badge.BE{background:#e8d58a; color:#3a3010;}
+tr.rowBE td{background:rgba(232,213,138,.08);}
+.btnBE{background:#e8d58a; color:#3a3010;}
+tr.rowW td{background:rgba(43,191,164,.08);}
+tr.rowL td{background:rgba(227,87,106,.06);}
+.neg{color:var(--red);}
+.pos{color:var(--teal);}
+.tablewrap{max-height:400px; overflow-y:auto;}
+.emptyrow td{color:var(--muted); padding:18px 4px; font-size:12.5px; font-family:inherit;}
+
+/* ---------------- INPUTS ---------------- */
+.row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 4px; font-size:13px; border-bottom:1px solid #2a3140; gap:6px;
+}
+.row:last-child{border-bottom:none;}
+.row label{color:var(--muted);}
+.row .hint{font-size:10px; color:var(--muted); display:block; margin-top:2px; max-width:220px;}
+.row input,.row select{
+  background:#2c3444; border:1px solid var(--border); color:#fff;
+  border-radius:5px; padding:5px 8px; width:120px; text-align:center; font-size:13px; font-family:var(--mono);
+}
+.inline-field{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
+.inline-field input{width:90px;}
+.inline-field .unit{color:var(--muted); font-size:12.5px;}
+.row.stakebox{border:1px solid var(--teal); border-radius:8px; padding:10px; margin:10px 0;}
+.stakebox label{color:var(--text); font-weight:700;}
+.stakewrap{display:flex; align-items:center; gap:8px;}
+#nextStakePreview{color:var(--teal); font-size:18px;}
+#copyStakeBtn{background:#3a4356; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; font-weight:700;}
+.row.row-tight{padding:8px 4px;}
+.row.row-center{justify-content:center;}
+#wlSummary{font-family:var(--mono); font-weight:800; letter-spacing:.5px;}
+.subbox{border:1px solid var(--teal); border-radius:8px; margin-top:10px; overflow:hidden;}
+.subbox .panel-title{background:var(--teal-dark); color:#fff; margin:0; border-radius:0;}
+.small{font-size:11px; color:var(--muted);}
+.lossexplain{color:var(--orange); line-height:1.6; padding:0 4px 8px;}
+
+.actions{display:flex; gap:8px; margin-bottom:10px;}
+.actions button{flex:1; padding:14px 6px; border:none; border-radius:8px; font-weight:800; cursor:pointer; font-size:15px;}
+.btnW{background:var(--teal); color:#062820;}
+.btnL{background:var(--red); color:#2a0510;}
+
+/* ---------------- RISK LEVELS (masaniello) ---------------- */
+.risklevels{display:flex; gap:8px; padding:4px 2px 8px;}
+.risklevels button{flex:1; padding:11px 4px; border-radius:8px; border:1px solid var(--border); background:#252c3a; color:var(--muted); font-weight:700; font-size:12px; cursor:pointer;}
+.risklevels button.active{border-color:transparent;}
+.risklevels button.active[data-risk="low"]{background:var(--teal); color:#062820;}
+.risklevels button.active[data-risk="medium"]{background:var(--orange); color:#241700;}
+.risklevels button.active[data-risk="high"]{background:var(--red); color:#2a0510;}
+
+.planbox{display:flex; gap:8px; margin:4px 2px 10px;}
+.planbox .p{flex:1; background:var(--panel2); border:1px solid var(--border); border-radius:8px; text-align:center; padding:8px 4px;}
+.planbox .p .n{font-size:16px; font-weight:800; font-family:var(--mono);}
+.planbox .p .l{font-size:10px; color:var(--muted); margin-top:2px;}
+
+.guaranteeline{text-align:center; font-size:11px; color:var(--muted); margin:0 2px 10px; padding:7px 8px; background:var(--panel2); border:1px solid var(--border); border-radius:8px;}
+.guaranteeline b{color:var(--teal); font-family:var(--mono);}
+.guaranteeline.bad b{color:var(--red);}
+
+.status{background:#2c3444; color:#fff; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+.success{background:var(--teal); color:#062820; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+
+.rowSub{padding:7px 2px; font-size:12px; color:var(--muted); border-bottom:1px solid #2a3140; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.rowSub:last-child{border-bottom:none;}
+.rowSub input{background:#252c3a; border:1px solid var(--border); color:#ccc; border-radius:5px; padding:5px 6px; width:70px; text-align:center; font-size:12px; font-family:var(--mono);}
+.rowSub span.val{color:#fff; font-weight:700; font-family:var(--mono);}
+details summary{cursor:pointer; color:var(--muted); font-size:12px; padding:6px 2px;}
+.note{font-size:10.5px; color:var(--muted); line-height:1.6; padding:6px 2px 2px;}
+.manualwrap{display:none;}
+.manualwrap.show{display:block;}
+.checkrow{display:flex; justify-content:space-between; align-items:center; padding:7px 2px; font-size:12px; color:var(--muted);}
+.checkrow input[type=checkbox]{width:18px; height:18px;}
+
+.statsrow{display:flex; gap:8px; margin-bottom:4px; flex-wrap:wrap;}
+.statbox{flex:1; min-width:70px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; text-align:center; padding:8px 4px;}
+.statbox .n{font-size:15px; font-weight:800; font-family:var(--mono);}
+.statbox .l{font-size:9.5px; color:var(--muted); margin-top:2px;}
+
+/* ---------------- HEADER CONTROLS (gear + session pill, inside titlebar) ---------------- */
+.sessionpill{
+  display:flex; align-items:center; gap:6px;
+  background:#333c4e; color:#fff; border:none;
+  padding:9px 14px; border-radius:8px; font-size:13px; font-weight:700; line-height:1;
+  cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.35);
+  touch-action:manipulation;
+  -webkit-user-select:none; -moz-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+  justify-self:start;
+}
+.sessionpill .ic{font-size:15px;}
+.sessionpill b{font-family:var(--mono); font-size:14px; color:var(--orange);}
+.optionsmenu{position:relative; justify-self:end;}
+.optionsmenu summary{list-style:none; cursor:pointer; background:#333c4e; color:#fff; padding:9px 10px; border-radius:8px; font-size:18px; line-height:1; font-weight:700; box-shadow:0 6px 16px rgba(0,0,0,.35);}
+.optionsmenu summary::-webkit-details-marker{display:none;}
+.optionsmenu .optionpanel{position:absolute; z-index:20; top:calc(100% + 8px); left:0; width:280px; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:10px; box-shadow:0 12px 30px rgba(0,0,0,.45);}
+.optionsmenu .goalrow{padding:7px 2px;}
+
+.subactions{display:flex; gap:8px; margin-bottom:10px;}
+.subactions button{flex:1; white-space:nowrap;}
+
+.toggle{background:var(--teal); color:#062820; border:none; padding:4px 10px; border-radius:4px; font-weight:700; cursor:pointer; font-size:11px; min-width:48px;}
+.toggle.off{background:var(--red); color:#fff;}
+
+.goalrow{display:flex; justify-content:space-between; align-items:center; padding:5px 4px; font-size:12.5px; border-bottom:1px solid #2a3140; gap:6px;}
+.goalrow:last-child{border-bottom:none;}
+.goalrow input,.goalrow select{width:70px; background:#2c3444; border:1px solid var(--border); color:#fff; border-radius:5px; padding:4px; text-align:center; font-size:12px;}
+
+.alert{background:var(--red); color:#fff; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+.warning{background:var(--orange); color:#241700; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+.info{background:#2c3444; color:var(--teal); text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px; border:1px solid var(--teal);}
+
+.histwrap{max-height:220px; overflow-y:auto; margin-top:4px;}
+.histrow{display:flex; justify-content:space-between; font-size:11.5px; padding:6px 4px; border-bottom:1px solid #2a3140;}
+.histrow .hp{font-weight:700;}
+.histbtns{display:flex; gap:8px; margin-top:8px;}
+.histbtns button{flex:1; background:#3a4356; border:none; color:#fff; padding:7px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:600;}
+.histsummary{cursor:pointer; color:var(--text); font-weight:700; padding:4px 2px;}
+.small-center{text-align:center; padding:10px;}
+
+.logbtn{width:100%; padding:9px; background:#2c3444; border:1px solid var(--border); border-radius:6px; color:#fff; font-weight:700; cursor:pointer; font-size:12px; margin-top:8px;}
+.copybtn{width:100%; padding:9px; background:var(--teal); border:none; border-radius:6px; color:#062820; font-weight:800; cursor:pointer; font-size:12px; margin-top:8px;}
+.copybtn.copied{background:#1c8f7a;}
+#logOutput{width:100%; min-height:200px; background:#0e1119; color:#9be8d9; border:1px solid var(--border); border-radius:8px; font-family:var(--mono); font-size:10px; padding:10px; white-space:pre; overflow:auto; direction:ltr; text-align:left;}
+.logwrap{display:none;}
+.logwrap.show{display:block;}
+.lognote{font-size:10.5px; color:var(--muted); line-height:1.5; margin:0 2px 8px;}
+
+.aboutbox{text-align:center; font-size:11px; color:var(--muted); line-height:1.6;}
+.aboutbox b{color:var(--text); display:block; font-size:13px; margin-bottom:4px;}
+
+footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
+
+.hidden{display:none !important;}
+
+/* ---------------- MOBILE ---------------- */
+@media(max-width:900px){
+  body{padding:0;}
+  .app{border-radius:0; max-width:100%;}
+  .titlebar{border-radius:0;}
+  .titlebar{padding:16px 10px; font-size:17px; letter-spacing:.5px;}
+  .modetabs{padding:10px 10px 0;}
+  .modetabs button{font-size:12px; padding:11px 4px;}
+  .grid{grid-template-columns:1fr; padding:10px; gap:10px;}
+  .panel{padding:10px;}
+  .panel-title{font-size:11.5px; padding:7px;}
+  .row,.goalrow{font-size:12.5px; padding:7px 2px; flex-wrap:wrap;}
+  .row input,.row select{width:100px; font-size:13px; padding:6px;}
+  .goalrow input,.goalrow select{width:64px;}
+  table{font-size:12px;}
+  th{font-size:9px; padding:7px 3px; white-space:nowrap;}
+  td{padding:8px 3px; font-size:11.5px;}
+  .badge{width:24px; padding:4px 0; font-size:12px;}
+  .tablewrap{max-height:300px; overflow-x:auto; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .actions button{padding:12px 6px; font-size:13px;}
+  .sessionpill{font-size:12px; padding:8px 10px;}
+  .subactions button{padding:10px 6px; font-size:12px;}
+  footer{font-size:10px; padding:12px 8px;}
+}
+@media(max-width:420px){
+  .titlebar{font-size:14.5px;}
+  .row label,.goalrow label{font-size:11.5px;}
+  .row input,.row select{width:84px; font-size:12px;}
+  th{font-size:8px;}
+  td{font-size:10.5px;}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <button class="sessionpill" id="sessionPill" title="تپ = سشن جدید · نگه‌دارید = ریست شمارنده" aria-label="New Session">
+      <span class="ic">⟳</span> Session #<b id="sessionCounter">1</b>
+    </button>
+
+    <div class="titlebar-title">TRADE MANAGER</div>
+
+    <details class="optionsmenu" id="optionsMenu">
+      <summary>⚙</summary>
+      <div class="optionpanel">
+        <div class="goalrow simple-only"><label>درصد هشدار حد ضرر</label><input id="stopLossAlertPct" type="number" min="1" max="100" value="80" oninput="render()"></div>
+        <div class="goalrow simple-only"><label>هشدار پایان سشن</label><button class="toggle off" id="t-sessionEnd" onclick="toggleBtn('t-sessionEnd')">OFF</button></div>
+        <div class="goalrow simple-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade" onclick="toggleBtn('t-lowTrade')">OFF</button></div>
+        <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy" onclick="toggleBtn('t-autoCopy')">ON</button></div>
+        <div class="goalrow"><label>ریست شمارنده سشن</label><button class="btn btn-secondary btn-sm" onclick="resetSessionCounter()">Reset</button></div>
+        <div class="goalrow"><label>درباره</label><button class="btn btn-secondary btn-sm" onclick="showAbout()">About</button></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="modetabs">
+    <button id="modeBtnSimple" onclick="setMode('simple')">Simple
+      <span class="t2">درصد ثابت + استاپ‌لاس</span>
+    </button>
+    <button id="modeBtnMasaniello" onclick="setMode('masaniello')">Masaniello
+      <span class="t2">برنامه تضمینی چند معامله‌ای</span>
+    </button>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: TRADE LOG (shared) -->
+    <div class="panel">
+
+      <div class="actions">
+        <button id="winBtn" class="btnW" onclick="logTrade('W')">Win</button>
+        <button id="beBtn" class="btnBE" onclick="logTrade('BE')">BE</button>
+        <button id="lossBtn" class="btnL" onclick="logTrade('L')">Lose</button>
+      </div>
+
+      <div class="subactions">
+        <button id="clearBtn" class="btn btn-secondary" onclick="clearTrades()">پاک کردن جدول</button>
+        <button id="undoBtn" class="btn btn-secondary" onclick="undoLastTrade()">↩ Undo آخرین معامله</button>
+      </div>
+
+      <div id="alertBox"></div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>نتیجه</th>
+              <th>مبلغ معامله</th>
+              <th>سود/زیان</th>
+              <th>موجودی فعلی</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="row stakebox">
+        <label>مبلغ معامله بعدی</label>
+        <span class="stakewrap">
+          <strong id="nextStakePreview">-</strong>
+          <button id="copyStakeBtn" onclick="copyNextStake()">کپی</button>
+        </span>
+      </div>
+
+      <!-- shared session performance summary -->
+      <div class="row row-tight">
+        <label>موجودی فعلی</label>
+        <strong id="curBalance">-</strong>
+      </div>
+      <div class="row row-tight">
+        <label>سود/زیان سشن</label>
+        <strong id="curPL">-</strong>
+      </div>
+      <div class="row row-tight row-center">
+        <span id="wlSummary">W:0 BE:0 L:0 T:0 WR:0%</span>
+      </div>
+
+      <!-- masaniello-only plan summary -->
+      <div id="masaPlanBlock" class="hidden">
+        <div class="planbox">
+          <div class="p"><div class="n" id="planN">-</div><div class="l">معاملات برنامه‌ریزی‌شده</div></div>
+          <div class="p"><div class="n" id="planK">-</div><div class="l">برد لازم</div></div>
+          <div class="p"><div class="n" id="planBuffer">-</div><div class="l">باخت مجاز</div></div>
+        </div>
+        <div id="guaranteeLine" class="guaranteeline">-</div>
+      </div>
+
+    </div>
+
+
+    <!-- MIDDLE: CALCULATIONS -->
+    <div>
+
+      <div class="panel">
+        <div class="panel-title">تنظیمات و هدف</div>
+
+        <div class="row">
+          <label>سرمایه اولیه</label>
+          <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00" oninput="onSetupChange()" onblur="formatCapitalInput()">
+        </div>
+
+        <div class="row">
+          <label>Payout %</label>
+          <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" oninput="onSetupChange()">
+        </div>
+
+        <!-- ===================== SIMPLE MODE TARGET ===================== -->
+        <div id="panelSimple">
+          <div class="subbox">
+            <div class="panel-title">هدف سود</div>
+
+            <div class="row">
+              <label>رشد حساب سشن</label>
+              <span class="inline-field"><input id="accountGain" type="number" min="0" step="0.01" value="1" oninput="onSetupChange()"><span class="unit">%</span></span>
+            </div>
+
+            <div class="row">
+              <label>سرمایه نهایی این سشن</label>
+              <span id="capitalFinal">-</span>
+            </div>
+
+            <div class="row">
+              <label>سود برد</label>
+              <span id="winProfit">-</span>
+            </div>
+
+            <div class="row">
+              <label>حد ضرر</label>
+              <span id="stopLossAmt">-</span>
+              <span class="inline-field"><input id="stopLossPct" type="number" min="0.01" max="100" step="0.01" value="20" oninput="onSetupChange()"><span class="unit">%</span></span>
+            </div>
+
+            <div class="row">
+              <label>سقف باخت متوالی</label>
+              <span id="maxLossLimit">-</span>
+              <span class="small">حداکثر باخت پیاپی</span>
+            </div>
+            <div id="lossLimitExplain" class="small lossexplain" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- ===================== MASANIELLO MODE TARGET ===================== -->
+        <div id="panelMasaniello" class="hidden">
+          <div class="subbox">
+            <div class="panel-title">هدف و برنامه</div>
+
+            <div class="row">
+              <label>سود هدف (مبلغ)</label>
+              <input id="targetProfit" type="number" min="0.01" step="0.01" value="50" oninput="onSetupChange()">
+            </div>
+
+            <div class="risklevels">
+              <button data-risk="low" onclick="setRisk('low')">ریسک کم</button>
+              <button data-risk="medium" onclick="setRisk('medium')">ریسک متوسط</button>
+              <button data-risk="high" onclick="setRisk('high')">ریسک بالا</button>
+            </div>
+
+            <details id="advDetails">
+              <summary>تنظیمات پیشرفته (اختیاری)</summary>
+
+              <div class="rowSub">
+                <span>نرخ برد سربه‌سر این ابزار</span>
+                <span class="val" id="breakevenDisplay">-</span>
+              </div>
+
+              <div class="checkrow">
+                <span>تنظیم دستی تعداد معاملات و بردهای لازم</span>
+                <input id="manualToggle" type="checkbox" onchange="onManualToggle()">
+              </div>
+              <div class="manualwrap" id="manualWrap">
+                <div class="rowSub">
+                  <span>کل معاملات برنامه (n)</span>
+                  <input id="manualN" type="number" min="1" step="1" oninput="onSetupChange()">
+                </div>
+                <div class="rowSub">
+                  <span>برد لازم (k)</span>
+                  <input id="manualK" type="number" min="1" step="1" oninput="onSetupChange()">
+                </div>
+              </div>
+
+              <div class="note">
+                سطح ریسک، تعداد کل معاملات (n) و تعداد بردهای لازم (k) را طوری تعیین می‌کند که رسیدن به «سود هدف» را <b>صرف‌نظر از اینکه کدام معاملات ببازند</b> تضمین کند، تا زمانی که تعداد باخت‌ها از سقف مجاز (n−k) بیشتر نشود. مبلغ هر معامله همیشه به‌صورت زنده از موجودی فعلی، معاملات باقی‌مانده و بردهای باقی‌مانده محاسبه می‌شود.
+              </div>
+            </details>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- RIGHT: SESSION CONTROL (shared) -->
+    <div>
+
+      <div class="panel">
+        <details id="historyDetails">
+          <summary class="histsummary">تاریخچه سشن‌ها</summary>
+          <div class="histwrap" id="historyWrap">
+            <div class="small small-center">هنوز سشنی ثبت نشده</div>
+          </div>
+          <div class="histbtns">
+            <button onclick="exportHistoryCSV()">خروجی CSV</button>
+            <button onclick="clearHistory()">پاک کردن تاریخچه</button>
+          </div>
+        </details>
+        <button class="logbtn" onclick="toggleLog()">📋 ساخت لاگ سشن (JSON، برای بررسی هوش مصنوعی)</button>
+        <div class="logwrap" id="logWrap">
+          <div class="lognote">رکورد کامل و ماشین‌خوان از سشن جاری و تمام سشن‌های قبلی این صفحه به‌همراه متریک‌های ریسک/بازده. آن را برای یک هوش مصنوعی کپی کنید تا ریسک و بازده شما را بررسی کند.</div>
+          <textarea id="logOutput" readonly></textarea>
+          <button class="copybtn" id="copyBtn" onclick="copyLog()">کپی</button>
+        </div>
+      </div>
+
+      <div class="panel" id="tradingPlanPanel">
+        <div class="panel-title">برنامه معاملاتی</div>
+
+        <div id="tradingPlanCreateView">
+          <div class="row">
+            <label>نام برنامه</label>
+            <input id="tpFormName" type="text" placeholder="مثلاً Account Growth">
+          </div>
+          <div class="row">
+            <label>موجودی شروع برنامه</label>
+            <input id="tpFormStartBalance" type="number" step="0.01" min="0">
+          </div>
+          <div class="row">
+            <label>نوع هدف</label>
+            <span class="inline-field">
+              <label><input type="radio" name="tpTargetType" value="percent" checked onclick="onTradingPlanTargetTypeChange()"> درصد (%)</label>
+              <label><input type="radio" name="tpTargetType" value="balance" onclick="onTradingPlanTargetTypeChange()"> مبلغ ($)</label>
+            </span>
+          </div>
+          <div class="row" id="tpFormTargetPercentRow">
+            <label>هدف %</label>
+            <input id="tpFormTargetPercent" type="number" step="0.01">
+          </div>
+          <div class="row hidden" id="tpFormTargetBalanceRow">
+            <label>موجودی هدف</label>
+            <input id="tpFormTargetBalance" type="number" step="0.01">
+          </div>
+          <div class="subactions">
+            <button class="btn btn-secondary" onclick="onTradingPlanFormSubmit()">ذخیره برنامه</button>
+          </div>
+        </div>
+
+        <div id="tradingPlanActiveView" class="hidden">
+          <div class="row">
+            <label>نام برنامه</label>
+            <span id="tpPlanName">-</span>
+          </div>
+          <div class="row">
+            <label>موجودی شروع برنامه</label>
+            <span id="tpStartBalance">-</span>
+          </div>
+          <div class="row">
+            <label>هدف %</label>
+            <span id="tpTargetPercent">-</span>
+          </div>
+          <div class="row">
+            <label>موجودی هدف</label>
+            <span id="tpTargetBalance">-</span>
+          </div>
+
+          <div class="row">
+            <label>سود باقی‌مانده تا هدف</label>
+            <span id="tpRemainingProfit">-</span>
+          </div>
+          <div class="row">
+            <label>پیشرفت</label>
+            <span id="tpProgressPercent">-</span>
+          </div>
+          <div class="row">
+            <label>سشن‌های تکمیل‌شده</label>
+            <span id="tpSessionsCompleted">-</span>
+          </div>
+          <div class="row">
+            <label>میانگین سود هر سشن</label>
+            <span id="tpAvgProfitPerSession">-</span>
+          </div>
+          <div class="row">
+            <label>سشن‌های باقی‌مانده (تخمینی)</label>
+            <span id="tpEstSessionsRemaining">-</span>
+          </div>
+          <div class="row">
+            <label>سود لازم هر سشن</label>
+            <span id="tpRequiredAvgProfit">-</span>
+          </div>
+
+          <div class="subactions">
+            <button class="btn btn-secondary" onclick="onTradingPlanEdit()">ویرایش</button>
+            <button class="btn btn-secondary" onclick="onTradingPlanComplete()">تکمیل برنامه</button>
+            <button class="btn btn-secondary" onclick="onTradingPlanCancel()">لغو برنامه</button>
+          </div>
+        </div>
+
+        <div id="tradingPlanTargetReached" class="success hidden">
+          🎯 هدف برنامه محقق شد
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+/* =====================================================
+   STATE (shared between both modes — only one mode's
+   engine runs at a time, so trades/balance/locked are shared)
+===================================================== */
+const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
+const APP_VERSION = '5.5';
+
+let mode = 'simple';               // 'simple' | 'masaniello'
+let trades = [];                   // {no, result, amount, ret, balance}
+let balance = 0;
+let locked = false;
+
+let sessionCounter = 1;
+let sessionHistory = [];           // {session, mode, trades, wins, losses, initial, finalBalance, profit, date, endedAt}
+let sessionStartTime = null;
+
+// Trading Plan — independent long-term planning layer (see Trading Plan architecture doc).
+// Never read by, or written from, Simple Mode / Masaniello / recovery / stake logic.
+let tradingPlan = null;
+
+// simple-mode-only runtime state
+let streakLoss = 0;
+let currentStreakCount = 0;
+
+// masaniello-mode-only runtime state
+let riskLevel = 'medium';
+let capital0 = 0, payout0 = 0, target0 = 0;
+let planned0 = 0, kRequired0 = 0;
+let nRemaining = 0, kRemaining = 0;
+
+/* =====================================================
+   PERSISTENCE — auto-save/restore across refresh & tab
+   close. Everything lives in localStorage; failures
+   (private browsing, storage disabled, quota) are caught
+   and silently ignored so the app keeps working without
+   persistence rather than crashing.
+===================================================== */
+const STORAGE_KEY = 'masaniello_calc_state_v1';
+
+function saveState(){
+  try{
+    const state = {
+      mode, trades, balance, locked, sessionCounter, sessionHistory, sessionStartTime,
+      streakLoss, currentStreakCount,
+      riskLevel, capital0, payout0, target0, planned0, kRequired0, nRemaining, kRemaining,
+      tradingPlan,
+      inputs: {
+        initialCapital: document.getElementById('initialCapital')?.value ?? '',
+        payout: document.getElementById('payout')?.value ?? '',
+        targetProfit: document.getElementById('targetProfit')?.value ?? '',
+        accountGain: document.getElementById('accountGain')?.value ?? '',
+        manualToggle: document.getElementById('manualToggle')?.checked ?? false,
+        manualN: document.getElementById('manualN')?.value ?? '',
+        manualK: document.getElementById('manualK')?.value ?? ''
+      }
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){ /* storage unavailable — app still works, just without persistence */ }
+}
+
+function loadState(){
+  let saved = null;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) saved = JSON.parse(raw);
+  }catch(e){ saved = null; }
+  if(!saved) return false;
+
+  try{
+    mode = saved.mode || 'simple';
+    trades = Array.isArray(saved.trades) ? saved.trades : [];
+    balance = saved.balance || 0;
+    locked = !!saved.locked;
+    sessionCounter = Number.isFinite(saved.sessionCounter) ? saved.sessionCounter : 1;
+    sessionHistory = Array.isArray(saved.sessionHistory) ? saved.sessionHistory : [];
+    sessionStartTime = saved.sessionStartTime || null;
+    streakLoss = saved.streakLoss || 0;
+    currentStreakCount = saved.currentStreakCount || 0;
+    riskLevel = saved.riskLevel || 'medium';
+    capital0 = saved.capital0 || 0;
+    payout0 = saved.payout0 || 0;
+    target0 = saved.target0 || 0;
+    planned0 = saved.planned0 || 0;
+    kRequired0 = saved.kRequired0 || 0;
+    nRemaining = saved.nRemaining || 0;
+    kRemaining = saved.kRemaining || 0;
+    tradingPlan = saved.tradingPlan || null;
+
+    const inp = saved.inputs || {};
+    if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
+    if(inp.payout) document.getElementById('payout').value = inp.payout;
+    if(inp.targetProfit) document.getElementById('targetProfit').value = inp.targetProfit;
+    if(inp.accountGain) document.getElementById('accountGain').value = inp.accountGain;
+    document.getElementById('manualToggle').checked = !!inp.manualToggle;
+    if(inp.manualN) document.getElementById('manualN').value = inp.manualN;
+    if(inp.manualK) document.getElementById('manualK').value = inp.manualK;
+
+    // restore mode buttons/panels
+    document.getElementById('modeBtnSimple').classList.toggle('active', mode === 'simple');
+    document.getElementById('modeBtnMasaniello').classList.toggle('active', mode === 'masaniello');
+    document.getElementById('panelSimple').classList.toggle('hidden', mode !== 'simple');
+    document.getElementById('panelMasaniello').classList.toggle('hidden', mode !== 'masaniello');
+    document.getElementById('masaPlanBlock').classList.toggle('hidden', mode !== 'masaniello');
+    document.querySelectorAll('.simple-only').forEach(el => el.classList.toggle('hidden', mode !== 'simple'));
+
+    // restore manual-plan panel visibility + risk buttons
+    document.getElementById('manualWrap').classList.toggle('show', !!inp.manualToggle);
+    document.querySelectorAll('.risklevels button').forEach(b => {
+      b.classList.toggle('active', b.dataset.risk === riskLevel);
+      b.disabled = !!inp.manualToggle;
+    });
+
+    formatCapitalInput();
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+/* =====================================================
+   BASIC HELPERS
+===================================================== */
+function num(id){
+  const raw = String(document.getElementById(id).value ?? '').replace(/[$,\s]/g,'');
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value : 0;
+}
+function intNum(id){
+  const v = parseInt(document.getElementById(id).value, 10);
+  return Number.isFinite(v) ? v : 0;
+}
+
+function formatNumber(value){
+  return Number(value || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function formatCapitalInput(){
+  const el=document.getElementById('initialCapital');
+  const v=num('initialCapital');
+  if(v>0) el.value=formatNumber(v);
+}
+function updateSessionCounter(){
+  document.getElementById('sessionCounter').textContent=sessionCounter;
+  saveState();
+}
+
+function resetSessionCounter(){
+  if(!confirm('شمارنده سشن به ۱ بازنشانی شود؟\n\nتاریخچه سشن‌ها و معاملات حذف نخواهد شد.\n\nOK = بازنشانی\nCancel = انصراف')) return;
+  sessionCounter = 1;
+  updateSessionCounter();
+}
+
+function showAbout(){
+  alert('Trade Manager\n\nDesigned & Developed by\nre3ae6\n\nv1.0.0 • © 2026');
+}
+
+function getCurrency(){
+  return 'USD';
+}
+function money(value){
+  const negative = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  const formatted = abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return negative + '$' + formatted;
+}
+function formatDateTime(d){
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function getValidPayout(){
+  let payout = num('payout');
+  if(payout <= 0) payout = 0.01;
+  if(payout > 500) payout = 500;
+  return payout / 100;
+}
+function getQuota(){
+  return 1 + getValidPayout() * 100 / 100; // 1 + payout%/100, kept explicit for readability
+}
+
+/* =====================================================
+   MODE SWITCH
+===================================================== */
+function setMode(m){
+  if(m === mode) return;
+  if(trades.length > 0){
+    alert('برای تغییر حالت، ابتدا یک سشن جدید شروع کنید (سشن فعلی معامله دارد).');
+    return;
+  }
+  mode = m;
+  document.getElementById('modeBtnSimple').classList.toggle('active', mode === 'simple');
+  document.getElementById('modeBtnMasaniello').classList.toggle('active', mode === 'masaniello');
+  document.getElementById('panelSimple').classList.toggle('hidden', mode !== 'simple');
+  document.getElementById('panelMasaniello').classList.toggle('hidden', mode !== 'masaniello');
+  document.getElementById('masaPlanBlock').classList.toggle('hidden', mode !== 'masaniello');
+  document.querySelectorAll('.simple-only').forEach(el => el.classList.toggle('hidden', mode !== 'simple'));
+  applySetup();
+  resetTradesState();
+}
+
+/* =====================================================
+   SETUP — recomputes derived plan values; masaniello's
+   plan (n,k) is only (re)computed while trades.length===0
+===================================================== */
+let setupDebounceTimer = null;
+function onSetupChange(){
+  if(trades.length === 0){
+    if(mode === 'masaniello'){
+      // computePlan searches many (n,k) combinations under extreme
+      // inputs (e.g. very low payout + very high target) and can take
+      // a couple hundred ms — debounce so typing stays smooth, and show
+      // a calculating indicator immediately so the UI doesn't look frozen.
+      clearTimeout(setupDebounceTimer);
+      setStatus('⏳ در حال محاسبه...', '');
+      setupDebounceTimer = setTimeout(() => { applySetup(); render(); }, 150);
+      return;
+    }
+    applySetup();
+  }
+  render();
+}
+
+function onManualToggle(){
+  const on = document.getElementById('manualToggle').checked;
+  document.getElementById('manualWrap').classList.toggle('show', on);
+  document.querySelectorAll('.risklevels button').forEach(b => b.disabled = on);
+  if(on && !document.getElementById('manualN').value){
+    document.getElementById('manualN').value = planned0 || 10;
+    document.getElementById('manualK').value = kRequired0 || 6;
+  }
+  onSetupChange();
+}
+
+function setRisk(level){
+  riskLevel = level;
+  document.querySelectorAll('.risklevels button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.risk === level);
+  });
+  if(trades.length === 0){
+    applySetup();
+  }
+  render();
+}
+
+function applySetup(){
+  const initialCapital = num('initialCapital');
+  sessionStartTime = new Date().toISOString();
+
+  if(mode === 'simple'){
+    balance = initialCapital;
+    streakLoss = 0;
+    currentStreakCount = 0;
+    return;
+  }
+
+  // masaniello
+  capital0 = initialCapital;
+  payout0 = num('payout');
+  target0 = num('targetProfit');
+  const floor = MIN_STAKE;
+
+  const manualOn = document.getElementById('manualToggle').checked;
+  if(manualOn){
+    planned0 = Math.max(1, intNum('manualN'));
+    kRequired0 = Math.min(planned0, Math.max(1, intNum('manualK')));
+  } else {
+    const plan = computePlan(riskLevel, capital0, payout0, target0, floor);
+    if(plan){
+      planned0 = plan.n;
+      kRequired0 = plan.k;
+    } else {
+      planned0 = 0;
+      kRequired0 = 0;
+    }
+  }
+
+  balance = capital0;
+  nRemaining = planned0;
+  kRemaining = kRequired0;
+
+  const Q = getQuota();
+  document.getElementById('breakevenDisplay').textContent = (1/Q*100).toFixed(1) + '%';
+}
+
+/* =====================================================
+   MASANIELLO ENGINE (position-sizing math)
+   Correct order-invariant dynamic-programming version.
+
+   f(m,c): m = trades completed (of the ORIGINAL plan), c = wins
+   achieved so far.
+     w = k-c (wins still needed), r = n-m (trades still remaining)
+     w==0  -> f=1                 (target already reached)
+     w==r  -> f=Q^w                (must win every remaining trade —
+                                     correct stake here is 100% of
+                                     balance on each of those trades)
+     else  -> f = Q*f(m+1,c)*f(m+1,c+1) / (f(m+1,c)+(Q-1)*f(m+1,c+1))
+
+   This guarantees the SAME final balance for any order of wins/losses,
+   as long as exactly k wins occur within n trades. Verified against
+   the reference Masaniello spreadsheet (7MM-Masaniello.xlsx).
+===================================================== */
+let masaTable = null, masaTableKey = '';
+
+function buildMasaTableFor(n, k, Q){
+  const key = n+'_'+k+'_'+Q.toFixed(6);
+  if(masaTableKey === key && masaTable) return masaTable;
+  const f = [];
+  for(let m=0;m<=n;m++){ f[m] = new Array(k+1).fill(null); }
+  for(let m=n;m>=0;m--){
+    for(let c=0;c<=k;c++){
+      const w = k-c, r = n-m;
+      if(w<0 || w>r){ f[m][c] = null; continue; }
+      if(w===0){ f[m][c] = 1; continue; }
+      if(w===r){ f[m][c] = Math.pow(Q,w); continue; }
+      const fWin = f[m+1][c+1], fLose = f[m+1][c];
+      f[m][c] = (Q*fLose*fWin) / (fLose + (Q-1)*fWin);
+    }
+  }
+  masaTable = f; masaTableKey = key;
+  return f;
+}
+
+// Exact guaranteed multiplier for a full (n,k,Q) plan — same value
+// regardless of win/loss order, as long as exactly k wins land in n trades.
+function masaTargetMultiplier(n, k, Q){
+  if(n<=0 || k<=0 || k>n || Q<=1) return null;
+  const t = buildMasaTableFor(n, k, Q);
+  return t[0] ? t[0][0] : null;
+}
+
+function masanielloStake(C, nRem, kRem, Q, floor, nTotal, kTotal){
+  if(kRem <= 0) return {stake:0, reason:'target-reached'};
+  if(nRem <= 0) return {stake:0, reason:'no-trades-left'};
+  if(kRem > nRem) return {stake:0, reason:'target-impossible'};
+  if(Q <= 1) return {stake:0, reason:'invalid-payout'};
+  if(C <= 0) return {stake:0, reason:'balance-depleted'};
+
+  // Forced state: remaining trades == remaining wins needed, so every
+  // remaining trade must be won. Losing this one already ends the plan
+  // regardless of stake size, so the correct play is the full balance —
+  // that's the only stake that still reaches the exact target if you win.
+  if(kRem === nRem){
+    return {stake: Math.round(C*100)/100, reason:'ok'};
+  }
+
+  const t = buildMasaTableFor(nTotal, kTotal, Q);
+  const m = nTotal - nRem;   // trades completed so far
+  const c = kTotal - kRem;   // wins achieved so far
+  const fLose = t[m+1] ? t[m+1][c]   : null;
+  const fWin  = t[m+1] ? t[m+1][c+1] : null;
+  if(fLose===null || fWin===null) return {stake:0, reason:'target-impossible'};
+
+  const fraction = 1 - (Q*fWin) / (fLose + (Q-1)*fWin);
+  let stake = C*fraction;
+  if(!Number.isFinite(stake)){
+    // Extreme inputs (very high payout% combined with a very large plan)
+    // can push Q^w past what floating point can represent, turning the
+    // fraction into NaN/Infinity. Fail safe instead of logging a broken
+    // trade — this never happens for realistic payout/target combinations.
+    return {stake:0, reason:'target-impossible'};
+  }
+  if(stake < floor){
+    if(C < floor) return {stake:0, reason:'insufficient-balance'};
+    stake = floor;
+  }
+  stake = Math.min(stake, C);
+  return {stake: Math.round(stake*100)/100, reason:'ok'};
+}
+
+// Exact final balance if a plan requires k wins out of n trades —
+// deterministic, so "worst case" and "guaranteed result" are the same number.
+function guaranteedWorstCaseFinal(C, n, k, Q){
+  if(n<=0 || k<=0 || k>n || Q<=1 || C<=0) return null;
+  const mult = masaTargetMultiplier(n, k, Q);
+  return mult!==null ? C*mult : null;
+}
+
+// All-win (k=n) plan final balance: every trade is bet 100% of balance,
+// so this is simply C * Q^n.
+function simulateAllWinFinal(C, n, Q, floor){
+  if(C < floor) return null;
+  return C * Math.pow(Q, n);
+}
+function findHighRiskN(C, Q, targetCapital, floor){
+  for(let n=1;n<=300;n++){
+    const f = simulateAllWinFinal(C, n, Q, floor);
+    if(f!==null && f>=targetCapital) return n;
+  }
+  return null;
+}
+function findMinK(C, n, Q, targetCapital){
+  for(let k=1;k<=n;k++){
+    const f = guaranteedWorstCaseFinal(C, n, k, Q);
+    if(f!==null && f>=targetCapital) return k;
+  }
+  return null;
+}
+function computePlan(risk, C, payoutPct, target, floor){
+  const Q = 1 + Math.max(0.01, payoutPct) / 100;
+  const targetCapital = C + target;
+  const highN = findHighRiskN(C, Q, targetCapital, floor);
+  if(highN === null) return null;
+
+  if(risk === 'high'){
+    return {n: highN, k: highN};
+  }
+
+  const minBuffer = risk === 'medium' ? 1 : 2;
+  let n = risk === 'medium'
+    ? Math.max(highN+1, highN*2)
+    : Math.max(highN+2, highN*4);
+  n = Math.min(n, 300);
+
+  let k = findMinK(C, n, Q, targetCapital);
+  if(k === null) return {n: highN, k: highN};
+
+  while((n - k) < minBuffer && n < 300){
+    n++;
+    const k2 = findMinK(C, n, Q, targetCapital);
+    if(k2 === null) break;
+    k = k2;
+  }
+  return {n, k};
+}
+
+/* =====================================================
+   SIMPLE ENGINE (fixed target % + stop loss)
+===================================================== */
+function getWinProfitAmount(){
+  const initialCapital = num('initialCapital');
+  const gain = num('accountGain') / 100;
+  return initialCapital * gain;
+}
+function getValidStopLossPct(){
+  let pct = num('stopLossPct');
+  if(pct <= 0) pct = 0.01;
+  if(pct > 100) pct = 100;
+  return pct / 100;
+}
+function getStopLossAmount(){
+  return num('initialCapital') * getValidStopLossPct();
+}
+function getStopLossBalance(){
+  return num('initialCapital') - getStopLossAmount();
+}
+function simpleNextStake(){
+  const payout = getValidPayout();
+  const targetProfit = getWinProfitAmount();
+  const requiredReturn = streakLoss + targetProfit;
+  const floor = MIN_STAKE;
+  let stake = requiredReturn / payout;
+  if(stake < floor) stake = floor;   // Pocket Option minimum trade amount
+
+  if(balance < floor) return {stake:0, reason:'insufficient-balance'};
+
+  const stopLossBalance = getStopLossBalance();
+  const projected = balance - stake;
+  if(stake <= 0 || projected < stopLossBalance) return {stake:0, reason:'stoploss'};
+  return {stake, reason:'ok'};
+}
+
+/* =====================================================
+   SHARED NEXT-STAKE DISPATCH
+===================================================== */
+function getNextStake(){
+  if(mode === 'simple') return simpleNextStake();
+  const Q = getQuota();
+  const floor = MIN_STAKE;
+  return masanielloStake(balance, nRemaining, kRemaining, Q, floor, planned0, kRequired0);
+}
+
+const LOCK_MESSAGES = {
+  'no-trades-left': '⚠ معاملات برنامه‌ریزی‌شده تمام شد — سشن جدید شروع کنید.',
+  'target-reached': '✅ هدف قبلاً محقق شده — سشن جدید شروع کنید.',
+  'target-impossible': '⚠ رسیدن به هدف با معاملات باقی‌مانده دیگر ممکن نیست.',
+  'invalid-payout': '⚠ درصد بازده نامعتبر است.',
+  'balance-depleted': '⚠ موجودی تمام شد — سشن جدید شروع کنید.',
+  'insufficient-balance': '⚠ موجودی کمتر از حداقل مبلغ معامله است.',
+  'stoploss': '⚠ مبلغ معامله لازم برای بازیابی، از بودجه‌ی باقی‌مانده تا حد ضرر بیشتر است — سشن قفل شد.'
+};
+
+/* =====================================================
+   LOG TRADE
+===================================================== */
+let lastTradeAt = 0;
+function logTrade(result){
+  const now = Date.now();
+  if(now - lastTradeAt < 350) return; // guard against accidental double-tap/double-fire
+  lastTradeAt = now;
+
+  if(locked){
+    showAlert(mode === 'simple' ? '⚠ به حد ضرر رسیده‌اید — سشن قفل شده. یک سشن جدید شروع کنید.' : LOCK_MESSAGES['no-trades-left'], 'alert');
+    return;
+  }
+
+  if(trades.length === 0){
+    applySetup();
+    if(mode === 'masaniello' && planned0 === 0){
+      setStatus('⚠ با این موجودی/بازده/هدف برنامه‌ای وجود ندارد — هدف را کاهش دهید.', 'warn');
+      render();
+      return;
+    }
+  }
+
+  const r = getNextStake();
+  if(r.reason !== 'ok'){
+    locked = true;
+    if(mode === 'simple'){
+      showAlert(LOCK_MESSAGES[r.reason] || LOCK_MESSAGES['stoploss'], 'alert');
+    } else {
+      setStatus(LOCK_MESSAGES[r.reason] || '⚠ ادامه معامله ممکن نیست.', 'warn');
+    }
+    render();
+    return;
+  }
+
+  applyTradeMath(result, r.stake);
+  evaluateLockState();
+  render();
+}
+
+// Pure state mutation for a single trade outcome. `precomputedStake`, when
+// given, skips a redundant getNextStake() call (logTrade() already computed
+// it to validate the trade before calling this). The undo-replay below
+// omits it on purpose — each replayed step needs a fresh calculation since
+// balance/n/k change after every step.
+function applyTradeMath(result, precomputedStake){
+  const stake = precomputedStake ?? getNextStake().stake;
+  let ret;
+
+  if(mode === 'simple'){
+    const payout = getValidPayout();
+    if(result === 'W'){
+      ret = stake * payout;
+      balance += ret;
+      streakLoss = 0;
+      currentStreakCount = 0;
+    } else if(result === 'BE'){
+      ret = 0;
+      // سر به سر: سرمایه و وضعیت ریسک بدون تغییر باقی می‌ماند.
+    } else {
+      ret = -stake;
+      balance += ret;
+      streakLoss += stake;
+      currentStreakCount++;
+    }
+  } else {
+    const Q = getQuota();
+    if(result === 'W'){
+      ret = stake * (Q - 1);
+      balance += ret;
+      kRemaining--;
+      nRemaining--;
+    } else if(result === 'BE'){
+      ret = 0;
+      // سر به سر: نه سرمایه تغییر می‌کند نه یکی از معاملات برنامه مصرف می‌شود —
+      // چون قیمت جابه‌جا نشده، این معامله عملاً اتفاق نیفتاده است.
+    } else {
+      ret = -stake;
+      balance += ret;
+      nRemaining--;
+    }
+  }
+
+  trades.push({no: trades.length+1, result, amount: stake, ret, balance});
+}
+
+function evaluateLockState(){
+  if(mode === 'simple'){
+    checkStopLoss();
+    checkOptionalAlerts();
+  } else {
+    if(balance <= 0){
+      locked = true;
+      setStatus('⚠ موجودی تمام شد — سشن جدید شروع کنید.', 'warn');
+    } else if(kRemaining <= 0){
+      locked = true;
+      setStatus('✅ سود هدف محقق شد! می‌توانید سشن جدید شروع کنید.', 'ok');
+    } else if(nRemaining <= 0){
+      locked = true;
+      setStatus('⚠ معاملات برنامه بدون رسیدن به هدف تمام شد.', 'warn');
+    } else if(kRemaining > nRemaining){
+      locked = true;
+      setStatus('⚠ رسیدن به هدف با معاملات باقی‌مانده دیگر ممکن نیست.', 'warn');
+    }
+  }
+}
+
+// Removes only the last logged trade, instead of wiping the whole table.
+// Rather than trying to hand-write an inverse of applyTradeMath() for every
+// case (risky, especially around locked/edge states), this replays the
+// remaining history from the same original starting point — deterministic
+// and guaranteed to match whatever applyTradeMath() actually does.
+function undoLastTrade(){
+  if(trades.length === 0) return;
+  const history = trades.slice(0, -1).map(t => t.result);
+  const keepStart = sessionStartTime;
+
+  trades = [];
+  streakLoss = 0;
+  currentStreakCount = 0;
+  locked = false;
+  clearAlert();
+
+  if(mode === 'simple'){
+    balance = num('initialCapital');
+  } else {
+    balance = capital0;
+    nRemaining = planned0;
+    kRemaining = kRequired0;
+  }
+  sessionStartTime = keepStart;
+
+  history.forEach(result => applyTradeMath(result));
+  evaluateLockState();
+  render();
+}
+
+/* =====================================================
+   STOP LOSS / ALERTS (simple mode)
+===================================================== */
+function checkStopLoss(){
+  const stopLossBalance = getStopLossBalance();
+
+  if(balance <= stopLossBalance){
+    locked = true;
+    showAlert('⚠ به حد ضرر (Stop Loss) رسیدید — معامله در این سشن قفل شد.', 'alert');
+    return;
+  }
+
+  const totalRisk = getStopLossAmount();
+  const remaining = balance - stopLossBalance;
+  const used = totalRisk - remaining;
+  const usedPct = totalRisk > 0 ? (used / totalRisk * 100) : 0;
+
+  let alertPct = num('stopLossAlertPct');
+  if(alertPct <= 0 || alertPct > 100) alertPct = 80;
+
+  if(usedPct >= alertPct){
+    showAlert('⚠ هشدار: به محدوده‌ی حد ضرر نزدیک شده‌اید.', 'warning');
+  } else {
+    clearAlert();
+  }
+}
+
+function checkOptionalAlerts(){
+  if(document.getElementById('t-sessionEnd')?.textContent === 'ON'){
+    const winProfit = getWinProfitAmount();
+    const pl = balance - num('initialCapital');
+    if(winProfit > 0 && pl >= winProfit){
+      showAlert('✅ هدف سود این سشن محقق شد — پیشنهاد می‌شود سشن را ببندید.', 'info');
+    }
+  }
+  if(document.getElementById('t-lowTrade')?.textContent === 'ON'){
+    const maxLoss = parseInt(document.getElementById('maxLossLimit').textContent, 10) || 0;
+    const remainingBudget = maxLoss - currentStreakCount;
+    if(maxLoss > 0 && remainingBudget <= 2 && remainingBudget >= 0 && !locked){
+      showAlert('⚠ فقط ' + remainingBudget + ' باخت متوالی دیگر تا رسیدن به حد ضرر باقی مانده.', 'warning');
+    }
+  }
+}
+
+function showAlert(message, type){
+  document.getElementById('alertBox').innerHTML = `<div class="${type}">${message}</div>`;
+}
+function clearAlert(){
+  document.getElementById('alertBox').innerHTML = '';
+}
+function setStatus(text, cls){
+  const map = { ok:'success', warn:'warning', '':'status' };
+  const type = map[cls] ?? 'status';
+  document.getElementById('alertBox').innerHTML = text ? `<div class="${type}">${text}</div>` : '';
+}
+
+/* =====================================================
+   CLEAR / NEW SESSION
+===================================================== */
+// Raw reset — no confirmation, no history save. Used internally by
+// setMode() (only ever called when trades.length===0) and by
+// newSession() (which already confirmed + saved before calling this).
+function resetTradesState(){
+  trades = [];
+  streakLoss = 0;
+  currentStreakCount = 0;
+  locked = false;
+  clearAlert();
+  applySetup();
+  if(mode === 'masaniello'){
+    setStatus(planned0 ? 'آماده شروع' : '⚠ با این موجودی/بازده/هدف برنامه‌ای وجود ندارد.', planned0 ? '' : 'warn');
+  }
+  render();
+}
+
+// Bound to the "پاک کردن جدول" button. Unlike newSession(), a click
+// here has no other confirmation step before it, so this one confirms
+// and saves the current session to history itself before wiping it —
+// otherwise a single misclick would silently destroy the whole table.
+function clearTrades(){
+  if(trades.length > 0){
+    if(!confirm('جدول معاملات جاری پاک شود؟\n\nOK = ثبت سشن در تاریخچه و پاک کردن\nCancel = انصراف')) return;
+    saveSession();
+  }
+  resetTradesState();
+}
+
+function newSession(){
+  if(trades.length > 0){
+    const choice = confirm('سشن فعلی ثبت شود و سشن جدید شروع شود؟\n\nOK = ثبت و شروع سشن جدید\nCancel = انصراف');
+    if(!choice) return;
+    saveSession();
+  }
+
+  if(document.getElementById('t-autoCopy')?.textContent === 'ON' && trades.length > 0){
+    document.getElementById('initialCapital').value = formatNumber(balance);
+  }
+
+  sessionCounter++;
+  updateSessionCounter();
+  resetTradesState();
+}
+
+
+/* =====================================================
+   SESSION HISTORY
+===================================================== */
+function saveSession(){
+  if(trades.length === 0) return;
+
+  const initial = trades[0].balance - trades[0].ret;
+  const finalBalance = balance;
+
+  sessionHistory.push({
+    session: sessionHistory.length + 1,
+    mode,
+    trades: trades.length,
+    wins: trades.filter(t => t.result === 'W').length,
+    losses: trades.filter(t => t.result === 'L').length,
+    breakevens: trades.filter(t => t.result === 'BE').length,
+    initial,
+    finalBalance,
+    profit: finalBalance - initial,
+    date: formatDateTime(new Date()),
+    endedAt: new Date().toISOString()
+  });
+
+  renderHistory();
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('historyWrap');
+  if(sessionHistory.length === 0){
+    wrap.innerHTML = '<div class="small" style="text-align:center; padding:10px;">هنوز سشنی ثبت نشده</div>';
+    saveState();
+    return;
+  }
+  wrap.innerHTML = sessionHistory.slice().reverse().map(s => `
+    <div class="histrow">
+      <span>#${s.session} · ${s.mode === 'simple' ? 'Simple' : 'Masaniello'} · ${s.trades} معامله (${s.wins}W/${s.breakevens || 0}BE/${s.losses}L)</span>
+      <span class="hp ${s.profit < 0 ? 'neg' : 'pos'}">${money(s.profit)}</span>
+    </div>
+  `).join('');
+
+  saveState();
+}
+
+function clearHistory(){
+  if(sessionHistory.length === 0) return;
+  if(!confirm('تاریخچه‌ی همه‌ی سشن‌ها پاک شود؟')) return;
+  sessionHistory = [];
+  renderHistory();
+}
+
+function exportHistoryCSV(){
+  if(sessionHistory.length === 0){
+    alert('تاریخچه‌ای برای خروجی گرفتن وجود ندارد.');
+    return;
+  }
+  const esc = v => {
+    const s = String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const header = ['Session','Mode','Trades','Wins','Losses','Initial','Final','Profit','DateTime'];
+  const rows = sessionHistory.map(s => [
+    s.session, s.mode, s.trades, s.wins, s.losses,
+    s.initial.toFixed(2), s.finalBalance.toFixed(2), s.profit.toFixed(2), s.date
+  ]);
+  const csv = [header, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wwa-session-history.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =====================================================
+   TRADING PLAN — independent long-term planning layer
+   (see Trading Plan architecture doc, Revision 3 — FROZEN)
+
+   Isolation contract:
+   - Reads sessionHistory and the live `balance` only.
+   - Never reads or writes anything belonging to Simple Mode,
+     Masaniello, recovery, or stake calculations.
+   - computeTradingPlanStats() is pure: no DOM access, no
+     saveState()/render() calls, no mutation of any kind.
+===================================================== */
+function generatePlanId(){
+  if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'){
+    return crypto.randomUUID();
+  }
+  return 'plan_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+}
+
+// Pure helper: resolves whichever of targetPercent/targetBalance wasn't provided,
+// relative to a given start balance. Shared by createTradingPlan() and
+// updateTradingPlan() so this math exists in exactly one place.
+function resolvePlanTarget(planStartBalance, targetPercent, targetBalance){
+  const hasPercent = Number.isFinite(targetPercent);
+  const hasBalance = Number.isFinite(targetBalance);
+
+  let resolvedPercent = hasPercent ? targetPercent : null;
+  let resolvedBalance = hasBalance ? targetBalance : null;
+
+  if(hasPercent && !hasBalance){
+    resolvedBalance = planStartBalance * (1 + targetPercent / 100);
+  } else if(hasBalance && !hasPercent){
+    resolvedPercent = planStartBalance > 0
+      ? (targetBalance / planStartBalance - 1) * 100
+      : 0;
+  }
+
+  return { targetPercent: resolvedPercent, targetBalance: resolvedBalance };
+}
+
+// Creates a brand-new plan: new id, new planCreatedAt, sessions start counting from zero.
+function createTradingPlan(planName, planStartBalance, targetPercent, targetBalance){
+  const resolved = resolvePlanTarget(planStartBalance, targetPercent, targetBalance);
+
+  tradingPlan = {
+    id: generatePlanId(),
+    enabled: true,
+    planName: planName || '',
+    planStartBalance: planStartBalance,
+    targetPercent: resolved.targetPercent,
+    targetBalance: resolved.targetBalance,
+    planCreatedAt: new Date().toISOString(),
+    status: 'running'
+  };
+
+  return tradingPlan;
+}
+
+// Updates the CURRENT plan in place: preserves id, planCreatedAt, planStartBalance,
+// status, and therefore every historical relationship to sessionHistory. Only
+// planName/targetPercent/targetBalance may change — this is "change the goal",
+// not "start a new plan".
+function updateTradingPlan(planName, targetPercent, targetBalance){
+  if(!tradingPlan) return null;
+
+  const resolved = resolvePlanTarget(tradingPlan.planStartBalance, targetPercent, targetBalance);
+
+  tradingPlan.planName = planName || '';
+  tradingPlan.targetPercent = resolved.targetPercent;
+  tradingPlan.targetBalance = resolved.targetBalance;
+
+  return tradingPlan;
+}
+
+function cancelTradingPlan(){
+  if(!tradingPlan) return;
+  tradingPlan.status = 'cancelled';
+}
+
+function completeTradingPlan(){
+  if(!tradingPlan) return;
+  tradingPlan.status = 'completed';
+}
+
+function getPlanSessions(){
+  if(!tradingPlan) return [];
+  return sessionHistory.filter(s => s.endedAt && s.endedAt >= tradingPlan.planCreatedAt);
+}
+
+function computeTradingPlanStats(){
+  if(!tradingPlan){
+    return {
+      remainingProfit: null,
+      progressPercent: null,
+      sessionsCompletedTowardPlan: 0,
+      averageProfitPerCompletedSession: null,
+      estimatedSessionsRemaining: null,
+      requiredAverageProfitPerSession: null,
+      targetReached: false
+    };
+  }
+
+  const planSessions = getPlanSessions();
+  const currentBalance = balance;
+
+  const remainingProfit = tradingPlan.targetBalance - currentBalance;
+
+  const denom = tradingPlan.targetBalance - tradingPlan.planStartBalance;
+  const progressPercent = denom !== 0
+    ? ((currentBalance - tradingPlan.planStartBalance) / denom) * 100
+    : (currentBalance >= tradingPlan.targetBalance ? 100 : 0);
+
+  const sessionsCompletedTowardPlan = planSessions.length;
+
+  const averageProfitPerCompletedSession = sessionsCompletedTowardPlan > 0
+    ? planSessions.reduce((sum, s) => sum + s.profit, 0) / sessionsCompletedTowardPlan
+    : null;
+
+  const estimatedSessionsRemaining = (averageProfitPerCompletedSession !== null && averageProfitPerCompletedSession > 0)
+    ? remainingProfit / averageProfitPerCompletedSession
+    : null;
+
+  const requiredAverageProfitPerSession = (estimatedSessionsRemaining !== null && estimatedSessionsRemaining !== 0)
+    ? remainingProfit / estimatedSessionsRemaining
+    : null;
+
+  const targetReached = progressPercent >= 100;
+
+  return {
+    remainingProfit,
+    progressPercent,
+    sessionsCompletedTowardPlan,
+    averageProfitPerCompletedSession,
+    estimatedSessionsRemaining,
+    requiredAverageProfitPerSession,
+    targetReached
+  };
+}
+
+/* renderTradingPlan() — display only (Phase 4).
+   Calls computeTradingPlanStats() exactly once and reuses the
+   returned object for every displayed value. No calculation is
+   duplicated here. No event handlers, no saveState(), no automatic
+   status changes. */
+function renderTradingPlan(){
+  const createView = document.getElementById('tradingPlanCreateView');
+  const activeView = document.getElementById('tradingPlanActiveView');
+  const reachedView = document.getElementById('tradingPlanTargetReached');
+  if(!createView || !activeView || !reachedView) return;
+
+  const isRunning = !!tradingPlan && tradingPlan.status === 'running';
+
+  createView.classList.toggle('hidden', isRunning);
+  activeView.classList.toggle('hidden', !isRunning);
+
+  if(!isRunning){
+    reachedView.classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('tpPlanName').textContent = tradingPlan.planName || '-';
+  document.getElementById('tpStartBalance').textContent = money(tradingPlan.planStartBalance);
+  document.getElementById('tpTargetPercent').textContent =
+    Number.isFinite(tradingPlan.targetPercent) ? tradingPlan.targetPercent.toFixed(2) + '%' : '-';
+  document.getElementById('tpTargetBalance').textContent = money(tradingPlan.targetBalance);
+
+  const stats = computeTradingPlanStats();
+
+  document.getElementById('tpRemainingProfit').textContent =
+    Number.isFinite(stats.remainingProfit) ? money(stats.remainingProfit) : '-';
+  document.getElementById('tpProgressPercent').textContent =
+    Number.isFinite(stats.progressPercent) ? stats.progressPercent.toFixed(2) + '%' : '-';
+  document.getElementById('tpSessionsCompleted').textContent = stats.sessionsCompletedTowardPlan;
+  document.getElementById('tpAvgProfitPerSession').textContent =
+    stats.averageProfitPerCompletedSession !== null ? money(stats.averageProfitPerCompletedSession) : '-';
+  document.getElementById('tpEstSessionsRemaining').textContent =
+    stats.estimatedSessionsRemaining !== null ? Math.ceil(stats.estimatedSessionsRemaining) : '-';
+  document.getElementById('tpRequiredAvgProfit').textContent =
+    stats.requiredAverageProfitPerSession !== null ? money(stats.requiredAverageProfitPerSession) : '-';
+
+  reachedView.classList.toggle('hidden', !stats.targetReached);
+}
+
+/* ---- Trading Plan action handlers (Phase 5) ----
+   One shared form (#tradingPlanCreateView) is used for both
+   creating a new plan and editing the current one.
+   These handlers only orchestrate existing Trading Plan
+   functions (createTradingPlan/updateTradingPlan/
+   completeTradingPlan/cancelTradingPlan) — no business logic
+   is duplicated here. */
+
+// Transient UI-only state: which action the shared form currently represents.
+// Not part of tradingPlan, never persisted, never read by any calculation.
+let tradingPlanFormMode = 'create';
+
+// UI-only housekeeping: clears the shared form's fields and resets it to
+// its default "create" appearance. Not a calculation.
+function clearTradingPlanForm(){
+  tradingPlanFormMode = 'create';
+  document.getElementById('tpFormName').value = '';
+  document.getElementById('tpFormStartBalance').value = '';
+  document.getElementById('tpFormStartBalance').disabled = false;
+  document.getElementById('tpFormTargetPercent').value = '';
+  document.getElementById('tpFormTargetBalance').value = '';
+  document.querySelector('input[name="tpTargetType"][value="percent"]').checked = true;
+  onTradingPlanTargetTypeChange();
+}
+
+// Shows only the target input matching the selected Target Type radio —
+// the other target field is never visible at the same time, for either
+// Create or Edit. Pure UI toggle, not a calculation.
+function onTradingPlanTargetTypeChange(){
+  const isPercent = document.querySelector('input[name="tpTargetType"]:checked').value === 'percent';
+  document.getElementById('tpFormTargetPercentRow').classList.toggle('hidden', !isPercent);
+  document.getElementById('tpFormTargetBalanceRow').classList.toggle('hidden', isPercent);
+}
+
+// The Create/Save button: reads inputs, then calls exactly one of
+// createTradingPlan() (new plan) or updateTradingPlan() (same plan,
+// identity preserved), then calls render(). Which one depends only on
+// tradingPlanFormMode, set by onTradingPlanEdit()/clearTradingPlanForm().
+function onTradingPlanFormSubmit(){
+  const planName = document.getElementById('tpFormName').value;
+  const isPercent = document.querySelector('input[name="tpTargetType"]:checked').value === 'percent';
+  const targetPercent = isPercent ? parseFloat(document.getElementById('tpFormTargetPercent').value) : NaN;
+  const targetBalance = !isPercent ? parseFloat(document.getElementById('tpFormTargetBalance').value) : NaN;
+
+  // Guard: the visible target field must contain a real number. Without
+  // this, an empty active field silently resolves to targetPercent/
+  // targetBalance both null (resolvePlanTarget's correct response to
+  // "nothing was provided"), which callers here never expected to persist.
+  const activeTargetValid = isPercent ? Number.isFinite(targetPercent) : Number.isFinite(targetBalance);
+  if(!activeTargetValid) return;
+
+  if(tradingPlanFormMode === 'edit'){
+    updateTradingPlan(planName, targetPercent, targetBalance);
+  } else {
+    const planStartBalance = parseFloat(document.getElementById('tpFormStartBalance').value);
+    if(!Number.isFinite(planStartBalance)) return;
+    createTradingPlan(planName, planStartBalance, targetPercent, targetBalance);
+  }
+
+  render();
+  clearTradingPlanForm();
+}
+
+// Reveals the shared form pre-filled with the current plan's values, in
+// "edit" mode: planStartBalance is shown but disabled (edit must never
+// change it), and only one target field is shown at a time via the
+// Target Type selector, defaulting to Percentage. Does not call
+// updateTradingPlan()/render() — that only happens on submit.
+function onTradingPlanEdit(){
+  if(!tradingPlan) return;
+  tradingPlanFormMode = 'edit';
+
+  document.getElementById('tpFormName').value = tradingPlan.planName || '';
+
+  document.getElementById('tpFormStartBalance').value = tradingPlan.planStartBalance;
+  document.getElementById('tpFormStartBalance').disabled = true;
+
+  document.querySelector('input[name="tpTargetType"][value="percent"]').checked = true;
+  document.getElementById('tpFormTargetPercent').value =
+    Number.isFinite(tradingPlan.targetPercent) ? tradingPlan.targetPercent : '';
+  document.getElementById('tpFormTargetBalance').value = '';
+  onTradingPlanTargetTypeChange();
+
+  document.getElementById('tradingPlanCreateView').classList.remove('hidden');
+  document.getElementById('tradingPlanActiveView').classList.add('hidden');
+}
+
+function onTradingPlanComplete(){
+  if(!confirm('برنامه به عنوان تکمیل‌شده علامت‌گذاری شود؟\n\nOK = تکمیل برنامه\nCancel = انصراف')) return;
+  completeTradingPlan();
+  render();
+  clearTradingPlanForm();
+}
+
+function onTradingPlanCancel(){
+  if(!confirm('این برنامه لغو شود؟\n\nOK = لغو برنامه\nCancel = انصراف')) return;
+  cancelTradingPlan();
+  render();
+  clearTradingPlanForm();
+}
+
+function copyNextStake(){
+  const r = !locked ? getNextStake() : {stake:0, reason:'locked'};
+  if(locked || r.reason !== 'ok'){
+    alert('مبلغ معامله بعدی در حال حاضر موجود نیست.');
+    return;
+  }
+  const text = r.stake.toFixed(2);
+  const btn = document.getElementById('copyStakeBtn');
+  const done = () => {
+    if(btn){
+      const original = 'کپی';
+      btn.textContent = 'کپی شد ✓';
+      setTimeout(() => { btn.textContent = original; }, 1200);
+    }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => alert('مبلغ: ' + text));
+  } else {
+    alert('مبلغ: ' + text);
+  }
+}
+
+/* =====================================================
+   SESSION LOG (JSON) — for AI / human risk-reward review
+===================================================== */
+function computeSessionMetricsGeneric(){
+  const initialCapital = num('initialCapital');
+  const wins = trades.filter(t => t.result === 'W').length;
+  const losses = trades.length - wins;
+  const totalStaked = trades.reduce((a,t)=>a+t.amount,0);
+  const netPL = balance - initialCapital;
+
+  let peak = initialCapital, maxDDDollar = 0;
+  const path = [initialCapital, ...trades.map(t=>t.balance)];
+  path.forEach(b=>{
+    if(b>peak) peak = b;
+    const dd = peak - b;
+    if(dd > maxDDDollar) maxDDDollar = dd;
+  });
+
+  const base = {
+    mode,
+    start_balance: initialCapital,
+    final_balance: Math.round(balance*100)/100,
+    net_profit_loss: Math.round(netPL*100)/100,
+    total_trades_taken: trades.length,
+    wins, losses,
+    actual_win_rate_percent: trades.length ? Math.round((wins/trades.length*100)*100)/100 : null,
+    total_amount_staked: Math.round(totalStaked*100)/100,
+    max_drawdown_dollar: Math.round(maxDDDollar*100)/100,
+    max_drawdown_percent: peak>0 ? Math.round((maxDDDollar/peak*100)*100)/100 : 0,
+    locked
+  };
+
+  if(mode === 'masaniello'){
+    const Q = getQuota();
+    const targetBalance = capital0 + target0;
+    const guaranteedWorstCase = guaranteedWorstCaseFinal(capital0, planned0, kRequired0, Q);
+    return Object.assign(base, {
+      instrument_payout_percent: payout0,
+      decimal_odds_Q: Math.round(Q*10000)/10000,
+      break_even_win_rate_percent: Math.round((1/Q*100)*100)/100,
+      plan: {
+        planned_trades_n: planned0,
+        wins_required_k: kRequired0,
+        losses_allowed_budget: planned0 - kRequired0,
+        losses_used: losses,
+        losses_budget_remaining: (planned0 - kRequired0) - losses
+      },
+      target_profit: target0,
+      target_balance: Math.round(targetBalance*100)/100,
+      guaranteed_worst_case_final_balance: guaranteedWorstCase!==null ? Math.round(guaranteedWorstCase*100)/100 : null,
+      target_achieved: balance >= targetBalance
+    });
+  }
+
+  return Object.assign(base, {
+    payout_percent: num('payout'),
+    account_gain_target_percent: num('accountGain'),
+    stop_loss_percent: num('stopLossPct'),
+    stop_loss_balance_floor: Math.round(getStopLossBalance()*100)/100
+  });
+}
+
+function toggleLog(){
+  const wrap = document.getElementById('logWrap');
+  const show = !wrap.classList.contains('show');
+  wrap.classList.toggle('show', show);
+  if(show) generateLog();
+}
+
+function generateLog(){
+  const liveMetrics = trades.length > 0 ? computeSessionMetricsGeneric() : null;
+
+  const log = {
+    generated_at: new Date().toISOString(),
+    tool: `Trade Manager v${APP_VERSION} (Simple + Masaniello)`,
+    currency: getCurrency(),
+    current_session: liveMetrics,
+    session_history: sessionHistory
+  };
+
+  document.getElementById('logOutput').value = JSON.stringify(log, null, 2);
+  document.getElementById('copyBtn').textContent = 'کپی';
+  document.getElementById('copyBtn').classList.remove('copied');
+}
+
+function copyLog(){
+  const ta = document.getElementById('logOutput');
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(markCopied).catch(() => fallbackCopy(ta));
+    return;
+  }
+  fallbackCopy(ta);
+}
+function fallbackCopy(ta){
+  try{
+    const ok = document.execCommand('copy');
+    if(ok) markCopied();
+  }catch(e){ /* selection remains for manual copy */ }
+}
+function markCopied(){
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = 'کپی شد ✓';
+  btn.classList.add('copied');
+}
+
+/* =====================================================
+   UI TOGGLES
+===================================================== */
+function toggleBtn(id){
+  const el = document.getElementById(id);
+  const isOn = !el.classList.contains('off');
+  if(isOn){
+    el.classList.add('off');
+    el.textContent = 'OFF';
+  } else {
+    el.classList.remove('off');
+    el.textContent = 'ON';
+  }
+  if(id === 't-sessionEnd' || id === 't-lowTrade'){
+    checkOptionalAlerts();
+  }
+}
+
+/* =====================================================
+   RENDER
+===================================================== */
+function render(){
+  const tbody = document.getElementById('tbody');
+
+  if(trades.length === 0){
+    tbody.innerHTML = '<tr class="emptyrow"><td colspan="5">هنوز معامله‌ای ثبت نشده — یک نتیجه را ثبت کنید</td></tr>';
+  } else {
+    tbody.innerHTML = trades.map(t => `
+      <tr class="${t.result === 'W' ? 'rowW' : (t.result === 'BE' ? 'rowBE' : 'rowL')}">
+        <td>${t.no}</td>
+        <td><span class="badge ${t.result}">${t.result}</span></td>
+        <td>${money(t.amount)}</td>
+        <td class="${t.ret < 0 ? 'neg' : 'pos'}">${money(t.ret)}</td>
+        <td>${money(t.balance)}</td>
+      </tr>
+    `).join('');
+  }
+
+  const wins = trades.filter(t => t.result === 'W').length;
+  const breakevens = trades.filter(t => t.result === 'BE').length;
+  const losses = trades.filter(t => t.result === 'L').length;
+
+  document.getElementById('winBtn').disabled = locked;
+  document.getElementById('beBtn').disabled = locked;
+  document.getElementById('lossBtn').disabled = locked;
+
+  // shared session performance summary (balance / P&L / W-L-T-WR abbreviated)
+  const winRate = trades.length ? Math.round(wins / trades.length * 100) : 0;
+  const initialForPL = mode === 'simple' ? num('initialCapital') : capital0;
+  const pl = balance - initialForPL;
+
+  document.getElementById('curBalance').textContent = money(balance);
+  const curPLEl = document.getElementById('curPL');
+  curPLEl.textContent = money(pl);
+  curPLEl.className = pl < 0 ? 'neg' : 'pos';
+
+  let wlText = `W:${wins} BE:${breakevens} L:${losses} T:${trades.length} WR:${winRate}%`;
+  if(mode === 'simple' && currentStreakCount > 0){
+    wlText += ` STK:${currentStreakCount}`;
+  }
+  document.getElementById('wlSummary').textContent = wlText;
+
+  renderTradingPlan();
+
+  const nextStakeResult = !locked ? getNextStake() : {stake:0, reason:'locked'};
+
+  if(mode === 'simple'){
+    recalc();
+  } else {
+    document.getElementById('planN').textContent = planned0 || '-';
+    document.getElementById('planK').textContent = kRequired0 || '-';
+    document.getElementById('planBuffer').textContent = planned0 ? (planned0 - kRequired0) : '-';
+
+    const guaranteeEl = document.getElementById('guaranteeLine');
+    if(planned0 > 0){
+      const Q = getQuota();
+      const wc = guaranteedWorstCaseFinal(capital0, planned0, kRequired0, Q);
+      const targetBalance = capital0 + target0;
+      if(wc !== null){
+        const safe = wc >= targetBalance - 0.005;
+        guaranteeEl.className = 'guaranteeline' + (safe ? '' : ' bad');
+        guaranteeEl.innerHTML = (safe ? 'نتیجه تضمینی این برنامه: ' : 'هشدار — نتیجه‌ی این برنامه کمتر از هدف است: ')
+          + '<b>' + money(wc) + '</b>' + (safe ? ' — صرف‌نظر از اینکه کدام معاملات برنده/بازنده باشند (تا سقف باخت مجاز).' : ' — هدف ' + money(targetBalance) + ' بود.');
+      } else {
+        guaranteeEl.textContent = '-';
+      }
+    } else {
+      guaranteeEl.textContent = '-';
+    }
+
+    if(!locked && nextStakeResult.reason === 'ok'){
+      setStatus(trades.length === 0 ? 'آماده شروع' : `${trades.length} معامله ثبت شده — ${nRemaining} باقی‌مانده`, '');
+    }
+  }
+
+  document.getElementById('nextStakePreview').textContent =
+    (locked || nextStakeResult.reason !== 'ok') ? '— قفل —' : money(nextStakeResult.stake);
+
+  saveState();
+}
+
+/* =====================================================
+   CALCULATIONS (simple mode)
+===================================================== */
+function recalc(){
+  const initialCapital = num('initialCapital');
+  const gainPct = num('accountGain') / 100;
+  const capitalFinal = initialCapital * (1 + gainPct);
+  const winProfit = getWinProfitAmount();
+  const stopLossAmount = getStopLossAmount();
+  const stopLossBalance = getStopLossBalance();
+
+  document.getElementById('capitalFinal').textContent = money(capitalFinal);
+  document.getElementById('winProfit').textContent = money(winProfit);
+  document.getElementById('stopLossAmt').textContent = money(stopLossBalance);
+
+  const payout = getValidPayout();
+  let cumulativeLoss = 0;
+  let count = 0;
+  let firstStake = null;
+  for(let i = 0; i < 500; i++){
+    const stake = (cumulativeLoss + winProfit) / payout;
+    if(i === 0) firstStake = stake;
+    if(cumulativeLoss + stake > stopLossAmount) break;
+    cumulativeLoss += stake;
+    count++;
+  }
+  document.getElementById('maxLossLimit').textContent = count;
+
+  const explainEl = document.getElementById('lossLimitExplain');
+  if(count === 0 && firstStake !== null){
+    explainEl.innerHTML = `معامله ۱ نیاز به ${money(firstStake)} دارد<br>بودجه‌ی مجاز حد ضرر: ${money(stopLossAmount)}<br>با این هدف، بازیابی حتی از یک باخت هم ممکن نیست — هدف سشن را کاهش دهید یا حد ضرر را افزایش دهید.`;
+    explainEl.style.display = '';
+  } else {
+    explainEl.innerHTML = '';
+    explainEl.style.display = 'none';
+  }
+}
+
+
+/* =====================================================
+   INITIALIZATION
+===================================================== */
+
+const restored = loadState();
+if(!restored){
+  document.getElementById('modeBtnSimple').classList.add('active');
+  document.querySelector('.risklevels button[data-risk="medium"]').classList.add('active');
+  formatCapitalInput();
+  applySetup();
+}
+render();
+renderHistory();
+updateSessionCounter();
+
+/* Session pill: tap = new session, long-press = reset session counter (shortcut for the Settings option) */
+(function(){
+  const pill = document.getElementById('sessionPill');
+  if(!pill) return;
+  const LONG_MS = 3000;
+  const TAP_MS = 250;
+  let timer = null, longFired = false, downAt = 0;
+  function down(){
+    longFired = false;
+    downAt = Date.now();
+    timer = setTimeout(() => { longFired = true; timer = null; resetSessionCounter(); }, LONG_MS);
+  }
+  function up(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    if(!longFired && (Date.now() - downAt) <= TAP_MS) newSession();
+  }
+  function cancel(){
+    if(timer){ clearTimeout(timer); timer = null; }
+  }
+  pill.addEventListener('pointerdown', down);
+  pill.addEventListener('pointerup', up);
+  pill.addEventListener('pointerleave', cancel);
+  pill.addEventListener('pointercancel', cancel);
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
