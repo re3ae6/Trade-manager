@@ -13,22 +13,40 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          cp index.html manifest.json service-worker.js www/ 2>/dev/null || true
+          cp icon-*.png www/ 2>/dev/null || true
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync web assets into Android project
+        run: npx cap copy android
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
 
       - name: Build debug APK
-        run: |
-          yes | sdkmanager --licenses || true
-          gradle assembleDebug
+        run: cd android && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: TradeManager-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
