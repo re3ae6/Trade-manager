@@ -36,6 +36,36 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Remove INTERNET permission (app is fully offline)
+        run: |
+          python3 - <<'EOF'
+          import re
+
+          path = "android/app/src/main/AndroidManifest.xml"
+          with open(path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          # The tools:node="remove" merger instruction requires the
+          # tools namespace to be declared on the root <manifest> tag.
+          if 'xmlns:tools=' not in content:
+              content = content.replace(
+                  '<manifest ',
+                  '<manifest xmlns:tools="http://schemas.android.com/tools" ',
+                  1
+              )
+
+          removal_tag = '    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />\n'
+
+          if 'android.permission.INTERNET" tools:node="remove"' not in content:
+              content = content.replace('</manifest>', removal_tag + '</manifest>')
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+
+          print("--- AndroidManifest.xml after edit ---")
+          print(content)
+          EOF
+
       - name: Prepare app icon source
         run: |
           mkdir -p assets
@@ -52,6 +82,23 @@ jobs:
 
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
+
+      - name: Verify INTERNET permission is absent from the built APK
+        run: |
+          BUILD_TOOLS=$(ls /usr/local/lib/android/sdk/build-tools | sort -V | tail -1)
+          AAPT="/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/aapt"
+          if [ -x "$AAPT" ]; then
+            echo "--- Permissions declared in the built APK ---"
+            "$AAPT" dump permissions android/app/build/outputs/apk/debug/app-debug.apk || true
+            if "$AAPT" dump permissions android/app/build/outputs/apk/debug/app-debug.apk | grep -q "android.permission.INTERNET"; then
+              echo "::error::INTERNET permission is still present in the built APK!"
+              exit 1
+            else
+              echo "Confirmed: android.permission.INTERNET is NOT present in the built APK."
+            fi
+          else
+            echo "aapt not found at expected path — skipping automated permission check. Verify manually with: aapt dump permissions app-debug.apk"
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
