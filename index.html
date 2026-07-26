@@ -613,25 +613,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
     <!-- RIGHT: SESSION CONTROL (shared) -->
     <div>
 
-      <div class="panel">
-        <details id="historyDetails">
-          <summary class="histsummary">تاریخچه سشن‌ها</summary>
-          <div class="histwrap" id="historyWrap">
-            <div class="small small-center">هنوز سشنی ثبت نشده</div>
-          </div>
-          <div class="histbtns">
-            <button onclick="exportHistoryCSV()">خروجی CSV</button>
-            <button onclick="clearHistory()">پاک کردن تاریخچه</button>
-          </div>
-        </details>
-        <button class="logbtn" onclick="toggleLog()">📋 ساخت لاگ سشن (JSON، برای بررسی هوش مصنوعی)</button>
-        <div class="logwrap" id="logWrap">
-          <div class="lognote">رکورد کامل و ماشین‌خوان از سشن جاری و تمام سشن‌های قبلی این صفحه به‌همراه متریک‌های ریسک/بازده. آن را برای یک هوش مصنوعی کپی کنید تا ریسک و بازده شما را بررسی کند.</div>
-          <textarea id="logOutput" readonly></textarea>
-          <button class="copybtn" id="copyBtn" onclick="copyLog()">کپی</button>
-        </div>
-      </div>
-
       <div class="panel" id="tradingPlanPanel">
         <div class="panel-title">برنامه معاملاتی</div>
 
@@ -716,6 +697,25 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 
         <div id="tradingPlanTargetReached" class="success hidden">
           🎯 هدف برنامه محقق شد
+        </div>
+      </div>
+
+      <div class="panel">
+        <details id="historyDetails">
+          <summary class="histsummary">تاریخچه سشن‌ها</summary>
+          <div class="histwrap" id="historyWrap">
+            <div class="small small-center">هنوز سشنی ثبت نشده</div>
+          </div>
+          <div class="histbtns">
+            <button onclick="exportHistoryCSV()">خروجی CSV</button>
+            <button onclick="clearHistory()">پاک کردن تاریخچه</button>
+          </div>
+        </details>
+        <button class="logbtn" onclick="toggleLog()">📋 ساخت لاگ سشن (JSON، برای بررسی هوش مصنوعی)</button>
+        <div class="logwrap" id="logWrap">
+          <div class="lognote">رکورد کامل و ماشین‌خوان از سشن جاری و تمام سشن‌های قبلی این صفحه به‌همراه متریک‌های ریسک/بازده. آن را برای یک هوش مصنوعی کپی کنید تا ریسک و بازده شما را بررسی کند.</div>
+          <textarea id="logOutput" readonly></textarea>
+          <button class="copybtn" id="copyBtn" onclick="copyLog()">کپی</button>
         </div>
       </div>
 
@@ -1497,7 +1497,7 @@ function clearHistory(){
   renderHistory();
 }
 
-function exportHistoryCSV(){
+async function exportHistoryCSV(){
   if(sessionHistory.length === 0){
     alert('تاریخچه‌ای برای خروجی گرفتن وجود ندارد.');
     return;
@@ -1512,11 +1512,37 @@ function exportHistoryCSV(){
     s.initial.toFixed(2), s.finalBalance.toFixed(2), s.profit.toFixed(2), s.date
   ]);
   const csv = [header, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+  const filename = 'wwa-session-history.csv';
+
+  // Inside the wrapped Android app, the browser-only <a download> + blob
+  // trick below silently does nothing (Android's WebView has no built-in
+  // download handling for it). When running natively, use Capacitor's own
+  // Filesystem + Share plugins instead — this writes the file to the
+  // app's private cache (no storage permission needed) and opens the
+  // native share sheet so the user can save/send it anywhere.
+  if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+    try{
+      const { Filesystem, Share } = window.Capacitor.Plugins;
+      await Filesystem.writeFile({
+        path: filename,
+        data: '\uFEFF' + csv,
+        directory: 'CACHE',
+        encoding: 'utf8'
+      });
+      const { uri } = await Filesystem.getUri({ directory: 'CACHE', path: filename });
+      await Share.share({ title: 'Session History CSV', url: uri });
+    }catch(e){
+      alert('خروجی گرفتن با خطا مواجه شد: ' + (e && e.message ? e.message : e));
+    }
+    return;
+  }
+
+  // Normal browser / PWA context — unchanged from before.
   const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'wwa-session-history.csv';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
