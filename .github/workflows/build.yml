@@ -38,15 +38,13 @@ jobs:
 
       - name: Remove INTERNET permission (app is fully offline)
         run: |
-          python3 - <<'EOF'
+          python3 - <<'PYEOF'
           import re
 
           path = "android/app/src/main/AndroidManifest.xml"
           with open(path, "r", encoding="utf-8") as f:
               content = f.read()
 
-          # The tools:node="remove" merger instruction requires the
-          # tools namespace to be declared on the root <manifest> tag.
           if 'xmlns:tools=' not in content:
               content = content.replace(
                   '<manifest ',
@@ -54,8 +52,13 @@ jobs:
                   1
               )
 
-          removal_tag = '    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />\n'
+          content = re.sub(
+              r'\s*<uses-permission android:name="android\.permission\.INTERNET"\s*/>\n',
+              '\n',
+              content
+          )
 
+          removal_tag = '    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />\n'
           if 'android.permission.INTERNET" tools:node="remove"' not in content:
               content = content.replace('</manifest>', removal_tag + '</manifest>')
 
@@ -64,7 +67,7 @@ jobs:
 
           print("--- AndroidManifest.xml after edit ---")
           print(content)
-          EOF
+          PYEOF
 
       - name: Prepare app icon source
         run: |
