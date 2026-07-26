@@ -35,7 +35,6 @@ jobs:
 
       - name: Add Android platform
         run: npx cap add android
-
       - - name: Remove INTERNET permission (app is fully offline)
         run: |
           python3 - <<'EOF'
