@@ -304,6 +304,104 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   th{font-size:8px;}
   td{font-size:10.5px;}
 }
+
+/* ---------------- PHONE LANDSCAPE: keep the 3-column layout, ----------------
+   fitted to a short viewport. All three columns are forced to the same
+   height (the available viewport height below the header) and each
+   scrolls independently, so nothing overlaps and every button/row stays
+   in its normal position — you just scroll within a column if it has
+   more content than fits. */
+@media (orientation:landscape) and (max-height:500px){
+  html, body{height:100%;}
+  body{padding:0; overflow:hidden;}
+  .app{
+    display:flex; flex-direction:column;
+    height:100vh; height:100dvh;
+    border-radius:0; max-width:100%;
+  }
+
+  .titlebar{
+    flex:0 0 auto;
+    padding:6px 12px;
+    padding-top:calc(6px + env(safe-area-inset-top));
+    font-size:14px; letter-spacing:.5px;
+    border-radius:0;
+  }
+  .sessionpill{font-size:11px; padding:6px 8px;}
+  .optionsmenu summary{padding:6px 8px; font-size:15px;}
+
+  .modetabs{flex:0 0 auto; padding:5px 8px 0; gap:6px;}
+  .modetabs button{padding:6px 4px; font-size:11px;}
+  .modetabs button .t2{font-size:9px;}
+
+  .grid{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-columns:1.4fr 1fr .8fr;
+    gap:6px;
+    padding:6px;
+  }
+  /* every direct column (whether a single .panel or a wrapper holding
+     several stacked .panel blocks) gets the exact same height and
+     scrolls its own content independently */
+  .grid > div{
+    min-height:0;
+    height:100%;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .panel{padding:6px;}
+  .panel-title{font-size:10px; padding:5px;}
+  .row,.goalrow{font-size:10.5px; padding:4px 2px; flex-wrap:wrap;}
+  .row .hint{font-size:8.5px;}
+  .row input,.row select{width:80px; font-size:11px; padding:4px 6px;}
+  .goalrow input,.goalrow select{width:54px; font-size:10.5px;}
+  .inline-field input{width:70px;}
+  .small{font-size:9.5px;}
+
+  .actions{gap:6px; margin-bottom:6px;}
+  .actions button{padding:9px 4px; font-size:12px;}
+  .subactions{gap:6px; margin-bottom:6px;}
+  .subactions button{padding:7px 4px; font-size:10.5px;}
+
+  table{font-size:10.5px;}
+  th{font-size:8px; padding:5px 2px; white-space:nowrap;}
+  td{padding:5px 2px; font-size:9.5px;}
+  .badge{width:20px; padding:2px 0; font-size:10px;}
+  .tablewrap{max-height:140px;}
+
+  .row.stakebox{padding:6px; margin:6px 0;}
+  #nextStakePreview{font-size:14px;}
+  #copyStakeBtn{padding:4px 6px; font-size:9.5px;}
+
+  .statsrow{gap:6px;}
+  .statbox{padding:5px 3px;}
+  .statbox .n{font-size:12px;}
+  .statbox .l{font-size:8px;}
+
+  .planbox{gap:6px; margin:3px 2px 6px;}
+  .planbox .p{padding:5px 3px;}
+  .planbox .p .n{font-size:13px;}
+  .planbox .p .l{font-size:8px;}
+  .guaranteeline{font-size:9.5px; padding:5px 6px; margin:0 2px 6px;}
+
+  .risklevels{gap:6px; padding:3px 2px 6px;}
+  .risklevels button{padding:7px 4px; font-size:10.5px;}
+
+  .histrow{font-size:9.5px; padding:4px 2px;}
+  .histwrap{max-height:110px;}
+  .histbtns button{padding:5px; font-size:9.5px;}
+  .histsummary{font-size:11px; padding:3px 2px;}
+
+  .logbtn{font-size:10px; padding:7px; margin-top:6px;}
+  #logOutput{min-height:100px; font-size:8.5px;}
+  .copybtn{font-size:10px; padding:7px; margin-top:6px;}
+  .lognote{font-size:9px;}
+
+  footer{font-size:9px; padding:6px 8px;}
+}
 </style>
 </head>
 
