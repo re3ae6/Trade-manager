@@ -163,6 +163,10 @@ tr.rowL td{background:rgba(227,87,106,.06);}
 .inline-field{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
 .inline-field input{width:90px;}
 .inline-field .unit{color:var(--muted); font-size:12.5px;}
+.type-toggle{display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden;}
+.type-toggle label{margin:0; padding:5px 14px; cursor:pointer; color:var(--muted); font-size:13px; font-weight:700;}
+.type-toggle label input{display:none;}
+.type-toggle label.active{background:var(--teal); color:#062820;}
 .row.stakebox{border:1px solid var(--teal); border-radius:8px; padding:10px; margin:10px 0;}
 .stakebox label{color:var(--text); font-weight:700;}
 .stakewrap{display:flex; align-items:center; gap:8px;}
@@ -630,9 +634,9 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
           </div>
           <div class="row">
             <label>نوع هدف</label>
-            <span class="inline-field">
-              <label><input type="radio" name="tpTargetType" value="percent" checked onclick="onTradingPlanTargetTypeChange()"> درصد (%)</label>
-              <label><input type="radio" name="tpTargetType" value="balance" onclick="onTradingPlanTargetTypeChange()"> مبلغ ($)</label>
+            <span class="inline-field type-toggle">
+              <label id="tpTypeLabelPercent" class="active"><input type="radio" name="tpTargetType" value="percent" checked onclick="onTradingPlanTargetTypeChange()"> %</label>
+              <label id="tpTypeLabelBalance"><input type="radio" name="tpTargetType" value="balance" onclick="onTradingPlanTargetTypeChange()"> $</label>
             </span>
           </div>
           <div class="row" id="tpFormTargetPercentRow">
@@ -933,7 +937,15 @@ function setMode(m){
    plan (n,k) is only (re)computed while trades.length===0
 ===================================================== */
 let setupDebounceTimer = null;
+function syncTradingPlanStartBalance(){
+  const startInput = document.getElementById('tpFormStartBalance');
+  if(!startInput || startInput.disabled) return;
+  const num = parseFloat(String(document.getElementById('initialCapital').value).replace(/,/g,''));
+  if(!isNaN(num)) startInput.value = num;
+}
+
 function onSetupChange(){
+  syncTradingPlanStartBalance();
   if(trades.length === 0){
     if(mode === 'masaniello'){
       // computePlan searches many (n,k) combinations under extreme
@@ -1766,6 +1778,8 @@ function onTradingPlanTargetTypeChange(){
   const isPercent = document.querySelector('input[name="tpTargetType"]:checked').value === 'percent';
   document.getElementById('tpFormTargetPercentRow').classList.toggle('hidden', !isPercent);
   document.getElementById('tpFormTargetBalanceRow').classList.toggle('hidden', isPercent);
+  document.getElementById('tpTypeLabelPercent').classList.toggle('active', isPercent);
+  document.getElementById('tpTypeLabelBalance').classList.toggle('active', !isPercent);
 }
 
 // The Create/Save button: reads inputs, then calls exactly one of
