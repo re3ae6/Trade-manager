@@ -77,8 +77,8 @@ jobs:
       - name: Generate app icon
         run: npx capacitor-assets generate --android
 
-      - name: Sync web assets into Android project
-        run: npx cap copy android
+      - name: Sync web assets and plugins into Android project
+        run: npx cap sync android
 
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
