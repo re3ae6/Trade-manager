@@ -30,7 +30,7 @@ jobs:
       - name: Prepare web assets
         run: |
           mkdir -p www
-          cp index.html manifest.json service-worker.js www/ 2>/dev/null || true
+          cp index.html manifest.json www/ 2>/dev/null || true
           cp icon-*.png www/ 2>/dev/null || true
 
       - name: Add Android platform
