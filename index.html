@@ -444,7 +444,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
         <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy" onclick="toggleBtn('t-autoCopy')">ON</button></div>
         <div class="goalrow"><label>ریست شمارنده سشن</label><button class="btn btn-secondary btn-sm" onclick="resetSessionCounter()">Reset</button></div>
         <div class="goalrow"><label>درباره</label><button class="btn btn-secondary btn-sm" onclick="showAbout()">About</button></div>
-        <div class="goalrow hidden" id="installRow"><label>نصب اپلیکیشن</label><button class="btn btn-secondary btn-sm" id="installBtn" onclick="installApp()">Install</button></div>
       </div>
     </details>
   </div>
@@ -2162,75 +2161,7 @@ updateSessionCounter();
   pill.addEventListener('pointercancel', cancel);
 })();
 
-/* =====================================================
-   PWA: service worker registration + update flow
-===================================================== */
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').then((registration) => {
-      // If a new worker is already waiting (e.g. user had the app open
-      // during a deploy), let it take over next time all tabs are closed
-      // naturally — no forced reload, since all app data lives in
-      // localStorage, not in the worker, so this never risks losing
-      // trades/session state/Trading Plan data.
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if(!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-            // A new version is ready in the background. It will activate
-            // on its own the next time the app is fully closed and
-            // reopened — no interruption to the current session.
-          }
-        });
-      });
-    }).catch(() => { /* offline install / unsupported environment — app still works without it */ });
-  });
-}
 
-/* =====================================================
-   PWA: install prompt handling (Android/Chrome)
-===================================================== */
-let deferredInstallPrompt = null;
-
-function isStandaloneDisplay(){
-  return window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true; // iOS Safari
-}
-
-function updateInstallRowVisibility(){
-  const row = document.getElementById('installRow');
-  if(!row) return;
-  const canInstall = !!deferredInstallPrompt && !isStandaloneDisplay();
-  row.classList.toggle('hidden', !canInstall);
-}
-
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault(); // suppress the browser's own mini-infobar
-  deferredInstallPrompt = event;
-  updateInstallRowVisibility();
-});
-
-function installApp(){
-  if(!deferredInstallPrompt) return;
-  const promptEvent = deferredInstallPrompt;
-  deferredInstallPrompt = null;
-  updateInstallRowVisibility();
-  promptEvent.prompt();
-  // The user's choice (accepted/dismissed) doesn't need any follow-up
-  // here — the browser handles the actual install; we only needed the
-  // one-time prompt() call.
-  promptEvent.userChoice.catch(() => {});
-}
-
-window.addEventListener('appinstalled', () => {
-  deferredInstallPrompt = null;
-  updateInstallRowVisibility();
-});
-
-// In case the app is already running standalone (installed) on load,
-// make sure the install row never shows.
-updateInstallRowVisibility();
 </script>
 
 </body>
