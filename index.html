@@ -159,6 +159,7 @@ tr.rowL td{background:rgba(227,87,106,.06);}
   background:#2c3444; border:1px solid var(--border); color:#fff;
   border-radius:5px; padding:5px 8px; width:120px; text-align:center; font-size:13px; font-family:var(--mono);
 }
+#initialCapital{width:150px;}
 .inline-field{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
 .inline-field input{width:90px;}
 .inline-field .unit{color:var(--muted); font-size:12.5px;}
@@ -176,6 +177,7 @@ tr.rowL td{background:rgba(227,87,106,.06);}
 #wlSummary{font-family:var(--mono); font-weight:800; letter-spacing:.5px;}
 .subbox{border:1px solid var(--teal); border-radius:8px; margin-top:10px; overflow:hidden;}
 .subbox .panel-title{background:var(--teal-dark); color:#fff; margin:0; border-radius:0;}
+.panel-title-accent{background:var(--teal-dark); color:#fff;}
 .small{font-size:11px; color:var(--muted);}
 .lossexplain{color:var(--orange); line-height:1.6; padding:0 4px 8px;}
 
@@ -291,6 +293,7 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   .panel-title{font-size:11.5px; padding:7px;}
   .row,.goalrow{font-size:12.5px; padding:6px 2px; flex-wrap:wrap;}
   .row input,.row select{width:100px; font-size:13px; padding:6px;}
+  #initialCapital{width:130px;}
   .goalrow input,.goalrow select{width:64px;}
   table{font-size:12px;}
   th{font-size:9px; padding:7px 3px; white-space:nowrap;}
@@ -311,6 +314,7 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   .modetabs button{font-size:10.5px; padding:6px 6px;}
   .row label,.goalrow label{font-size:11.5px;}
   .row input,.row select{width:84px; font-size:12px;}
+  #initialCapital{width:108px;}
   th{font-size:8px;}
   td{font-size:10.5px;}
 }
@@ -371,6 +375,7 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   .row,.goalrow{font-size:10.5px; padding:4px 2px; flex-wrap:wrap;}
   .row .hint{font-size:8.5px;}
   .row input,.row select{width:80px; font-size:11px; padding:4px 6px;}
+  #initialCapital{width:104px;}
   .goalrow input,.goalrow select{width:54px; font-size:10.5px;}
   .inline-field input{width:70px;}
   .small{font-size:9.5px;}
@@ -519,10 +524,10 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
     <div>
 
       <div class="panel">
-        <div class="panel-title">تنظیمات و هدف</div>
+        <div class="panel-title panel-title-accent">تنظیمات هدف</div>
 
         <div class="row">
-          <label>سرمایه اولیه</label>
+          <label>Balance</label>
           <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00" oninput="onSetupChange()" onblur="formatCapitalInput()">
         </div>
 
@@ -533,83 +538,73 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 
         <!-- ===================== SIMPLE MODE TARGET ===================== -->
         <div id="panelSimple">
-          <div class="subbox">
-            <div class="panel-title">هدف سود</div>
-
-            <div class="row">
-              <label>رشد حساب سشن</label>
-              <span class="inline-field"><input id="accountGain" type="number" min="0" step="0.01" value="1" oninput="onSetupChange()"><span class="unit">%</span></span>
-            </div>
-
-            <div class="row">
-              <label>سرمایه نهایی این سشن</label>
-              <span id="capitalFinal">-</span>
-            </div>
-
-            <div class="row">
-              <label>سود برد</label>
-              <span id="winProfit">-</span>
-            </div>
-
-            <div class="row">
-              <label>حد ضرر</label>
-              <span id="stopLossAmt">-</span>
-              <span class="inline-field"><input id="stopLossPct" type="number" min="0.01" max="100" step="0.01" value="20" oninput="onSetupChange()"><span class="unit">%</span></span>
-            </div>
-
-            <div class="row">
-              <label>سقف باخت متوالی</label>
-              <span id="maxLossLimit">-</span>
-              <span class="small">حداکثر باخت پیاپی</span>
-            </div>
-            <div id="lossLimitExplain" class="small lossexplain" style="display:none;"></div>
+          <div class="row">
+            <label>Growth %</label>
+            <input id="accountGain" type="number" min="0" step="0.01" value="1" oninput="onSetupChange()">
           </div>
+
+          <div class="row">
+            <label>Target Balance</label>
+            <span id="capitalFinal">-</span>
+          </div>
+
+          <div class="row">
+            <label>Win P/L</label>
+            <span id="winProfit">-</span>
+          </div>
+
+          <div class="row">
+            <label>SL % <span class="small" id="stopLossAmt">-</span></label>
+            <input id="stopLossPct" type="number" min="0.01" max="100" step="0.01" value="20" oninput="onSetupChange()">
+          </div>
+
+          <div class="row">
+            <label>Max Loss Streak</label>
+            <span class="inline-field"><b id="maxLossLimit">-</b><span class="small">باخت پیاپی</span></span>
+          </div>
+          <div id="lossLimitExplain" class="small lossexplain" style="display:none;"></div>
         </div>
 
         <!-- ===================== MASANIELLO MODE TARGET ===================== -->
         <div id="panelMasaniello" class="hidden">
-          <div class="subbox">
-            <div class="panel-title">هدف و برنامه</div>
-
-            <div class="row">
-              <label>سود هدف (مبلغ)</label>
-              <input id="targetProfit" type="number" min="0.01" step="0.01" value="50" oninput="onSetupChange()">
-            </div>
-
-            <div class="risklevels">
-              <button data-risk="low" onclick="setRisk('low')">ریسک کم</button>
-              <button data-risk="medium" onclick="setRisk('medium')">ریسک متوسط</button>
-              <button data-risk="high" onclick="setRisk('high')">ریسک بالا</button>
-            </div>
-
-            <details id="advDetails">
-              <summary>تنظیمات پیشرفته (اختیاری)</summary>
-
-              <div class="rowSub">
-                <span>نرخ برد سربه‌سر این ابزار</span>
-                <span class="val" id="breakevenDisplay">-</span>
-              </div>
-
-              <div class="checkrow">
-                <span>تنظیم دستی تعداد معاملات و بردهای لازم</span>
-                <input id="manualToggle" type="checkbox" onchange="onManualToggle()">
-              </div>
-              <div class="manualwrap" id="manualWrap">
-                <div class="rowSub">
-                  <span>کل معاملات برنامه (n)</span>
-                  <input id="manualN" type="number" min="1" step="1" oninput="onSetupChange()">
-                </div>
-                <div class="rowSub">
-                  <span>برد لازم (k)</span>
-                  <input id="manualK" type="number" min="1" step="1" oninput="onSetupChange()">
-                </div>
-              </div>
-
-              <div class="note">
-                سطح ریسک، تعداد کل معاملات (n) و تعداد بردهای لازم (k) را طوری تعیین می‌کند که رسیدن به «سود هدف» را <b>صرف‌نظر از اینکه کدام معاملات ببازند</b> تضمین کند، تا زمانی که تعداد باخت‌ها از سقف مجاز (n−k) بیشتر نشود. مبلغ هر معامله همیشه به‌صورت زنده از موجودی فعلی، معاملات باقی‌مانده و بردهای باقی‌مانده محاسبه می‌شود.
-              </div>
-            </details>
+          <div class="row">
+            <label>سود هدف (مبلغ)</label>
+            <input id="targetProfit" type="number" min="0.01" step="0.01" value="50" oninput="onSetupChange()">
           </div>
+
+          <div class="risklevels">
+            <button data-risk="low" onclick="setRisk('low')">ریسک کم</button>
+            <button data-risk="medium" onclick="setRisk('medium')">ریسک متوسط</button>
+            <button data-risk="high" onclick="setRisk('high')">ریسک بالا</button>
+          </div>
+
+          <details id="advDetails">
+            <summary>تنظیمات پیشرفته (اختیاری)</summary>
+
+            <div class="rowSub">
+              <span>نرخ برد سربه‌سر این ابزار</span>
+              <span class="val" id="breakevenDisplay">-</span>
+            </div>
+
+            <div class="checkrow">
+              <span>تنظیم دستی تعداد معاملات و بردهای لازم</span>
+              <input id="manualToggle" type="checkbox" onchange="onManualToggle()">
+            </div>
+            <div class="manualwrap" id="manualWrap">
+              <div class="rowSub">
+                <span>کل معاملات برنامه (n)</span>
+                <input id="manualN" type="number" min="1" step="1" oninput="onSetupChange()">
+              </div>
+              <div class="rowSub">
+                <span>برد لازم (k)</span>
+                <input id="manualK" type="number" min="1" step="1" oninput="onSetupChange()">
+              </div>
+            </div>
+
+            <div class="note">
+              سطح ریسک، تعداد کل معاملات (n) و تعداد بردهای لازم (k) را طوری تعیین می‌کند که رسیدن به «سود هدف» را <b>صرف‌نظر از اینکه کدام معاملات ببازند</b> تضمین کند، تا زمانی که تعداد باخت‌ها از سقف مجاز (n−k) بیشتر نشود. مبلغ هر معامله همیشه به‌صورت زنده از موجودی فعلی، معاملات باقی‌مانده و بردهای باقی‌مانده محاسبه می‌شود.
+            </div>
+          </details>
         </div>
 
       </div>
