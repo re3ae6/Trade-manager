@@ -90,17 +90,16 @@ body{
   border-bottom:2px solid #000;
   border-radius:18px 18px 0 0;
 }
-.titlebar-title{text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 
-/* ---------------- MODE TABS ---------------- */
-.modetabs{display:flex; gap:10px; padding:14px 16px 0;}
+/* ---------------- MODE TABS (merged into titlebar, segmented switch) ---------------- */
+.titlebar-center{display:flex; align-items:center; gap:12px;}
+.titlebar-balance{font-size:14px; font-weight:800; color:var(--teal); white-space:nowrap;}
+.modetabs{display:inline-flex; background:#1b212c; border:1px solid var(--border); border-radius:20px; padding:3px; gap:2px;}
 .modetabs button{
-  flex:1; padding:13px 6px; border-radius:10px; border:1px solid var(--border);
-  background:#252c3a; color:var(--muted); font-weight:800; font-size:13.5px; cursor:pointer;
+  flex:0 0 auto; padding:7px 14px; border-radius:16px; border:none;
+  background:transparent; color:var(--muted); font-weight:800; font-size:12.5px; cursor:pointer;
 }
-.modetabs button .t2{display:block; font-size:10.5px; font-weight:600; color:var(--muted); margin-top:2px;}
-.modetabs button.active{background:var(--teal); color:#062820; border-color:transparent;}
-.modetabs button.active .t2{color:#0b3b30;}
+.modetabs button.active{background:var(--teal); color:#062820;}
 
 .grid{
   display:grid;
@@ -283,8 +282,10 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   .app{border-radius:0; max-width:100%;}
   .titlebar{border-radius:0;}
   .titlebar{padding:10px 10px 10px; padding-top:calc(10px + env(safe-area-inset-top)); font-size:16px; letter-spacing:.5px;}
-  .modetabs{padding:8px 10px 0;}
-  .modetabs button{font-size:12px; padding:9px 4px;}
+  .titlebar-center{gap:6px;}
+  .titlebar-balance{font-size:12px;}
+  .modetabs{gap:6px;}
+  .modetabs button{font-size:11.5px; padding:7px 8px;}
   .grid{grid-template-columns:1fr; padding:8px; gap:8px;}
   .panel{padding:8px;}
   .panel-title{font-size:11.5px; padding:7px;}
@@ -303,6 +304,11 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 }
 @media(max-width:420px){
   .titlebar{font-size:14.5px;}
+  .sessionpill{font-size:11px; padding:6px 8px;}
+  .titlebar-center{gap:4px;}
+  .titlebar-balance{font-size:10.5px;}
+  .modetabs{gap:4px;}
+  .modetabs button{font-size:10.5px; padding:6px 6px;}
   .row label,.goalrow label{font-size:11.5px;}
   .row input,.row select{width:84px; font-size:12px;}
   th{font-size:8px;}
@@ -337,9 +343,10 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   .sessionpill{font-size:11px; padding:6px 8px;}
   .optionsmenu summary{padding:6px 8px; font-size:15px;}
 
-  .modetabs{flex:0 0 auto; padding:5px 8px 0; gap:6px;}
-  .modetabs button{padding:6px 4px; font-size:11px;}
-  .modetabs button .t2{font-size:9px;}
+  .titlebar-center{gap:5px;}
+  .titlebar-balance{font-size:11px;}
+  .modetabs{gap:5px;}
+  .modetabs button{padding:5px 8px; font-size:10.5px;}
 
   .grid{
     flex:1 1 auto;
@@ -357,9 +364,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
     height:100%;
     overflow-y:auto;
     overscroll-behavior:contain;
-    position:relative;
-    isolation:isolate;
-    contain:layout paint;
   }
 
   .panel{padding:6px;}
@@ -420,10 +424,16 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 
   <div class="titlebar">
     <button class="sessionpill" id="sessionPill" title="تپ = سشن جدید · نگه‌دارید = ریست شمارنده" aria-label="New Session">
-      <span class="ic">⟳</span> Session #<b id="sessionCounter">1</b>
+      <span class="ic">⟳</span> Sess #<b id="sessionCounter">1</b>
     </button>
 
-    <div class="titlebar-title">TRADE MANAGER</div>
+    <div class="titlebar-center">
+      <strong class="titlebar-balance" id="titlebarBalance">-</strong>
+      <div class="modetabs">
+        <button id="modeBtnSimple" onclick="setMode('simple')">Simple</button>
+        <button id="modeBtnMasaniello" onclick="setMode('masaniello')">Masaniello</button>
+      </div>
+    </div>
 
     <details class="optionsmenu" id="optionsMenu">
       <summary>⚙</summary>
@@ -437,15 +447,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
         <div class="goalrow hidden" id="installRow"><label>نصب اپلیکیشن</label><button class="btn btn-secondary btn-sm" id="installBtn" onclick="installApp()">Install</button></div>
       </div>
     </details>
-  </div>
-
-  <div class="modetabs">
-    <button id="modeBtnSimple" onclick="setMode('simple')">Simple
-      <span class="t2">درصد ثابت + استاپ‌لاس</span>
-    </button>
-    <button id="modeBtnMasaniello" onclick="setMode('masaniello')">Masaniello
-      <span class="t2">برنامه تضمینی چند معامله‌ای</span>
-    </button>
   </div>
 
   <div class="grid">
@@ -738,7 +739,7 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '5.5';
+const APP_VERSION = '5.6';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -2032,6 +2033,7 @@ function render(){
   const pl = balance - initialForPL;
 
   document.getElementById('curBalance').textContent = money(balance);
+  document.getElementById('titlebarBalance').textContent = money(balance);
   const curPLEl = document.getElementById('curPL');
   curPLEl.textContent = money(pl);
   curPLEl.className = pl < 0 ? 'neg' : 'pos';
