@@ -1,0 +1,24 @@
+{
+  "name": "trade-manager",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Offline-first Simple + Masaniello trade manager.",
+  "scripts": {
+    "build": "node scripts/build-web.mjs",
+    "test": "node --test tests/**/*.test.mjs",
+    "check": "node --check src/js/app.js && node --check src/js/core/format.js && node --check src/js/core/history.js && node --check src/js/core/masaniello.js && node --check src/js/core/simple.js && node --check src/js/core/trading-plan.js && node --check src/js/storage/state.js"
+  },
+  "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/android": "latest",
+    "@capacitor/filesystem": "latest",
+    "@capacitor/share": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/toast": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest",
+    "@capacitor/assets": "latest"
+  },
+  "type": "module"
+}
