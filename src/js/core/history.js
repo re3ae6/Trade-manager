@@ -18,8 +18,8 @@ export function computeHistoryWithCumulativeStats(sessionHistory){
 
 export function buildHistoryCSV(sessionHistory){
   const enriched = computeHistoryWithCumulativeStats(sessionHistory);
-  const header = ['Session','Mode','Trades','Wins','Losses','Initial','Final','Profit','DateTime','CumulativeWinRate%','Trend'];
-  const rows = enriched.map(s => [s.session,s.mode,s.trades,s.wins,s.losses,s.initial.toFixed(2),s.finalBalance.toFixed(2),s.profit.toFixed(2),s.date,s.cumulativeWinRate.toFixed(2),s.trend]);
+  const header = ['Session','Mode','Trades','Wins','BE','Losses','Initial','Final','Profit','DateTime','CumulativeWinRate%','Trend'];
+  const rows = enriched.map(s => [s.session,s.mode,s.trades,s.wins,s.breakevens || 0,s.losses,s.initial.toFixed(2),s.finalBalance.toFixed(2),s.profit.toFixed(2),s.date,s.cumulativeWinRate.toFixed(2),s.trend]);
   const signatureRow = ['re3ae6'];
   return [header, ...rows, signatureRow].map(r => r.map(csvEscape).join(',')).join('\r\n');
 }
