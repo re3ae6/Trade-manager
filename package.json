@@ -1,12 +1,14 @@
 {
   "name": "trade-manager",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@capacitor/core": "latest",
     "@capacitor/android": "latest",
     "@capacitor/filesystem": "latest",
-    "@capacitor/share": "latest"
+    "@capacitor/share": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/toast": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "latest",
