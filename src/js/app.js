@@ -5,13 +5,14 @@ import { generatePlanId, resolvePlanTarget, computeTradingPlanStats as computeTr
 import { computeHistoryWithCumulativeStats as computeHistoryWithCumulativeStatsPure, buildHistoryCSV } from './core/history.js';
 import { readStoredState, writeStoredState } from './storage/state.js';
 import { computePerformanceStats } from './core/analytics.js';
+import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from './core/planner.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -19,6 +20,8 @@ let balance = 0;
 let locked = false;
 let lockReason = null; // target | stoploss | balance | plan-complete | plan-impossible
 let selectedPlannerRisk = null;
+let selectedPlannerPlan = null;
+let sessionPaused = false;
 
 let sessionCounter = 1;
 let sessionHistory = [];           // {session, mode, trades, wins, losses, initial, finalBalance, profit, date, endedAt}
@@ -31,6 +34,7 @@ let tradingPlan = null;
 // simple-mode-only runtime state
 let streakLoss = 0;
 let currentStreakCount = 0;
+let simplePlanN = 0, simplePlanK = 0;
 
 // masaniello-mode-only runtime state
 let riskLevel = 'medium';
@@ -40,18 +44,18 @@ let nRemaining = 0, kRemaining = 0;
 
 /* =====================================================
    PERSISTENCE — auto-save/restore across refresh & tab
-   close. Everything lives in localStorage; failures
-   (private browsing, storage disabled, quota) are caught
-   and silently ignored so the app keeps working without
-   persistence rather than crashing.
+   close. Everything lives in localStorage. Storage failures
+   are logged and do not crash the app; the app can continue
+   operating without persistence.
 ===================================================== */
 
 function getPersistableState(){
   return {
-    mode, trades, balance, locked, sessionCounter, sessionHistory, sessionStartTime,
-    streakLoss, currentStreakCount,
+    version: 2,
+    mode, trades, balance, locked, sessionCounter, sessionHistory, sessionStartTime, sessionPaused,
+    streakLoss, currentStreakCount, simplePlanN, simplePlanK,
     riskLevel, capital0, payout0, target0, planned0, kRequired0, nRemaining, kRemaining,
-    tradingPlan,
+    tradingPlan, selectedPlannerRisk, selectedPlannerPlan,
     inputs: {
       initialCapital: document.getElementById('initialCapital')?.value ?? '',
       payout: document.getElementById('payout')?.value ?? '',
@@ -61,15 +65,15 @@ function getPersistableState(){
       stopLossAlertPct: document.getElementById('stopLossAlertPct')?.value ?? '',
       manualToggle: document.getElementById('manualToggle')?.checked ?? false,
       manualN: document.getElementById('manualN')?.value ?? '',
-      manualK: document.getElementById('manualK')?.value ?? ''
+      manualK: document.getElementById('manualK')?.value ?? '',
+      mainTargetType: document.querySelector('input[name="mainTargetType"]:checked')?.value ?? 'percent',
+      mainTargetValue: document.getElementById('mainTargetValue')?.value ?? ''
     }
   };
 }
 
 function saveState(){
-  try{
-    writeStoredState(getPersistableState());
-  }catch(e){ /* storage unavailable — app still works, just without persistence */ }
+  writeStoredState(getPersistableState());
 }
 
 function loadState(){
@@ -84,8 +88,13 @@ function loadState(){
     sessionCounter = Number.isFinite(saved.sessionCounter) ? saved.sessionCounter : 1;
     sessionHistory = Array.isArray(saved.sessionHistory) ? saved.sessionHistory : [];
     sessionStartTime = saved.sessionStartTime || null;
+    sessionPaused = !!saved.sessionPaused;
+    selectedPlannerRisk = saved.selectedPlannerRisk || null;
+    selectedPlannerPlan = saved.selectedPlannerPlan || null;
     streakLoss = saved.streakLoss || 0;
     currentStreakCount = saved.currentStreakCount || 0;
+    simplePlanN = saved.simplePlanN || 0;
+    simplePlanK = saved.simplePlanK || 0;
     riskLevel = saved.riskLevel || 'medium';
     capital0 = saved.capital0 || 0;
     payout0 = saved.payout0 || 0;
@@ -114,6 +123,8 @@ function loadState(){
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
     if(inp.manualN) document.getElementById('manualN').value = inp.manualN;
     if(inp.manualK) document.getElementById('manualK').value = inp.manualK;
+    if(inp.mainTargetValue) document.getElementById('mainTargetValue').value = inp.mainTargetValue;
+    if(inp.mainTargetType){ const radio=document.querySelector(`input[name="mainTargetType"][value="${inp.mainTargetType}"]`); if(radio) radio.checked=true; }
 
     // restore mode buttons/panels
     document.getElementById('modeBtnSimple').classList.toggle('active', mode === 'simple');
@@ -121,6 +132,7 @@ function loadState(){
     document.getElementById('panelSimple').classList.toggle('hidden', mode !== 'simple');
     document.getElementById('panelMasaniello').classList.toggle('hidden', mode !== 'masaniello');
     document.getElementById('masaPlanBlock').classList.toggle('hidden', mode !== 'masaniello');
+  document.getElementById('simplePlannerBlock')?.classList.toggle('hidden', mode !== 'simple');
     document.querySelectorAll('.simple-only').forEach(el => el.classList.toggle('hidden', mode !== 'simple'));
 
     // restore manual-plan panel visibility + risk buttons
@@ -289,10 +301,20 @@ function hideAbout(){
 function getCurrency(){
   return 'USD';
 }
+function showInputAdjustment(id, message){
+  const el = document.getElementById(id + 'Hint');
+  if(!el) return;
+  el.textContent = message || '';
+  el.className = message ? 'small warn input-adjustment' : 'small input-adjustment';
+}
+
 function getValidPayout(){
-  let payout = num('payout');
-  if(payout <= 0) payout = 0.01;
-  if(payout > 500) payout = 500;
+  const raw = num('payout');
+  let payout = raw;
+  let message = '';
+  if(payout <= 0){ payout = 0.01; message = 'Payout نامعتبر بود و به 0.01٪ اصلاح شد.'; }
+  else if(payout > 500){ payout = 500; message = 'Payout از سقف 500٪ بیشتر بود و به 500٪ اصلاح شد.'; }
+  showInputAdjustment('payout', message);
   return payout / 100;
 }
 function getQuota(){
@@ -314,6 +336,7 @@ function setMode(m){
   document.getElementById('panelSimple').classList.toggle('hidden', mode !== 'simple');
   document.getElementById('panelMasaniello').classList.toggle('hidden', mode !== 'masaniello');
   document.getElementById('masaPlanBlock').classList.toggle('hidden', mode !== 'masaniello');
+  document.getElementById('simplePlannerBlock')?.classList.toggle('hidden', mode !== 'simple');
   document.querySelectorAll('.simple-only').forEach(el => el.classList.toggle('hidden', mode !== 'simple'));
   applySetup();
   resetTradesState();
@@ -331,7 +354,27 @@ function syncTradingPlanStartBalance(){
   if(!isNaN(num)) startInput.value = num;
 }
 
+function syncUnifiedTarget(){
+  const type=document.querySelector('input[name="mainTargetType"]:checked')?.value || 'percent';
+  const value=parseFloat(document.getElementById('mainTargetValue')?.value);
+  const capital=num('initialCapital');
+  const safeValue=Number.isFinite(value) && value>0 ? value : 0.01;
+  document.getElementById('mainTargetPercentLabel')?.classList.toggle('active',type==='percent');
+  document.getElementById('mainTargetAmountLabel')?.classList.toggle('active',type==='amount');
+  const label=document.getElementById('mainTargetValueLabel');
+  if(label) label.textContent=type==='percent'?'هدف %':'هدف ($)';
+  if(type==='percent'){
+    document.getElementById('accountGain').value=safeValue;
+    document.getElementById('targetProfit').value=(capital*safeValue/100).toFixed(2);
+  }else{
+    document.getElementById('targetProfit').value=safeValue;
+    document.getElementById('accountGain').value=(capital>0 ? safeValue/capital*100 : 0).toFixed(4);
+  }
+}
+
 function onSetupChange(){
+  selectedPlannerPlan=null;
+  syncUnifiedTarget();
   syncTradingPlanStartBalance();
   if(trades.length === 0){
     if(mode === 'masaniello'){
@@ -379,6 +422,10 @@ function applySetup(){
     balance = initialCapital;
     streakLoss = 0;
     currentStreakCount = 0;
+    const plans=buildSimplePlans(initialCapital,num('payout'),getWinProfitAmount(),MIN_STAKE);
+    const p=selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(x=>x.risk==='medium');
+    simplePlanN=p?.n || 0;
+    simplePlanK=p?.k || 0;
     return;
   }
 
@@ -424,9 +471,12 @@ function getWinProfitAmount(){
   return initialCapital * gain;
 }
 function getValidStopLossPct(){
-  let pct = num('stopLossPct');
-  if(pct <= 0) pct = 0.01;
-  if(pct > 100) pct = 100;
+  const raw = num('stopLossPct');
+  let pct = raw;
+  let message = '';
+  if(pct <= 0){ pct = 0.01; message = 'حد ضرر نامعتبر بود و به 0.01٪ اصلاح شد.'; }
+  else if(pct > 100){ pct = 100; message = 'حد ضرر از 100٪ بیشتر بود و به 100٪ اصلاح شد.'; }
+  showInputAdjustment('stopLossPct', message);
   return pct / 100;
 }
 function getStopLossAmount(){
@@ -471,6 +521,11 @@ function logTrade(result){
   const now = Date.now();
   if(now - lastTradeAt < 350) return; // guard against accidental double-tap/double-fire
   lastTradeAt = now;
+
+  if(sessionPaused){
+    showAlert('⏸ سشن در حالت مکث است — ابتدا آن را ادامه دهید.','warning');
+    return;
+  }
 
   if(locked){
     showAlert(mode === 'simple' ? '⚠ به حد ضرر رسیده‌اید — سشن قفل شده. یک سشن جدید شروع کنید.' : LOCK_MESSAGES['no-trades-left'], 'alert');
@@ -552,6 +607,11 @@ function applyTradeMath(result, precomputedStake){
 function evaluateLockState(){
   if(mode === 'simple'){
     checkStopLoss();
+    const wins=trades.filter(t=>t.result==='W').length;
+    const losses=trades.filter(t=>t.result==='L').length;
+    if(!locked && simplePlanK>0 && wins>=simplePlanK){ locked=true; lockReason='target'; setStatus('✅ برنامه Simple به تعداد برد هدف رسید.','ok'); }
+    else if(!locked && simplePlanN>0 && (wins+losses)>=simplePlanN){ locked=true; lockReason='plan-complete'; setStatus('⚠ تعداد معاملات برنامه تمام شد.','warn'); }
+    else if(!locked && simplePlanN>0 && losses>(simplePlanN-simplePlanK)){ locked=true; lockReason='plan-impossible'; setStatus('⚠ باخت مجاز برنامه تمام شد.','warn'); }
     checkOptionalAlerts();
   } else {
     if(balance <= 0){
@@ -635,9 +695,11 @@ function checkStopLoss(){
 
 function checkOptionalAlerts(){
   if(document.getElementById('t-sessionEnd')?.textContent === 'ON'){
-    const winProfit = getWinProfitAmount();
+    const type=document.querySelector('input[name="mainTargetType"]:checked')?.value || 'percent';
+    const v=parseFloat(document.getElementById('mainTargetValue')?.value) || 0;
+    const targetProfit=type==='percent' ? num('initialCapital')*v/100 : v;
     const pl = balance - num('initialCapital');
-    if(winProfit > 0 && pl >= winProfit){
+    if(targetProfit > 0 && pl >= targetProfit){
       showAlert('✅ هدف سود این سشن محقق شد — پیشنهاد می‌شود سشن را ببندید.', 'info');
     }
   }
@@ -982,85 +1044,78 @@ function computeTradingPlanStats(){
    returned object for every displayed value. No calculation is
    duplicated here. No event handlers, no saveState(), no automatic
    status changes. */
+function renderUnifiedTarget(){
+  const capital=num('initialCapital');
+  const type=document.querySelector('input[name="mainTargetType"]:checked')?.value || 'percent';
+  const value=parseFloat(document.getElementById('mainTargetValue')?.value);
+  const targetBalance=capital + (type==='percent' ? capital*(Number.isFinite(value)?value:0)/100 : (Number.isFinite(value)?value:0));
+  const el=document.getElementById('unifiedTargetBalance'); if(el) el.textContent=money(targetBalance);
+}
+
+function renderSimplePlanner(){
+  const wrap=document.getElementById('simplePlannerOptions'); if(!wrap) return;
+  const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE);
+  const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
+  wrap.innerHTML=plans.map(o=>{
+    const selected=selectedPlannerRisk===o.risk;
+    if(!o.valid) return `<button type="button" class="tp-risk-card disabled"><div class="tp-risk-title">${labels[o.risk]}</div><div>با ورودی فعلی قابل اجرا نیست</div></button>`;
+    return `<button type="button" class="tp-risk-card selectable risk-${o.risk} ${selected?'selected':''}" data-simple-risk="${o.risk}">
+      <div class="tp-risk-title">${labels[o.risk]}</div>
+      <div><b>${o.n}</b><span> معامله</span></div>
+      <div><b>${o.k}</b><span> برد هدف</span></div>
+      <div><b>${o.n-o.k}</b><span> باخت مجاز</span></div>
+      <div><b>${money(o.maxStake)}</b><span> بیشترین Stake</span></div>
+      <div><b>${money(o.stopLossAmount)}</b><span> بودجه SL</span></div>
+    </button>`;
+  }).join('');
+  wrap.querySelectorAll('[data-simple-risk]').forEach(btn=>btn.addEventListener('click',()=>selectPlannerRisk(btn.dataset.simpleRisk)));
+  const info=document.getElementById('simplePlannerInfo');
+  if(info){
+    const p=plans.find(x=>x.risk===selectedPlannerRisk && x.valid);
+    info.textContent=p ? `برنامه انتخاب‌شده: ${p.n} معامله، ${p.k} برد هدف و ${p.n-p.k} باخت مجاز. Target هر برد ${money(p.profitPerWin)} است.` : 'یک برنامه را انتخاب کنید.';
+  }
+}
+
 function renderTradingPlan(){
-  const createView = document.getElementById('tradingPlanCreateView');
-  const activeView = document.getElementById('tradingPlanActiveView');
-  const reachedView = document.getElementById('tradingPlanTargetReached');
-  if(!createView || !activeView || !reachedView) return;
+  const summary=document.getElementById('plannerSummary');
+  const info=document.getElementById('savedPlanInfo');
+  if(!summary) return;
+  renderUnifiedTarget();
+  if(mode==='simple') renderSimplePlanner();
+  if(mode==='masaniello') renderMasanielloPlanner(summary);
+  else renderSimplePlannerSummary(summary);
+  if(info) info.textContent = tradingPlan?.status === 'running' ? `برنامه ذخیره‌شده: ${tradingPlan.planName || 'برنامه فعلی'}` : '';
+  const pause=document.getElementById('pauseSessionBtn');
+  const resume=document.getElementById('resumeSessionBtn');
+  const start=document.getElementById('startPlanBtn');
+  const active=trades.length>0 && !sessionPaused;
+  pause?.classList.toggle('hidden',!active);
+  resume?.classList.toggle('hidden',!sessionPaused || trades.length===0);
+  start?.classList.toggle('hidden',active || sessionPaused);
+}
 
-  const isRunning = !!tradingPlan && tradingPlan.status === 'running';
+function renderMasanielloPlanner(summary){
+  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE);
+  const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
+  const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
+  if(current?.valid){
+    selectedPlannerPlan=current;
+    const losses=current.n-current.k;
+    summary.innerHTML=`<b>${labels[current.risk]||'Custom'}</b> · ${current.n} معامله · ${current.k} برد · ${losses} باخت مجاز<br><span class="small">هدف نهایی: ${money(current.targetBalance)} · نتیجه تضمینی: ${money(current.worstCaseFinal)}</span>`;
+  }else summary.textContent='با ورودی‌های فعلی برنامه قابل محاسبه نیست.';
+  const n=document.getElementById('tpEditTrades'), l=document.getElementById('tpEditLosses');
+  if(current?.valid && n && l && document.activeElement!==n && document.activeElement!==l){ n.value=current.n; l.value=current.n-current.k; }
+}
 
-  createView.classList.toggle('hidden', isRunning);
-  activeView.classList.toggle('hidden', !isRunning);
-
-  if(!isRunning){
-    reachedView.classList.add('hidden');
-    return;
-  }
-
-  document.getElementById('tpPlanName').textContent = tradingPlan.planName || '-';
-  document.getElementById('tpStartBalance').textContent = money(tradingPlan.planStartBalance);
-  document.getElementById('tpTargetPercent').textContent =
-    Number.isFinite(tradingPlan.targetPercent) ? tradingPlan.targetPercent.toFixed(2) + '%' : '-';
-  document.getElementById('tpTargetBalance').textContent = money(tradingPlan.targetBalance);
-  document.getElementById('tpRiskPayout').textContent = Number.isFinite(tradingPlan.payoutPercent) ? tradingPlan.payoutPercent + '%' : '-';
-  const riskLabels = {low:'کم‌ریسک', medium:'ریسک متوسط', high:'پرریسک'};
-  const riskClasses = {low:'risk-low', medium:'risk-medium', high:'risk-high'};
-  const riskWrap = document.getElementById('tpRiskOptions');
-  if(riskWrap){
-    const options = Array.isArray(tradingPlan.riskOptions) ? tradingPlan.riskOptions : [];
-    if(!selectedPlannerRisk && options.length) selectedPlannerRisk = options.find(o => o.risk === 'medium')?.risk || options[0].risk;
-    riskWrap.innerHTML = options.map(option => `
-      <button type="button" class="tp-risk-card selectable ${riskClasses[option.risk] || ''} ${selectedPlannerRisk === option.risk ? 'selected' : ''}" data-planner-risk="${option.risk}">
-        <div class="tp-risk-title">${riskLabels[option.risk] || option.risk}</div>
-        <div><b>${option.n || '-'}</b><span> معامله</span></div>
-        <div><b>${option.k || '-'}</b><span> برد لازم</span></div>
-        <div><b>${Number.isFinite(option.n) && Number.isFinite(option.k) ? option.n - option.k : '-'}</b><span> باخت مجاز</span></div>
-      </button>`).join('');
-    riskWrap.querySelectorAll('[data-planner-risk]').forEach(btn => {
-      btn.addEventListener('click', () => selectPlannerRisk(btn.dataset.plannerRisk));
-    });
-  }
-
-  const selectedOption = Array.isArray(tradingPlan.riskOptions)
-    ? tradingPlan.riskOptions.find(o => o.risk === selectedPlannerRisk)
-    : null;
-  const editN = document.getElementById('tpEditTrades');
-  const editLosses = document.getElementById('tpEditLosses');
-  if(selectedOption && editN && editLosses){
-    if(document.activeElement !== editN) editN.value = selectedOption.n || '';
-    if(document.activeElement !== editLosses) editLosses.value =
-      Number.isFinite(selectedOption.n) && Number.isFinite(selectedOption.k) ? selectedOption.n - selectedOption.k : '';
-  }
-
-  const stats = computeTradingPlanStats();
-
-  document.getElementById('tpRemainingProfit').textContent =
-    Number.isFinite(stats.remainingProfit) ? money(stats.remainingProfit) : '-';
-  document.getElementById('tpProgressPercent').textContent =
-    Number.isFinite(stats.progressPercent) ? stats.progressPercent.toFixed(2) + '%' : '-';
-  document.getElementById('tpSessionsCompleted').textContent = stats.sessionsCompletedTowardPlan;
-  document.getElementById('tpAvgProfitPerSession').textContent =
-    stats.averageProfitPerCompletedSession !== null ? money(stats.averageProfitPerCompletedSession) : '-';
-  document.getElementById('tpEstSessionsRemaining').textContent =
-    stats.estimatedSessionsRemaining !== null ? Math.ceil(stats.estimatedSessionsRemaining) : '-';
-  document.getElementById('tpRequiredAvgProfit').textContent =
-    stats.requiredAverageProfitPerSession !== null ? money(stats.requiredAverageProfitPerSession) : '-';
-
-  const actualProfit = balance - tradingPlan.planStartBalance;
-  const plannedProfit = tradingPlan.targetBalance - tradingPlan.planStartBalance;
-  const actualEl = document.getElementById('tpActualProfit');
-  const gapEl = document.getElementById('tpPlanGap');
-  const planProgressEl = document.getElementById('tpPlanProgressBar');
-  if(actualEl) actualEl.textContent = money(actualProfit);
-  if(gapEl) gapEl.textContent = money(actualProfit - plannedProfit);
-  if(planProgressEl){
-    const pct = plannedProfit > 0 ? Math.max(0, Math.min(100, actualProfit / plannedProfit * 100)) : 0;
-    planProgressEl.style.width = pct.toFixed(2) + '%';
-    planProgressEl.setAttribute('aria-valuenow', pct.toFixed(2));
-  }
-
-  reachedView.classList.toggle('hidden', !stats.targetReached);
+function renderSimplePlannerSummary(summary){
+  const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE);
+  const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
+  if(current?.valid){
+    selectedPlannerPlan=current;
+    summary.innerHTML=`<b>${current.label}</b> · ${current.n} معامله · ${current.k} برد هدف · ${current.n-current.k} باخت مجاز<br><span class="small">سود هدف هر برد: ${money(current.profitPerWin)} · بیشترین Stake: ${money(current.maxStake)} · بودجه SL: ${money(current.stopLossAmount)}</span>`;
+    const n=document.getElementById('tpEditTrades'), l=document.getElementById('tpEditLosses');
+    if(n && l && document.activeElement!==n && document.activeElement!==l){n.value=current.n;l.value=current.n-current.k;}
+  }else summary.textContent='با ورودی‌های فعلی برنامه قابل محاسبه نیست.';
 }
 
 /* ---- Trading Plan action handlers (Phase 5) ----
@@ -1141,59 +1196,67 @@ function completeTradingPlan(){
 }
 
 function selectPlannerRisk(risk){
-  if(!tradingPlan || !Array.isArray(tradingPlan.riskOptions)) return;
-  const option = tradingPlan.riskOptions.find(o => o.risk === risk);
-  if(!option) return;
+  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE);
+  const option = options.find(o => o.risk === risk);
+  if(!option || option.valid === false) return;
   selectedPlannerRisk = risk;
-  const n = document.getElementById('tpEditTrades');
-  const losses = document.getElementById('tpEditLosses');
-  if(n) n.value = option.n || '';
-  if(losses) losses.value = Number.isFinite(option.n) && Number.isFinite(option.k) ? option.n - option.k : '';
+  selectedPlannerPlan = option;
+  if(mode === 'masaniello'){
+    document.getElementById('manualToggle').checked = false;
+    document.getElementById('manualN').value = option.n;
+    document.getElementById('manualK').value = option.k;
+    applySetup();
+  } else {
+    document.getElementById('accountGain').value = ((option.profitPerWin / num('initialCapital')) * 100).toFixed(4);
+    document.getElementById('stopLossPct').value = ((option.stopLossAmount / num('initialCapital')) * 100).toFixed(2);
+    applySetup();
+  }
   render();
 }
 
 function previewPlannerEdit(){
-  const n = parseInt(document.getElementById('tpEditTrades')?.value,10);
-  const losses = parseInt(document.getElementById('tpEditLosses')?.value,10);
-  const hint = document.getElementById('tpEditHint');
-  if(!hint || !tradingPlan) return;
-  if(!Number.isFinite(n) || n < 1 || !Number.isFinite(losses) || losses < 0 || losses >= n){
-    hint.textContent = 'تعداد معاملات باید بیشتر از باخت مجاز باشد.';
-    hint.className = 'small warn';
-    return;
+  const n=parseInt(document.getElementById('tpEditTrades')?.value,10);
+  const losses=parseInt(document.getElementById('tpEditLosses')?.value,10);
+  const hint=document.getElementById('tpEditHint');
+  if(!hint) return;
+  if(!Number.isInteger(n)||!Number.isInteger(losses)||n<1||losses<0||losses>=n){hint.textContent='تعداد معاملات باید بیشتر از باخت مجاز باشد.';hint.className='small warn';return;}
+  if(mode==='masaniello'){
+    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),num('targetProfit'),n,losses,MIN_STAKE);
+    if(!checked.valid){hint.textContent='⚠ این ترکیب با Target فعلی قابل تضمین نیست.';hint.className='small warn';return;}
+    hint.textContent=`Custom معتبر: ${n} معامله، ${n-losses} برد، ${losses} باخت مجاز، حداکثر Stake ${money(checked.maxStake)}.`;
+  }else{
+    const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE);
+    const base=plans.find(p=>p.n===n&&p.n-p.k===losses);
+    hint.textContent=base?.valid ? `برنامه Simple: ${n} معامله، ${n-losses} برد هدف، ${losses} باخت مجاز.` : 'این ترکیب در پروفایل‌های پیشنهادی Simple نیست؛ با اعمال، یک برنامه Custom با منطق بازیابی Simple ساخته می‌شود.';
   }
-  const k = n - losses;
-  hint.textContent = `برنامه ویرایش‌شده: ${n} معامله، ${k} برد لازم و ${losses} باخت مجاز. موتور Masaniello همین n/k را در سشن بعدی اجرا می‌کند.`;
-  hint.className = 'small';
+  hint.className='small';
 }
 
 async function applyPlannerEdit(){
-  if(!tradingPlan) return;
   if(trades.length > 0){
-    await showAppMessage('ابتدا سشن فعلی را تمام کنید؛ برنامه انتخاب‌شده برای سشن بعدی اعمال می‌شود.', 'اجرای برنامه');
+    await showAppMessage('ابتدا سشن فعلی را خاتمه/مکث کنید؛ برنامه جدید برای سشن بعدی اعمال می‌شود.', 'اجرای برنامه');
     return;
   }
   const n = parseInt(document.getElementById('tpEditTrades')?.value,10);
   const losses = parseInt(document.getElementById('tpEditLosses')?.value,10);
-  if(!Number.isFinite(n) || n < 1 || !Number.isFinite(losses) || losses < 0 || losses >= n){
-    await showAppMessage('تعداد معاملات و باخت مجاز را معتبر وارد کنید.', 'اطلاعات برنامه');
+  if(mode !== 'masaniello') return;
+  const capital = num('initialCapital');
+  const payout = num('payout');
+  const target = num('targetProfit');
+  const checked = validateMasanielloCustom(capital,payout,target,n,losses,MIN_STAKE);
+  if(!checked.valid){
+    await showAppMessage(checked.reason === 'target' ? 'این ترکیب N/K با سرمایه، Payout و Target فعلی نمی‌تواند هدف را طبق قواعد Masaniello تضمین کند.' : 'ترکیب تعداد معاملات و باخت مجاز معتبر یا قابل محاسبه نیست.', 'برنامه نامعتبر');
     return;
-  }
-
-  // This only selects/configures the existing Masaniello engine; it does not
-  // replace or alter its sizing formulas.
-  if(mode !== 'masaniello'){
-    setMode('masaniello');
   }
   document.getElementById('manualToggle').checked = true;
   document.getElementById('manualWrap').classList.add('show');
   document.getElementById('manualN').value = n;
   document.getElementById('manualK').value = n - losses;
-  document.getElementById('initialCapital').value = formatNumber(balance > 0 ? balance : tradingPlan.planStartBalance);
-  document.getElementById('targetProfit').value = Math.max(0.01, tradingPlan.targetBalance - (balance > 0 ? balance : tradingPlan.planStartBalance)).toFixed(2);
-  selectedPlannerRisk = null;
-  onSetupChange();
-  await showAppMessage(`برنامه انتخاب شد: ${n} معامله با ${losses} باخت مجاز.\n\nبرای شروع سشن بعدی، همین برنامه Masaniello اجرا می‌شود.`, 'برنامه انتخاب شد');
+  selectedPlannerRisk = 'custom';
+  selectedPlannerPlan = checked;
+  applySetup();
+  render();
+  await showAppMessage(`برنامه Custom آماده شد: ${n} معامله، ${n-losses} برد لازم و ${losses} باخت مجاز.\n\nحداکثر Stake برآوردی: ${money(checked.maxStake)}\nنتیجه تضمینی: ${money(checked.worstCaseFinal)}`, 'برنامه انتخاب شد');
 }
 
 async function onTradingPlanFormSubmit(){
@@ -1438,9 +1501,9 @@ function render(){
   const breakevens = trades.filter(t => t.result === 'BE').length;
   const losses = trades.filter(t => t.result === 'L').length;
 
-  document.getElementById('winBtn').disabled = locked;
-  document.getElementById('beBtn').disabled = locked;
-  document.getElementById('lossBtn').disabled = locked;
+  document.getElementById('winBtn').disabled = locked || sessionPaused;
+  document.getElementById('beBtn').disabled = locked || sessionPaused;
+  document.getElementById('lossBtn').disabled = locked || sessionPaused;
 
   // shared session performance summary (balance / P&L / W-L-T-WR abbreviated)
   const winRate = trades.length ? Math.round(wins / trades.length * 100) : 0;
@@ -1538,6 +1601,49 @@ function recalc(){
 }
 
 
+async function startSelectedPlan(){
+  if(trades.length>0){ await showAppMessage('این سشن در حال اجراست. ابتدا آن را مکث یا خاتمه دهید.','شروع سشن'); return; }
+  if(!selectedPlannerPlan || selectedPlannerPlan.valid===false){ await showAppMessage('ابتدا یک برنامه معتبر انتخاب کنید.','برنامه نامعتبر'); return; }
+  if(mode==='masaniello'){
+    const p=selectedPlannerPlan;
+    document.getElementById('manualToggle').checked=true;
+    document.getElementById('manualN').value=p.n;
+    document.getElementById('manualK').value=p.k;
+    riskLevel=p.risk==='custom'?'medium':p.risk;
+  }else{
+    document.getElementById('accountGain').value=((selectedPlannerPlan.profitPerWin/num('initialCapital'))*100).toFixed(4);
+    document.getElementById('stopLossPct').value=((selectedPlannerPlan.stopLossAmount/num('initialCapital'))*100).toFixed(2);
+  }
+  applySetup();
+  sessionPaused=false;
+  await showAppMessage('برنامه تأیید شد. سشن آماده شروع است؛ اولین نتیجه را ثبت کنید.','سشن آماده شد');
+  render();
+}
+
+async function pauseCurrentSession(){
+  if(trades.length===0) return;
+  sessionPaused=true;
+  saveState();
+  await showAppMessage('سشن با تمام وضعیت فعلی ذخیره شد. بعداً می‌توانید دقیقاً از همین نقطه ادامه دهید.','سشن ذخیره شد');
+  render();
+}
+
+function resumeCurrentSession(){
+  if(!sessionPaused || trades.length===0) return;
+  sessionPaused=false;
+  saveState();
+  render();
+}
+
+function saveSelectedPlan(){
+  if(!selectedPlannerPlan || selectedPlannerPlan.valid===false){ showAppMessage('ابتدا یک برنامه معتبر انتخاب کنید.','ذخیره برنامه'); return; }
+  const capital=num('initialCapital');
+  const targetBalance=mode==='masaniello' ? capital+num('targetProfit') : capital+(num('mainTargetValue')*(document.querySelector('input[name="mainTargetType"]:checked')?.value==='percent'?capital/100:1));
+  const percent=capital>0 ? (targetBalance/capital-1)*100 : 0;
+  tradingPlan={id:generatePlanId(),enabled:true,planName:`${mode==='masaniello'?'Masaniello':'Simple'} ${selectedPlannerPlan.risk==='custom'?'Custom':(selectedPlannerPlan.label||selectedPlannerPlan.risk)}`,planStartBalance:capital,targetPercent:percent,targetBalance,payoutPercent:num('payout'),selectedPlan:selectedPlannerPlan,mode,planCreatedAt:new Date().toISOString(),status:'running'};
+  saveState(); render();
+}
+
 function bindUI(){
   const $ = id => document.getElementById(id);
   $('modeBtnSimple')?.addEventListener('click', () => setMode('simple'));
@@ -1563,9 +1669,16 @@ function bindUI(){
   $('lossBtn')?.addEventListener('click', () => logTrade('L'));
   $('clearBtn')?.addEventListener('click', clearTrades);
   $('undoBtn')?.addEventListener('click', undoLastTrade);
+  $('startPlanBtn')?.addEventListener('click', startSelectedPlan);
+  $('pauseSessionBtn')?.addEventListener('click', pauseCurrentSession);
+  $('resumeSessionBtn')?.addEventListener('click', resumeCurrentSession);
+  $('pauseTopBtn')?.addEventListener('click', pauseCurrentSession);
+  $('savePlanBtn')?.addEventListener('click', saveSelectedPlan);
   $('copyStakeBtn')?.addEventListener('click', copyNextStake);
 
   $('initialCapital')?.addEventListener('input', onSetupChange);
+  $('mainTargetValue')?.addEventListener('input', onSetupChange);
+  document.querySelectorAll('input[name="mainTargetType"]').forEach(input => input.addEventListener('change', onSetupChange));
   $('initialCapital')?.addEventListener('blur', formatCapitalInput);
   ['payout','accountGain','stopLossPct','targetProfit','manualN','manualK'].forEach(id => $(id)?.addEventListener('input', onSetupChange));
   $('manualToggle')?.addEventListener('change', onManualToggle);
@@ -1598,7 +1711,7 @@ function applyNativeTheme(){
     const native = window.Capacitor?.Plugins?.StatusBar;
     if(!native) return;
     native.setBackgroundColor?.({color:'#171c26'});
-    native.setStyle?.({style:'LIGHT'});
+    native.setStyle?.({style:'DARK'});
   }catch(_){ /* web/PWA has no native status-bar plugin */ }
 }
 
@@ -1616,6 +1729,8 @@ if(!restored){
   formatCapitalInput();
   applySetup();
 }
+syncUnifiedTarget();
+if(!selectedPlannerRisk) selectedPlannerRisk='medium';
 render();
 renderHistory();
 updateSessionCounter();
