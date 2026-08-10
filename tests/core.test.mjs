@@ -62,3 +62,14 @@ test('history CSV includes the re3ae6 signature row', () => {
   assert.match(csv, /\r?\nre3ae6$/);
   assert.doesNotMatch(csv, /Signature/);
 });
+
+
+test('History CSV header is clean UTF-8 text without a BOM marker', () => {
+  const csv = buildHistoryCSV([{
+    session: 1, mode: 'simple', trades: 1, wins: 1, losses: 0,
+    initial: 100, finalBalance: 101, profit: 1, date: '2026-08-10T00:00:00.000Z'
+  }]);
+  assert.equal(csv.split('\r\n')[0].split(',')[0], 'Session');
+  assert.equal(csv.charCodeAt(0), 'S'.charCodeAt(0));
+  assert.doesNotMatch(csv, /ï»¿/);
+});
