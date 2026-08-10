@@ -630,3 +630,114 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 .backup-actions button{font-size:11px;padding:8px 6px;}
 #dashboardPanel .row{font-size:11.5px;}
 #dashboardPanel .statbox .n{font-size:14px;}
+
+
+/* ---------------- V2.3 DIALOG / COLLAPSIBLE POLISH ---------------- */
+.modal-backdrop{
+  z-index:9999;
+  overscroll-behavior:contain;
+}
+.modal-backdrop.show{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.appdialog,.aboutmodal{
+  position:relative;
+  max-height:min(88dvh,720px);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.appdialog-actions{
+  flex-wrap:wrap;
+}
+.dialog-alt{
+  min-width:82px;
+  padding:9px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#242b38;
+  color:var(--text);
+  font-weight:800;
+  cursor:pointer;
+}
+.dialog-alt:hover{filter:brightness(1.08);}
+.collapsible-panel{
+  padding:0;
+  overflow:hidden;
+}
+.collapsible-summary{
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.collapsible-summary::-webkit-details-marker{display:none;}
+.collapsible-summary::after{
+  content:'⌄';
+  font-size:16px;
+  opacity:.75;
+  transition:transform .2s ease;
+}
+.collapsible-panel[open] .collapsible-summary::after{transform:rotate(180deg);}
+.dashboard-body{padding:8px;}
+.about-backup{margin-top:14px;text-align:right;}
+.tp-plan-editor{
+  margin-top:9px;
+  padding:9px;
+  border:1px dashed var(--border);
+  border-radius:9px;
+  background:rgba(255,255,255,.02);
+}
+.tp-editor-title{font-weight:800;font-size:11px;margin-bottom:7px;}
+.tp-editor-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+.tp-editor-grid label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  font-size:10.5px;
+  color:var(--muted);
+}
+.tp-editor-grid input{
+  width:72px;
+  background:#252c3a;
+  border:1px solid var(--border);
+  color:var(--text);
+  border-radius:6px;
+  padding:5px;
+  text-align:center;
+  font-family:var(--mono);
+}
+#tpApplyBtn{width:100%;margin-top:8px;}
+.tp-risk-card.selectable{cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease;}
+.tp-risk-card.selectable:active{transform:scale(.99);}
+.tp-risk-card.selected{border-color:var(--teal);box-shadow:0 0 0 1px rgba(53,211,170,.25) inset;}
+.tp-risk-card.disabled{opacity:.55;}
+@media (orientation:landscape) and (max-height:500px){
+  .grid > div:nth-child(2){
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    align-items:stretch;
+  }
+  .grid > div:nth-child(2) > .panel{
+    width:100%;
+  }
+  .grid > div:nth-child(3){
+    display:flex;
+    flex-direction:column;
+  }
+  #tradingPlanPanel{margin-top:0;}
+}
+@media(max-width:420px){
+  .tp-editor-grid{grid-template-columns:1fr;}
+  .tp-editor-grid input{width:90px;}
+}
