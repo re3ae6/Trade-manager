@@ -1,16 +1,17 @@
 import { formatNumber, money, formatDateTime } from './core/format.js';
 import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from './core/masaniello.js';
 import { calculateSimpleNextStake } from './core/simple.js';
-import { generatePlanId, resolvePlanTarget, computeTradingPlanStats as computeTradingPlanStatsPure } from './core/trading-plan.js';
+import { generatePlanId, resolvePlanTarget, computeTradingPlanStats as computeTradingPlanStatsPure, computeTradingPlanRiskOptions } from './core/trading-plan.js';
 import { computeHistoryWithCumulativeStats as computeHistoryWithCumulativeStatsPure, buildHistoryCSV } from './core/history.js';
 import { readStoredState, writeStoredState } from './storage/state.js';
+import { computePerformanceStats } from './core/analytics.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -43,24 +44,29 @@ let nRemaining = 0, kRemaining = 0;
    persistence rather than crashing.
 ===================================================== */
 
+function getPersistableState(){
+  return {
+    mode, trades, balance, locked, sessionCounter, sessionHistory, sessionStartTime,
+    streakLoss, currentStreakCount,
+    riskLevel, capital0, payout0, target0, planned0, kRequired0, nRemaining, kRemaining,
+    tradingPlan,
+    inputs: {
+      initialCapital: document.getElementById('initialCapital')?.value ?? '',
+      payout: document.getElementById('payout')?.value ?? '',
+      targetProfit: document.getElementById('targetProfit')?.value ?? '',
+      accountGain: document.getElementById('accountGain')?.value ?? '',
+      stopLossPct: document.getElementById('stopLossPct')?.value ?? '',
+      stopLossAlertPct: document.getElementById('stopLossAlertPct')?.value ?? '',
+      manualToggle: document.getElementById('manualToggle')?.checked ?? false,
+      manualN: document.getElementById('manualN')?.value ?? '',
+      manualK: document.getElementById('manualK')?.value ?? ''
+    }
+  };
+}
+
 function saveState(){
   try{
-    const state = {
-      mode, trades, balance, locked, sessionCounter, sessionHistory, sessionStartTime,
-      streakLoss, currentStreakCount,
-      riskLevel, capital0, payout0, target0, planned0, kRequired0, nRemaining, kRemaining,
-      tradingPlan,
-      inputs: {
-        initialCapital: document.getElementById('initialCapital')?.value ?? '',
-        payout: document.getElementById('payout')?.value ?? '',
-        targetProfit: document.getElementById('targetProfit')?.value ?? '',
-        accountGain: document.getElementById('accountGain')?.value ?? '',
-        manualToggle: document.getElementById('manualToggle')?.checked ?? false,
-        manualN: document.getElementById('manualN')?.value ?? '',
-        manualK: document.getElementById('manualK')?.value ?? ''
-      }
-    };
-    writeStoredState(state);
+    writeStoredState(getPersistableState());
   }catch(e){ /* storage unavailable — app still works, just without persistence */ }
 }
 
@@ -87,12 +93,22 @@ function loadState(){
     nRemaining = saved.nRemaining || 0;
     kRemaining = saved.kRemaining || 0;
     tradingPlan = saved.tradingPlan || null;
+    if(tradingPlan && tradingPlan.status === 'running' && !Array.isArray(tradingPlan.riskOptions)){
+      tradingPlan.payoutPercent = Number.isFinite(tradingPlan.payoutPercent) ? tradingPlan.payoutPercent : num('payout');
+      tradingPlan.riskOptions = computeTradingPlanRiskOptions(
+        tradingPlan.planStartBalance,
+        tradingPlan.targetBalance,
+        tradingPlan.payoutPercent
+      );
+    }
 
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
     if(inp.payout) document.getElementById('payout').value = inp.payout;
     if(inp.targetProfit) document.getElementById('targetProfit').value = inp.targetProfit;
     if(inp.accountGain) document.getElementById('accountGain').value = inp.accountGain;
+    if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
+    if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
     if(inp.manualN) document.getElementById('manualN').value = inp.manualN;
     if(inp.manualK) document.getElementById('manualK').value = inp.manualK;
@@ -142,8 +158,69 @@ function updateSessionCounter(){
   saveState();
 }
 
-function resetSessionCounter(){
-  if(!confirm('شمارنده سشن به ۱ بازنشانی شود؟\n\nتاریخچه سشن‌ها و معاملات حذف نخواهد شد.\n\nOK = بازنشانی\nCancel = انصراف')) return;
+function showAppMessage(message, title='پیام'){
+  return new Promise(resolve => {
+    const modal = document.getElementById('appDialog');
+    if(!modal) return resolve();
+    document.getElementById('appDialogTitle').textContent = title;
+    document.getElementById('appDialogMessage').textContent = message;
+    document.getElementById('appDialogCancel').classList.add('hidden');
+    const ok = document.getElementById('appDialogOk');
+    ok.textContent = 'باشه';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    const finish = () => {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+      ok.removeEventListener('click', finish);
+      resolve();
+    };
+    ok.addEventListener('click', finish, {once:true});
+    ok.focus();
+  });
+}
+
+function showAppConfirm(message, title='تأیید'){
+  return new Promise(resolve => {
+    const modal = document.getElementById('appDialog');
+    if(!modal) return resolve(false);
+    document.getElementById('appDialogTitle').textContent = title;
+    document.getElementById('appDialogMessage').textContent = message;
+    const cancel = document.getElementById('appDialogCancel');
+    const ok = document.getElementById('appDialogOk');
+    cancel.classList.remove('hidden');
+    ok.textContent = 'تأیید';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    let done = false;
+    const finish = value => {
+      if(done) return;
+      done = true;
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(value);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    const onBackdrop = event => { if(event.target === event.currentTarget) finish(false); };
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+    ok.focus();
+  });
+}
+
+function isShareCancellation(error){
+  const text = String(error?.message || error || '').toLowerCase();
+  return /cancel|cancell|dismiss|abort/.test(text);
+}
+
+async function resetSessionCounter(){
+  const ok = await showAppConfirm('شمارنده سشن به ۱ بازنشانی شود؟\n\nتاریخچه سشن‌ها و معاملات حذف نخواهد شد.', 'ریست شمارنده');
+  if(!ok) return;
   sessionCounter = 1;
   updateSessionCounter();
 }
@@ -184,7 +261,7 @@ function getQuota(){
 function setMode(m){
   if(m === mode) return;
   if(trades.length > 0){
-    alert('برای تغییر حالت، ابتدا یک سشن جدید شروع کنید (سشن فعلی معامله دارد).');
+    showAppMessage('برای تغییر حالت، ابتدا یک سشن جدید شروع کنید (سشن فعلی معامله دارد).', 'تغییر حالت');
     return;
   }
   mode = m;
@@ -558,17 +635,17 @@ function resetTradesState(){
 // here has no other confirmation step before it, so this one confirms
 // and saves the current session to history itself before wiping it —
 // otherwise a single misclick would silently destroy the whole table.
-function clearTrades(){
+async function clearTrades(){
   if(trades.length > 0){
-    if(!confirm('جدول معاملات جاری پاک شود؟\n\nOK = ثبت سشن در تاریخچه و پاک کردن\nCancel = انصراف')) return;
+    if(!await showAppConfirm('جدول معاملات جاری پاک شود؟\n\nسشن در تاریخچه ثبت خواهد شد.', 'پاک کردن جدول')) return;
     saveSession();
   }
   resetTradesState();
 }
 
-function newSession(){
+async function newSession(){
   if(trades.length > 0){
-    const choice = confirm('سشن فعلی ثبت شود و سشن جدید شروع شود؟\n\nOK = ثبت و شروع سشن جدید\nCancel = انصراف');
+    const choice = await showAppConfirm('سشن فعلی ثبت شود و سشن جدید شروع شود؟', 'سشن جدید');
     if(!choice) return;
     saveSession();
   }
@@ -642,19 +719,20 @@ function renderHistory(){
     </div>
   `).join('');
 
+  renderDashboard();
   saveState();
 }
 
-function clearHistory(){
+async function clearHistory(){
   if(sessionHistory.length === 0) return;
-  if(!confirm('تاریخچه‌ی همه‌ی سشن‌ها پاک شود؟')) return;
+  if(!await showAppConfirm('تاریخچه‌ی همه‌ی سشن‌ها پاک شود؟\n\nاین عمل قابل بازگشت نیست.', 'پاک کردن تاریخچه')) return;
   sessionHistory = [];
   renderHistory();
 }
 
 async function exportHistoryCSV(){
   if(sessionHistory.length === 0){
-    alert('تاریخچه‌ای برای خروجی گرفتن وجود ندارد.');
+    await showAppMessage('تاریخچه‌ای برای خروجی گرفتن وجود ندارد.', 'خروجی CSV');
     return;
   }
   const csv = buildHistoryCSV(sessionHistory);
@@ -666,7 +744,7 @@ async function exportHistoryCSV(){
       const { uri } = await Filesystem.getUri({ directory: 'CACHE', path: filename });
       await Share.share({ title: 'Session History CSV', url: uri });
     }catch(e){
-      alert('خروجی گرفتن با خطا مواجه شد: ' + (e && e.message ? e.message : e));
+      if(!isShareCancellation(e)) await showAppMessage('خروجی گرفتن با خطا مواجه شد: ' + (e && e.message ? e.message : e), 'خطا در خروجی CSV');
     }
     return;
   }
@@ -679,6 +757,131 @@ async function exportHistoryCSV(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/* =====================================================
+   PERFORMANCE DASHBOARD + BACKUP
+===================================================== */
+function getLiveSessionSummary(){
+  if(trades.length === 0) return null;
+  return {
+    trades: trades.length,
+    wins: trades.filter(t => t.result === 'W').length,
+    losses: trades.filter(t => t.result === 'L').length,
+    breakevens: trades.filter(t => t.result === 'BE').length,
+    initial: mode === 'simple' ? num('initialCapital') : capital0,
+    finalBalance: balance,
+    profit: balance - (mode === 'simple' ? num('initialCapital') : capital0)
+  };
+}
+
+function renderDashboard(){
+  const panel = document.getElementById('dashboardPanel');
+  if(!panel) return;
+  const stats = computePerformanceStats(sessionHistory, getLiveSessionSummary());
+
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  };
+  const signedMoney = value => {
+    if(!Number.isFinite(value)) return '-';
+    return (value > 0 ? '+' : '') + money(value);
+  };
+
+  set('dashSessions', stats.sessions);
+  set('dashTrades', stats.trades);
+  set('dashWinRate', stats.trades ? stats.winRate.toFixed(1) + '%' : '-');
+  set('dashNetProfit', signedMoney(stats.netProfit));
+  set('dashBest', stats.bestSession ? signedMoney(stats.bestSession.profit) : '-');
+  set('dashWorst', stats.worstSession ? signedMoney(stats.worstSession.profit) : '-');
+  set('dashDrawdown', stats.trades ? money(stats.maxDrawdownDollar) : '-');
+  set('dashDrawdownPct', stats.trades ? stats.maxDrawdownPercent.toFixed(1) + '%' : '-');
+  set('dashCurrentBalance', stats.currentBalance !== null ? money(stats.currentBalance) : '-');
+
+  const current = getLiveSessionSummary();
+  const liveEl = document.getElementById('dashLiveStatus');
+  if(liveEl){
+    liveEl.textContent = current
+      ? `سشن جاری: ${current.wins}W / ${current.breakevens}BE / ${current.losses}L · ${signedMoney(current.profit)}`
+      : 'سشن جاری: هنوز معامله‌ای ثبت نشده';
+  }
+}
+
+function downloadTextFile(filename, text, type){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function exportBackup(){
+  const backup = {
+    format: 'trade-manager-backup',
+    formatVersion: 1,
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    state: getPersistableState()
+  };
+  const filename = `TM.re3a.backup.${new Date().toISOString().slice(0,10)}.json`;
+  const json = JSON.stringify(backup, null, 2);
+
+  if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+    try{
+      const { Filesystem, Share } = window.Capacitor.Plugins;
+      await Filesystem.writeFile({ path: filename, data: json, directory: 'CACHE', encoding: 'utf8' });
+      const { uri } = await Filesystem.getUri({ directory: 'CACHE', path: filename });
+      await Share.share({ title: 'Trade Manager Backup', url: uri });
+      return;
+    }catch(e){
+      if(isShareCancellation(e)) return;
+      await showAppMessage('ساخت فایل پشتیبان با خطا مواجه شد: ' + (e?.message || e), 'خطا');
+      return;
+    }
+  }
+
+  downloadTextFile(filename, json, 'application/json;charset=utf-8');
+}
+
+function validateBackupPayload(payload){
+  if(!payload || payload.format !== 'trade-manager-backup' || payload.formatVersion !== 1 || !payload.state){
+    return false;
+  }
+  const state = payload.state;
+  return Array.isArray(state.trades) &&
+    Array.isArray(state.sessionHistory) &&
+    (state.mode === 'simple' || state.mode === 'masaniello');
+}
+
+async function restoreBackupFile(file){
+  try{
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    if(!validateBackupPayload(payload)){
+      await showAppMessage('این فایل پشتیبان متعلق به Trade Manager نیست یا ساختار آن معتبر نیست.', 'فایل نامعتبر');
+      return;
+    }
+    if(!await showAppConfirm(
+      'اطلاعات فعلی برنامه با این نسخه پشتیبان جایگزین می‌شود.\n\nتاریخچه و وضعیت فعلی برنامه نیز جایگزین خواهد شد.',
+      'بازیابی پشتیبان'
+    )) return;
+
+    writeStoredState(payload.state);
+    window.location.reload();
+  }catch(e){
+    await showAppMessage('خواندن فایل پشتیبان ممکن نشد: ' + (e?.message || e), 'خطا در بازیابی');
+  }
+}
+
+function handleBackupImport(event){
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if(file) restoreBackupFile(file);
 }
 
 /* =====================================================
@@ -723,6 +926,20 @@ function renderTradingPlan(){
   document.getElementById('tpTargetPercent').textContent =
     Number.isFinite(tradingPlan.targetPercent) ? tradingPlan.targetPercent.toFixed(2) + '%' : '-';
   document.getElementById('tpTargetBalance').textContent = money(tradingPlan.targetBalance);
+  document.getElementById('tpRiskPayout').textContent = Number.isFinite(tradingPlan.payoutPercent) ? tradingPlan.payoutPercent + '%' : '-';
+  const riskLabels = {low:'کم‌ریسک', medium:'ریسک متوسط', high:'پرریسک'};
+  const riskClasses = {low:'risk-low', medium:'risk-medium', high:'risk-high'};
+  const riskWrap = document.getElementById('tpRiskOptions');
+  if(riskWrap){
+    const options = Array.isArray(tradingPlan.riskOptions) ? tradingPlan.riskOptions : [];
+    riskWrap.innerHTML = options.map(option => `
+      <div class="tp-risk-card ${riskClasses[option.risk] || ''}">
+        <div class="tp-risk-title">${riskLabels[option.risk] || option.risk}</div>
+        <div><b>${option.n || '-'}</b><span> معامله</span></div>
+        <div><b>${option.k || '-'}</b><span> برد لازم</span></div>
+        <div><b>${Number.isFinite(option.n) && Number.isFinite(option.k) ? option.n - option.k : '-'}</b><span> باخت مجاز</span></div>
+      </div>`).join('');
+  }
 
   const stats = computeTradingPlanStats();
 
@@ -737,6 +954,19 @@ function renderTradingPlan(){
     stats.estimatedSessionsRemaining !== null ? Math.ceil(stats.estimatedSessionsRemaining) : '-';
   document.getElementById('tpRequiredAvgProfit').textContent =
     stats.requiredAverageProfitPerSession !== null ? money(stats.requiredAverageProfitPerSession) : '-';
+
+  const actualProfit = balance - tradingPlan.planStartBalance;
+  const plannedProfit = tradingPlan.targetBalance - tradingPlan.planStartBalance;
+  const actualEl = document.getElementById('tpActualProfit');
+  const gapEl = document.getElementById('tpPlanGap');
+  const planProgressEl = document.getElementById('tpPlanProgressBar');
+  if(actualEl) actualEl.textContent = money(actualProfit);
+  if(gapEl) gapEl.textContent = money(actualProfit - plannedProfit);
+  if(planProgressEl){
+    const pct = plannedProfit > 0 ? Math.max(0, Math.min(100, actualProfit / plannedProfit * 100)) : 0;
+    planProgressEl.style.width = pct.toFixed(2) + '%';
+    planProgressEl.setAttribute('aria-valuenow', pct.toFixed(2));
+  }
 
   reachedView.classList.toggle('hidden', !stats.targetReached);
 }
@@ -781,7 +1011,43 @@ function onTradingPlanTargetTypeChange(){
 // createTradingPlan() (new plan) or updateTradingPlan() (same plan,
 // identity preserved), then calls render(). Which one depends only on
 // tradingPlanFormMode, set by onTradingPlanEdit()/clearTradingPlanForm().
-function onTradingPlanFormSubmit(){
+function createTradingPlan(planName, planStartBalance, targetPercent, targetBalance){
+  const resolved = resolvePlanTarget(planStartBalance, targetPercent, targetBalance);
+  tradingPlan = {
+    id: generatePlanId(),
+    enabled: true,
+    planName: planName || '',
+    planStartBalance,
+    targetPercent: resolved.targetPercent,
+    targetBalance: resolved.targetBalance,
+    payoutPercent: num('payout'),
+    riskOptions: computeTradingPlanRiskOptions(planStartBalance, resolved.targetBalance, num('payout')),
+    planCreatedAt: new Date().toISOString(),
+    status: 'running'
+  };
+  return tradingPlan;
+}
+
+function updateTradingPlan(planName, targetPercent, targetBalance){
+  if(!tradingPlan) return null;
+  const resolved = resolvePlanTarget(tradingPlan.planStartBalance, targetPercent, targetBalance);
+  tradingPlan.planName = planName || '';
+  tradingPlan.targetPercent = resolved.targetPercent;
+  tradingPlan.targetBalance = resolved.targetBalance;
+  tradingPlan.payoutPercent = num('payout');
+  tradingPlan.riskOptions = computeTradingPlanRiskOptions(tradingPlan.planStartBalance, resolved.targetBalance, tradingPlan.payoutPercent);
+  return tradingPlan;
+}
+
+function cancelTradingPlan(){
+  if(tradingPlan) tradingPlan.status = 'cancelled';
+}
+
+function completeTradingPlan(){
+  if(tradingPlan) tradingPlan.status = 'completed';
+}
+
+async function onTradingPlanFormSubmit(){
   const planName = document.getElementById('tpFormName').value;
   const isPercent = document.querySelector('input[name="tpTargetType"]:checked').value === 'percent';
   const targetPercent = isPercent ? parseFloat(document.getElementById('tpFormTargetPercent').value) : NaN;
@@ -792,13 +1058,19 @@ function onTradingPlanFormSubmit(){
   // targetBalance both null (resolvePlanTarget's correct response to
   // "nothing was provided"), which callers here never expected to persist.
   const activeTargetValid = isPercent ? Number.isFinite(targetPercent) : Number.isFinite(targetBalance);
-  if(!activeTargetValid) return;
+  if(!activeTargetValid){
+    await showAppMessage('هدف برنامه را وارد کنید.', 'اطلاعات ناقص');
+    return;
+  }
 
   if(tradingPlanFormMode === 'edit'){
     updateTradingPlan(planName, targetPercent, targetBalance);
   } else {
     const planStartBalance = parseFloat(document.getElementById('tpFormStartBalance').value);
-    if(!Number.isFinite(planStartBalance)) return;
+    if(!Number.isFinite(planStartBalance)){
+      await showAppMessage('موجودی شروع برنامه را وارد کنید.', 'اطلاعات ناقص');
+      return;
+    }
     createTradingPlan(planName, planStartBalance, targetPercent, targetBalance);
   }
 
@@ -830,15 +1102,15 @@ function onTradingPlanEdit(){
   document.getElementById('tradingPlanActiveView').classList.add('hidden');
 }
 
-function onTradingPlanComplete(){
-  if(!confirm('برنامه به عنوان تکمیل‌شده علامت‌گذاری شود؟\n\nOK = تکمیل برنامه\nCancel = انصراف')) return;
+async function onTradingPlanComplete(){
+  if(!await showAppConfirm('برنامه به عنوان تکمیل‌شده علامت‌گذاری شود؟', 'تکمیل برنامه')) return;
   completeTradingPlan();
   render();
   clearTradingPlanForm();
 }
 
-function onTradingPlanCancel(){
-  if(!confirm('این برنامه لغو شود؟\n\nOK = لغو برنامه\nCancel = انصراف')) return;
+async function onTradingPlanCancel(){
+  if(!await showAppConfirm('این برنامه لغو شود؟', 'لغو برنامه')) return;
   cancelTradingPlan();
   render();
   clearTradingPlanForm();
@@ -847,7 +1119,7 @@ function onTradingPlanCancel(){
 function copyNextStake(){
   const r = !locked ? getNextStake() : {stake:0, reason:'locked'};
   if(locked || r.reason !== 'ok'){
-    alert('مبلغ معامله بعدی در حال حاضر موجود نیست.');
+    showAppMessage('مبلغ معامله بعدی در حال حاضر موجود نیست.', 'مبلغ معامله');
     return;
   }
   const text = r.stake.toFixed(2);
@@ -860,9 +1132,9 @@ function copyNextStake(){
     }
   };
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(() => alert('مبلغ: ' + text));
+    navigator.clipboard.writeText(text).then(done).catch(() => showAppMessage('مبلغ: ' + text, 'مبلغ معامله'));
   } else {
-    alert('مبلغ: ' + text);
+    showAppMessage('مبلغ: ' + text, 'مبلغ معامله');
   }
 }
 
@@ -1074,6 +1346,7 @@ function render(){
   document.getElementById('nextStakePreview').textContent =
     (locked || nextStakeResult.reason !== 'ok') ? '— قفل —' : money(nextStakeResult.stake);
 
+  renderDashboard();
   saveState();
 }
 
@@ -1131,6 +1404,7 @@ function bindUI(){
   $('aboutModal')?.addEventListener('click', event => {
     if(event.target === event.currentTarget) hideAbout();
   });
+  $('appDialog')?.addEventListener('keydown', event => { if(event.key === 'Escape') event.preventDefault(); });
   document.addEventListener('keydown', event => {
     if(event.key === 'Escape') hideAbout();
   });
@@ -1160,6 +1434,9 @@ function bindUI(){
   histButtons[0]?.addEventListener('click', exportHistoryCSV);
   histButtons[1]?.addEventListener('click', clearHistory);
   document.querySelector('.logbtn')?.addEventListener('click', toggleLog);
+  $('backupExportBtn')?.addEventListener('click', exportBackup);
+  $('backupImportBtn')?.addEventListener('click', () => $('backupImportInput')?.click());
+  $('backupImportInput')?.addEventListener('change', handleBackupImport);
   $('copyBtn')?.addEventListener('click', copyLog);
 }
 
