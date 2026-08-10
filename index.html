@@ -25,7 +25,7 @@
     </button>
 
     <div class="titlebar-center">
-      <strong class="titlebar-balance" id="titlebarBalance">-</strong>
+      <strong class="titlebar-balance" id="titlebarBalance" aria-live="polite">-</strong>
       <div class="modetabs">
         <button id="modeBtnSimple">Simple</button>
         <button id="modeBtnMasaniello">Masaniello</button>
@@ -59,6 +59,7 @@
       <div class="subactions">
         <button id="clearBtn" class="btn btn-secondary">پاک کردن جدول</button>
         <button id="undoBtn" class="btn btn-secondary">↩ Undo آخرین معامله</button>
+        <button id="pauseTopBtn" class="btn btn-secondary hidden">⏸ مکث</button>
       </div>
 
       <div id="alertBox"></div>
@@ -89,14 +90,14 @@
       <!-- shared session performance summary -->
       <div class="row row-tight">
         <label>موجودی فعلی</label>
-        <strong id="curBalance">-</strong>
+        <strong id="curBalance" aria-live="polite">-</strong>
       </div>
       <div class="row row-tight">
         <label>سود/زیان سشن</label>
-        <strong id="curPL">-</strong>
+        <strong id="curPL" aria-live="polite">-</strong>
       </div>
       <div class="row row-tight row-center">
-        <span id="wlSummary">W:0 BE:0 L:0 T:0 WR:0%</span>
+        <span id="wlSummary" aria-live="polite">W:0 BE:0 L:0 T:0 WR:0%</span>
       </div>
 
       <!-- masaniello-only plan summary -->
@@ -125,45 +126,54 @@
 
         <div class="row">
           <label>Payout %</label>
-          <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85">
+          <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
+          <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
         </div>
 
-        <!-- ===================== SIMPLE MODE TARGET ===================== -->
+        <!-- ===================== SHARED TARGET ===================== -->
+        <div class="targetbox">
+          <div class="panel-title panel-title-accent">هدف اصلی</div>
+          <div class="row">
+            <label>نوع هدف</label>
+            <span class="inline-field type-toggle">
+              <label id="mainTargetPercentLabel" class="active"><input type="radio" name="mainTargetType" value="percent" checked> %</label>
+              <label id="mainTargetAmountLabel"><input type="radio" name="mainTargetType" value="amount"> $</label>
+            </span>
+          </div>
+          <div class="row">
+            <label id="mainTargetValueLabel">هدف %</label>
+            <input id="mainTargetValue" type="number" min="0.01" step="0.01" value="1">
+          </div>
+          <div class="row">
+            <label>موجودی هدف</label>
+            <strong id="unifiedTargetBalance">-</strong>
+          </div>
+        </div>
+
+        <!-- ===================== SIMPLE MODE ===================== -->
         <div id="panelSimple">
           <div class="row">
-            <label>Growth %</label>
-            <input id="accountGain" type="number" min="0" step="0.01" value="1">
+            <label>Win P/L</label><span id="winProfit">-</span>
           </div>
-
-          <div class="row">
-            <label>Target Balance</label>
-            <span id="capitalFinal">-</span>
-          </div>
-
-          <div class="row">
-            <label>Win P/L</label>
-            <span id="winProfit">-</span>
-          </div>
-
           <div class="row">
             <label>SL % <span class="small" id="stopLossAmt">-</span></label>
-            <input id="stopLossPct" type="number" min="0.01" max="100" step="0.01" value="20">
+            <input id="stopLossPct" type="number" min="0.01" max="100" step="0.01" value="20" aria-describedby="stopLossPctHint">
+            <div id="stopLossPctHint" class="small input-adjustment" aria-live="polite"></div>
           </div>
-
           <div class="row">
             <label>Max Loss Streak</label>
             <span class="inline-field"><b id="maxLossLimit">-</b><span class="small">باخت پیاپی</span></span>
           </div>
           <div id="lossLimitExplain" class="small lossexplain" style="display:none;"></div>
+          <div id="simplePlannerBlock" class="simple-planner-block">
+            <div class="planner-heading">پیشنهاد برنامه Simple</div>
+            <div id="simplePlannerOptions" class="tp-risk-options" aria-live="polite"></div>
+            <div id="simplePlannerInfo" class="small planner-info">یک برنامه را انتخاب کنید.</div>
+          </div>
         </div>
 
-        <!-- ===================== MASANIELLO MODE TARGET ===================== -->
+        <!-- ===================== MASANIELLO MODE ===================== -->
         <div id="panelMasaniello" class="hidden">
-          <div class="row">
-            <label>سود هدف (مبلغ)</label>
-            <input id="targetProfit" type="number" min="0.01" step="0.01" value="50">
-          </div>
-
           <div class="risklevels">
             <button data-risk="low">ریسک کم</button>
             <button data-risk="medium">ریسک متوسط</button>
@@ -205,120 +215,21 @@
 
       <div class="panel" id="tradingPlanPanel">
         <div class="panel-title">برنامه معاملاتی</div>
-
-        <div id="tradingPlanCreateView">
-          <div class="row">
-            <label>نام برنامه</label>
-            <input id="tpFormName" type="text" placeholder="مثلاً Account Growth">
-          </div>
-          <div class="row">
-            <label>موجودی شروع برنامه</label>
-            <input id="tpFormStartBalance" type="number" step="0.01" min="0">
-          </div>
-          <div class="row">
-            <label>نوع هدف</label>
-            <span class="inline-field type-toggle">
-              <label id="tpTypeLabelPercent" class="active"><input type="radio" name="tpTargetType" value="percent" checked> %</label>
-              <label id="tpTypeLabelBalance"><input type="radio" name="tpTargetType" value="balance"> $</label>
-            </span>
-          </div>
-          <div class="row" id="tpFormTargetPercentRow">
-            <label>هدف %</label>
-            <input id="tpFormTargetPercent" type="number" step="0.01">
-          </div>
-          <div class="row hidden" id="tpFormTargetBalanceRow">
-            <label>موجودی هدف</label>
-            <input id="tpFormTargetBalance" type="number" step="0.01">
-          </div>
-          <div class="subactions">
-            <button class="btn btn-secondary">ذخیره برنامه</button>
-          </div>
+        <div id="plannerSummary" class="planner-summary" aria-live="polite">در حال آماده‌سازی برنامه‌ها...</div>
+        <div class="planner-edit-grid">
+          <label>تعداد معاملات <input id="tpEditTrades" type="number" min="1" step="1"></label>
+          <label>باخت مجاز <input id="tpEditLosses" type="number" min="0" step="1"></label>
         </div>
-
-        <div id="tradingPlanActiveView" class="hidden">
-          <div class="row">
-            <label>نام برنامه</label>
-            <span id="tpPlanName">-</span>
-          </div>
-          <div class="row">
-            <label>موجودی شروع برنامه</label>
-            <span id="tpStartBalance">-</span>
-          </div>
-          <div class="row">
-            <label>هدف %</label>
-            <span id="tpTargetPercent">-</span>
-          </div>
-          <div class="row">
-            <label>موجودی هدف</label>
-            <span id="tpTargetBalance">-</span>
-          </div>
-          <div class="tp-risk-section">
-            <div class="tp-risk-heading">برنامه پیشنهادی بر اساس ریسک</div>
-            <div class="tp-risk-payout">Payout مبنا: <b id="tpRiskPayout">-</b></div>
-            <div id="tpRiskOptions" class="tp-risk-options"></div>
-            <div class="tp-plan-editor">
-              <div class="tp-editor-title">انتخاب / ویرایش برنامه برای اجرای سشن بعدی</div>
-              <div class="tp-editor-grid">
-                <label>تعداد معاملات <input id="tpEditTrades" type="number" min="1" step="1"></label>
-                <label>باخت مجاز <input id="tpEditLosses" type="number" min="0" step="1"></label>
-              </div>
-              <div id="tpEditHint" class="small">با تغییر تعداد معاملات یا باخت مجاز، برنامه بررسی می‌شود؛ محاسبات موتور فعلی دست‌نخورده می‌ماند.</div>
-              <button id="tpApplyBtn" class="btn btn-secondary" type="button">اجرای این برنامه در سشن بعدی</button>
-            </div>
-          </div>
-
-          <div class="row">
-            <label>سود باقی‌مانده تا هدف</label>
-            <span id="tpRemainingProfit">-</span>
-          </div>
-          <div class="row">
-            <label>پیشرفت</label>
-            <span id="tpProgressPercent">-</span>
-          </div>
-          <div class="row">
-            <label>سشن‌های تکمیل‌شده</label>
-            <span id="tpSessionsCompleted">-</span>
-          </div>
-          <div class="row">
-            <label>میانگین سود هر سشن</label>
-            <span id="tpAvgProfitPerSession">-</span>
-          </div>
-          <div class="row">
-            <label>سشن‌های باقی‌مانده (تخمینی)</label>
-            <span id="tpEstSessionsRemaining">-</span>
-          </div>
-          <div class="row">
-            <label>سود لازم هر سشن</label>
-            <span id="tpRequiredAvgProfit">-</span>
-          </div>
-
-          <div class="tp-actual">
-            <div class="tp-actual-head">
-              <span>برنامه در برابر عملکرد واقعی</span>
-              <b id="tpActualProfit">-</b>
-            </div>
-            <div class="tp-progress" aria-label="پیشرفت واقعی نسبت به سود هدف">
-              <span id="tpPlanProgressBar" aria-valuenow="0"></span>
-            </div>
-            <div class="tp-actual-foot">
-              <span>فاصله تا سود هدف</span>
-              <b id="tpPlanGap">-</b>
-            </div>
-          </div>
-
-          <div class="subactions">
-            <button class="btn btn-secondary">ویرایش</button>
-            <button class="btn btn-secondary">تکمیل برنامه</button>
-            <button class="btn btn-secondary">لغو برنامه</button>
-          </div>
+        <div id="tpEditHint" class="small planner-info"></div>
+        <div class="subactions">
+          <button id="tpApplyBtn" class="btn btn-secondary" type="button">اعمال تغییرات</button>
+          <button id="savePlanBtn" class="btn btn-secondary" type="button">ذخیره برنامه</button>
         </div>
-
-        <div id="tradingPlanTargetReached" class="success hidden">
-          🎯 هدف برنامه محقق شد
-        </div>
+        <button id="startPlanBtn" class="btn btn-primary" type="button">✓ تأیید برنامه و شروع سشن</button>
+        <button id="pauseSessionBtn" class="btn btn-secondary hidden" type="button">⏸ ذخیره و مکث سشن</button>
+        <button id="resumeSessionBtn" class="btn btn-primary hidden" type="button">▶ ادامه سشن ذخیره‌شده</button>
+        <div id="savedPlanInfo" class="small planner-info"></div>
       </div>
-    </div>
-
 
     <!-- RIGHT: SESSION CONTROL (shared) -->
     <div>
@@ -396,7 +307,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.3.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.4.0 • © 2026</div>
       <div class="backupbox about-backup">
         <div class="backup-title">پشتیبانی آفلاین</div>
         <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
