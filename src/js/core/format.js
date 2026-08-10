@@ -15,6 +15,7 @@ export function formatDateTime(d){
 }
 
 export function csvEscape(value){
-  const s = String(value);
+  let s = String(value);
+  if(/^[=+\-@]/.test(s)) s = '\t' + s;
   return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
 }

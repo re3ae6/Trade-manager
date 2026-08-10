@@ -28,6 +28,9 @@ export function masaTargetMultiplier(n, k, Q){
 }
 
 export function masanielloStake(C, nRem, kRem, Q, floor, nTotal, kTotal){
+  if(!Number.isFinite(C) || !Number.isFinite(Q) || !Number.isFinite(floor) || !Number.isFinite(nRem) || !Number.isFinite(kRem) || !Number.isFinite(nTotal) || !Number.isFinite(kTotal)){
+    return {stake:0, reason:'target-impossible'};
+  }
   if(kRem <= 0) return {stake:0, reason:'target-reached'};
   if(nRem <= 0) return {stake:0, reason:'no-trades-left'};
   if(kRem > nRem) return {stake:0, reason:'target-impossible'};
@@ -50,7 +53,9 @@ export function masanielloStake(C, nRem, kRem, Q, floor, nTotal, kTotal){
     stake = floor;
   }
   stake = Math.min(stake, C);
-  return {stake: Math.round(stake*100)/100, reason:'ok'};
+  const roundedStake = Math.round(stake*100)/100;
+  if(!Number.isFinite(roundedStake)) return {stake:0, reason:'target-impossible'};
+  return {stake: roundedStake, reason:'ok'};
 }
 
 export function guaranteedWorstCaseFinal(C, n, k, Q){
