@@ -433,6 +433,41 @@ table th:nth-child(3), table td:nth-child(3){width:22%;}
 table th:nth-child(4), table td:nth-child(4){width:22%;}
 table th:nth-child(5), table td:nth-child(5){width:34%;}
 
+/* ---------------- APP DIALOG ---------------- */
+.appdialog{
+  width:min(420px, 100%);
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 24px 70px rgba(0,0,0,.55);
+  overflow:hidden;
+  direction:rtl;
+  text-align:right;
+}
+.appdialog-head{padding:16px 18px 10px;border-bottom:1px solid #2a3140;}
+.appdialog-head h2{margin:0;font-size:18px;}
+.appdialog-body{padding:18px;line-height:1.8;font-size:13px;white-space:pre-line;}
+.appdialog-actions{display:flex;justify-content:flex-start;gap:8px;padding:10px 18px 16px;}
+.dialog-ok,.dialog-cancel{min-width:82px;padding:9px 18px;border:none;border-radius:8px;font-weight:800;cursor:pointer;}
+.dialog-ok{background:var(--teal);color:#062820;}
+.dialog-cancel{background:#333c4e;color:var(--text);border:1px solid var(--border);}
+.dialog-ok:hover,.dialog-cancel:hover{filter:brightness(1.08);}
+
+
+.tp-risk-section{margin:10px 0 12px;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;}
+.tp-risk-heading{font-weight:800;font-size:13px;margin-bottom:3px;}
+.tp-risk-payout{font-size:10px;color:var(--muted);margin-bottom:8px;}
+.tp-risk-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.tp-risk-card{min-width:0;padding:8px 5px;border:1px solid var(--border);border-radius:8px;text-align:center;background:#252c3a;font-size:10px;line-height:1.7;}
+.tp-risk-card b{font-family:var(--mono);font-size:13px;}
+.tp-risk-card span{color:var(--muted);}
+.tp-risk-title{font-weight:800;font-size:11px;margin-bottom:3px;}
+.tp-risk-card.risk-low .tp-risk-title{color:var(--teal);}
+.tp-risk-card.risk-medium .tp-risk-title{color:var(--orange);}
+.tp-risk-card.risk-high .tp-risk-title{color:var(--red);}
+@media(max-width:900px){.tp-risk-options{gap:5px;}.tp-risk-card{padding:7px 3px;font-size:9px;}}
+
 /* ---------------- ABOUT MODAL ---------------- */
 .modal-backdrop{
   position:fixed;
@@ -546,3 +581,52 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   .aboutmodal-body{padding:16px 14px 8px;}
   .aboutmodal-actions{padding:8px 14px 14px;}
 }
+
+
+/* ---------------- PERFORMANCE DASHBOARD / BACKUP ---------------- */
+.tp-actual{
+  margin:10px 0 12px;
+  padding:10px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+.tp-actual-head,.tp-actual-foot{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+}
+.tp-actual-head b,.tp-actual-foot b{font-family:var(--mono); color:var(--teal);}
+.tp-progress{
+  height:8px;
+  margin:9px 0 7px;
+  border-radius:99px;
+  background:#303847;
+  overflow:hidden;
+}
+.tp-progress span{
+  display:block;
+  width:0;
+  height:100%;
+  border-radius:99px;
+  background:var(--teal);
+  transition:width .25s ease;
+}
+.backupbox{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--panel2);
+}
+.backup-title{
+  font-weight:800;
+  font-size:12px;
+  margin-bottom:4px;
+}
+.backup-actions{margin:8px 0 0;}
+.backup-actions button{font-size:11px;padding:8px 6px;}
+#dashboardPanel .row{font-size:11.5px;}
+#dashboardPanel .statbox .n{font-size:14px;}
