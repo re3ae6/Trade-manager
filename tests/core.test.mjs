@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from '../src/js/core/masaniello.js';
 import { calculateSimpleNextStake } from '../src/js/core/simple.js';
 import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/core/history.js';
-import { resolvePlanTarget, computeTradingPlanStats } from '../src/js/core/trading-plan.js';
+import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions } from '../src/js/core/trading-plan.js';
+import { computePerformanceStats } from '../src/js/core/analytics.js';
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -72,4 +73,53 @@ test('History CSV header is clean UTF-8 text without a BOM marker', () => {
   assert.equal(csv.split('\r\n')[0].split(',')[0], 'Session');
   assert.equal(csv.charCodeAt(0), 'S'.charCodeAt(0));
   assert.doesNotMatch(csv, /ï»¿/);
+});
+
+
+test('Trading plan risk options produce low, medium and high plans from the saved target', () => {
+  const options = computeTradingPlanRiskOptions(1000, 1050, 85, 1);
+  assert.deepEqual(options.map(o => o.risk), ['low','medium','high']);
+  assert.ok(options.every(o => Number.isInteger(o.n) && Number.isInteger(o.k) && o.n >= o.k));
+  assert.ok(options[0].n >= options[1].n);
+  assert.ok(options[1].n >= options[2].n);
+});
+
+
+test('Performance dashboard aggregates wins, losses, BE and profit', () => {
+  const stats = computePerformanceStats([
+    { session: 1, trades: 4, wins: 2, losses: 1, breakevens: 1, initial: 100, finalBalance: 110, profit: 10 },
+    { session: 2, trades: 3, wins: 1, losses: 2, breakevens: 0, initial: 110, finalBalance: 105, profit: -5 }
+  ]);
+  assert.equal(stats.sessions, 2);
+  assert.equal(stats.trades, 7);
+  assert.equal(stats.wins, 3);
+  assert.equal(stats.losses, 3);
+  assert.equal(stats.breakevens, 1);
+  assert.equal(stats.winRate, (3 / 7) * 100);
+  assert.equal(stats.netProfit, 5);
+  assert.equal(stats.bestSession.profit, 10);
+  assert.equal(stats.worstSession.profit, -5);
+  assert.equal(stats.maxDrawdownDollar, 5);
+  assert.equal(stats.maxDrawdownPercent, (5 / 110) * 100);
+});
+
+test('Performance dashboard includes the live session without changing closed history', () => {
+  const stats = computePerformanceStats(
+    [{ session: 1, trades: 2, wins: 1, losses: 1, breakevens: 0, finalBalance: 99, profit: -1 }],
+    { trades: 2, wins: 2, losses: 0, breakevens: 0, finalBalance: 103, profit: 3 }
+  );
+  assert.equal(stats.completedSessions, 1);
+  assert.equal(stats.sessions, 2);
+  assert.equal(stats.trades, 4);
+  assert.equal(stats.wins, 3);
+  assert.equal(stats.netProfit, 2);
+  assert.equal(stats.currentBalance, 103);
+});
+
+test('Performance dashboard handles empty history', () => {
+  const stats = computePerformanceStats([]);
+  assert.equal(stats.sessions, 0);
+  assert.equal(stats.trades, 0);
+  assert.equal(stats.winRate, 0);
+  assert.equal(stats.currentBalance, null);
 });
