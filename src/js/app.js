@@ -149,7 +149,20 @@ function resetSessionCounter(){
 }
 
 function showAbout(){
-  alert('Trade Manager\n\nDesigned & Developed by\nre3ae6\n\nv1.0.0 • © 2026');
+  const modal = document.getElementById('aboutModal');
+  if(!modal) return;
+  const version = document.getElementById('aboutVersion');
+  if(version) version.textContent = `v${APP_VERSION} • © 2026`;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  document.getElementById('aboutCloseBtn')?.focus();
+}
+
+function hideAbout(){
+  const modal = document.getElementById('aboutModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
 }
 
 function getCurrency(){
@@ -649,7 +662,7 @@ async function exportHistoryCSV(){
   if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
     try{
       const { Filesystem, Share } = window.Capacitor.Plugins;
-      await Filesystem.writeFile({ path: filename, data: '\uFEFF' + csv, directory: 'CACHE', encoding: 'utf8' });
+      await Filesystem.writeFile({ path: filename, data: csv, directory: 'CACHE', encoding: 'utf8' });
       const { uri } = await Filesystem.getUri({ directory: 'CACHE', path: filename });
       await Share.share({ title: 'Session History CSV', url: uri });
     }catch(e){
@@ -657,7 +670,7 @@ async function exportHistoryCSV(){
     }
     return;
   }
-  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1112,8 +1125,15 @@ function bindUI(){
   $('t-lowTrade')?.addEventListener('click', () => toggleBtn('t-lowTrade'));
   $('t-autoCopy')?.addEventListener('click', () => toggleBtn('t-autoCopy'));
   document.querySelector('.optionpanel .btn-secondary.btn-sm')?.addEventListener('click', resetSessionCounter);
-  const aboutButtons = [...document.querySelectorAll('.optionpanel .btn-secondary.btn-sm')];
-  aboutButtons[aboutButtons.length - 1]?.addEventListener('click', showAbout);
+  $('aboutBtn')?.addEventListener('click', showAbout);
+  $('aboutCloseBtn')?.addEventListener('click', hideAbout);
+  $('aboutOkBtn')?.addEventListener('click', hideAbout);
+  $('aboutModal')?.addEventListener('click', event => {
+    if(event.target === event.currentTarget) hideAbout();
+  });
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape') hideAbout();
+  });
 
   $('winBtn')?.addEventListener('click', () => logTrade('W'));
   $('beBtn')?.addEventListener('click', () => logTrade('BE'));
