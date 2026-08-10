@@ -123,3 +123,14 @@ test('Performance dashboard handles empty history', () => {
   assert.equal(stats.winRate, 0);
   assert.equal(stats.currentBalance, null);
 });
+
+
+test('CSV export includes BE and keeps the requested signature only', () => {
+  const csv = buildHistoryCSV([{
+    session: 1, mode: 'simple', trades: 2, wins: 1, breakevens: 1, losses: 0,
+    initial: 100, finalBalance: 100.85, profit: 0.85, date: '2026-01-01 12:00:00'
+  }]);
+  assert.match(csv, /Session,Mode,Trades,Wins,BE,Losses/);
+  assert.ok(csv.trimEnd().endsWith('re3ae6'));
+  assert.doesNotMatch(csv, /Signature/);
+});
