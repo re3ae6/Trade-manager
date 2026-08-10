@@ -1,4 +1,4 @@
-# Trade Manager V2.2.0
+# Trade Manager V2.3.0
 
 Offline-first Simple + Masaniello trade manager, structured for GitHub Actions and Capacitor Android builds.
 
@@ -48,7 +48,7 @@ re3ae6
 
 ## About dialog
 
-The About dialog shows the current app version (`v2.2.0`) and developer signature in a native-looking in-app modal rather than a browser alert.
+The About dialog shows the current app version (`v2.3.0`) and developer signature in a native-looking in-app modal rather than a browser alert.
 
 ## Landscape layout
 

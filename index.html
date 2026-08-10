@@ -6,6 +6,7 @@
 <title>Trade Manager</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#171c26">
+<meta name="msapplication-navbutton-color" content="#171c26">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -200,11 +201,7 @@
 
       </div>
 
-    </div>
 
-
-    <!-- RIGHT: SESSION CONTROL (shared) -->
-    <div>
 
       <div class="panel" id="tradingPlanPanel">
         <div class="panel-title">برنامه معاملاتی</div>
@@ -259,6 +256,15 @@
             <div class="tp-risk-heading">برنامه پیشنهادی بر اساس ریسک</div>
             <div class="tp-risk-payout">Payout مبنا: <b id="tpRiskPayout">-</b></div>
             <div id="tpRiskOptions" class="tp-risk-options"></div>
+            <div class="tp-plan-editor">
+              <div class="tp-editor-title">انتخاب / ویرایش برنامه برای اجرای سشن بعدی</div>
+              <div class="tp-editor-grid">
+                <label>تعداد معاملات <input id="tpEditTrades" type="number" min="1" step="1"></label>
+                <label>باخت مجاز <input id="tpEditLosses" type="number" min="0" step="1"></label>
+              </div>
+              <div id="tpEditHint" class="small">با تغییر تعداد معاملات یا باخت مجاز، برنامه بررسی می‌شود؛ محاسبات موتور فعلی دست‌نخورده می‌ماند.</div>
+              <button id="tpApplyBtn" class="btn btn-secondary" type="button">اجرای این برنامه در سشن بعدی</button>
+            </div>
           </div>
 
           <div class="row">
@@ -311,6 +317,32 @@
           🎯 هدف برنامه محقق شد
         </div>
       </div>
+    </div>
+
+
+    <!-- RIGHT: SESSION CONTROL (shared) -->
+    <div>
+
+      <details id="performanceDetails" class="panel collapsible-panel" open>
+        <summary class="panel-title collapsible-summary">داشبورد عملکرد</summary>
+        <div id="dashboardPanel" class="dashboard-body">
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessions">0</div><div class="l">سشن</div></div>
+          <div class="statbox"><div class="n" id="dashTrades">0</div><div class="l">معامله</div></div>
+          <div class="statbox"><div class="n" id="dashWinRate">-</div><div class="l">Win Rate</div></div>
+        </div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashNetProfit">-</div><div class="l">سود/زیان کل</div></div>
+          <div class="statbox"><div class="n" id="dashCurrentBalance">-</div><div class="l">موجودی</div></div>
+        </div>
+        <div class="row"><label>بهترین سشن</label><strong id="dashBest">-</strong></div>
+        <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
+        <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
+        <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
+        <div id="dashLiveStatus" class="small-center small">سشن جاری: هنوز معامله‌ای ثبت نشده</div>
+
+        </div>
+      </details>
 
       <div class="panel">
         <details id="historyDetails">
@@ -331,33 +363,7 @@
         </div>
       </div>
 
-      <div class="panel" id="dashboardPanel">
-        <div class="panel-title">داشبورد عملکرد</div>
-        <div class="statsrow">
-          <div class="statbox"><div class="n" id="dashSessions">0</div><div class="l">سشن</div></div>
-          <div class="statbox"><div class="n" id="dashTrades">0</div><div class="l">معامله</div></div>
-          <div class="statbox"><div class="n" id="dashWinRate">-</div><div class="l">Win Rate</div></div>
-        </div>
-        <div class="statsrow">
-          <div class="statbox"><div class="n" id="dashNetProfit">-</div><div class="l">سود/زیان کل</div></div>
-          <div class="statbox"><div class="n" id="dashCurrentBalance">-</div><div class="l">موجودی</div></div>
-        </div>
-        <div class="row"><label>بهترین سشن</label><strong id="dashBest">-</strong></div>
-        <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
-        <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
-        <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
-        <div id="dashLiveStatus" class="small-center small">سشن جاری: هنوز معامله‌ای ثبت نشده</div>
 
-        <div class="backupbox">
-          <div class="backup-title">پشتیبان آفلاین</div>
-          <div class="small">یک فایل JSON از تاریخچه و تنظیمات برنامه بسازید تا برای تعویض گوشی یا بازیابی اطلاعات استفاده شود.</div>
-          <div class="subactions backup-actions">
-            <button id="backupExportBtn" class="btn btn-secondary">ساخت پشتیبان</button>
-            <button id="backupImportBtn" class="btn btn-secondary" type="button">بازیابی پشتیبان</button>
-            <input id="backupImportInput" type="file" accept=".json,application/json" hidden>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -375,6 +381,7 @@
     </div>
     <div class="appdialog-actions">
       <button id="appDialogCancel" class="dialog-cancel hidden" type="button">انصراف</button>
+      <button id="appDialogAlt" class="dialog-alt hidden" type="button">ذخیره نشود و حذف شود</button>
       <button id="appDialogOk" class="dialog-ok" type="button">تأیید</button>
     </div>
   </div>
@@ -389,7 +396,16 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.2.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.3.0 • © 2026</div>
+      <div class="backupbox about-backup">
+        <div class="backup-title">پشتیبانی آفلاین</div>
+        <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
+        <div class="subactions backup-actions">
+          <button id="backupExportBtn" class="btn btn-secondary" type="button">Export</button>
+          <button id="backupImportBtn" class="btn btn-secondary" type="button">Import</button>
+          <input id="backupImportInput" type="file" accept=".json,application/json" hidden>
+        </div>
+      </div>
     </div>
     <div class="aboutmodal-actions">
       <button id="aboutOkBtn" class="aboutok" type="button">OK</button>

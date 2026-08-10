@@ -1,6 +1,6 @@
 {
   "name": "trade-manager",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "description": "Offline-first Simple + Masaniello trade manager with performance dashboard and local backup/restore.",
   "scripts": {
@@ -14,7 +14,8 @@
     "@capacitor/filesystem": "latest",
     "@capacitor/share": "latest",
     "@capacitor/app": "latest",
-    "@capacitor/toast": "latest"
+    "@capacitor/toast": "latest",
+    "@capacitor/status-bar": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "latest",
