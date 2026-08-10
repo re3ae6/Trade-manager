@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -16,63 +17,42 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Install dependencies
         run: npm install
 
-      - name: Prepare web assets
+      - name: Check JavaScript syntax
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Verify web build
         run: |
-          mkdir -p www
-          cp index.html manifest.json www/ 2>/dev/null || true
-          cp icon-*.png www/ 2>/dev/null || true
+          test -f www/index.html
+          test -f www/manifest.json
+          test -f www/service-worker.js
+          test -f www/icons/icon-192.png
+          test -f www/icons/icon-512.png
+          echo "Web build verified successfully."
 
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Remove INTERNET permission (app is fully offline)
-        run: |
-          python3 - <<'PYEOF'
-          import re
-
-          path = "android/app/src/main/AndroidManifest.xml"
-          with open(path, "r", encoding="utf-8") as f:
-              content = f.read()
-
-          if 'xmlns:tools=' not in content:
-              content = content.replace(
-                  '<manifest ',
-                  '<manifest xmlns:tools="http://schemas.android.com/tools" ',
-                  1
-              )
-
-          content = re.sub(
-              r'\s*<uses-permission android:name="android\.permission\.INTERNET"\s*/>\n',
-              '\n',
-              content
-          )
-
-          removal_tag = '    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />\n'
-          if 'android.permission.INTERNET" tools:node="remove"' not in content:
-              content = content.replace('</manifest>', removal_tag + '</manifest>')
-
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(content)
-
-          print("--- AndroidManifest.xml after edit ---")
-          print(content)
-          PYEOF
-
       - name: Prepare app icon source
         run: |
           mkdir -p assets
-          cp icon-512.png assets/icon.png
+          cp icons/icon-512.png assets/icon.png
 
       - name: Generate app icon
         run: npx capacitor-assets generate --android
@@ -85,23 +65,6 @@ jobs:
 
       - name: Build debug APK
         run: cd android && ./gradlew assembleDebug
-
-      - name: Verify INTERNET permission is absent from the built APK
-        run: |
-          BUILD_TOOLS=$(ls /usr/local/lib/android/sdk/build-tools | sort -V | tail -1)
-          AAPT="/usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/aapt"
-          if [ -x "$AAPT" ]; then
-            echo "--- Permissions declared in the built APK ---"
-            "$AAPT" dump permissions android/app/build/outputs/apk/debug/app-debug.apk || true
-            if "$AAPT" dump permissions android/app/build/outputs/apk/debug/app-debug.apk | grep -q "android.permission.INTERNET"; then
-              echo "::error::INTERNET permission is still present in the built APK!"
-              exit 1
-            else
-              echo "Confirmed: android.permission.INTERNET is NOT present in the built APK."
-            fi
-          else
-            echo "aapt not found at expected path — skipping automated permission check. Verify manually with: aapt dump permissions app-debug.apk"
-          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
