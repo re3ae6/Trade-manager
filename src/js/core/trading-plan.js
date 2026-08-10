@@ -1,3 +1,5 @@
+import { computePlan } from './masaniello.js';
+
 export function generatePlanId(){
   if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   return 'plan_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -29,4 +31,15 @@ export function computeTradingPlanStats(tradingPlan, sessionHistory, currentBala
   const estimatedSessionsRemaining = (averageProfitPerCompletedSession !== null && averageProfitPerCompletedSession > 0) ? remainingProfit / averageProfitPerCompletedSession : null;
   const requiredAverageProfitPerSession = (estimatedSessionsRemaining !== null && estimatedSessionsRemaining !== 0) ? remainingProfit / estimatedSessionsRemaining : null;
   return {remainingProfit,progressPercent,sessionsCompletedTowardPlan,averageProfitPerCompletedSession,estimatedSessionsRemaining,requiredAverageProfitPerSession,targetReached:progressPercent>=100};
+}
+
+export function computeTradingPlanRiskOptions(planStartBalance, targetBalance, payoutPercent, floor = 1){
+  const targetProfit = targetBalance - planStartBalance;
+  if(!Number.isFinite(planStartBalance) || !Number.isFinite(targetBalance) || !Number.isFinite(payoutPercent) || planStartBalance <= 0 || targetProfit <= 0){
+    return null;
+  }
+  return ['low','medium','high'].map(risk => ({
+    risk,
+    ...((computePlan(risk, planStartBalance, payoutPercent, targetProfit, floor)) || {n:0,k:0})
+  }));
 }
