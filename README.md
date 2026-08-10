@@ -30,8 +30,7 @@ The workflow:
 7. generates Android app icons from `icons/icon-512.png`;
 8. syncs the web assets and Capacitor plugins;
 9. builds a debug APK;
-10. verifies that the offline APK does not declare `android.permission.INTERNET`;
-11. uploads the APK as the `TradeManager-debug-apk` artifact.
+10. uploads the APK as the `TradeManager-debug-apk` artifact.
 
 ## CSV export
 
@@ -41,11 +40,15 @@ The exported history filename is:
 TM.re3a.csv
 ```
 
-The final CSV line contains only the signature:
+The CSV header starts cleanly with `Session` (without a visible BOM marker), and the final CSV line contains only the signature:
 
 ```text
 re3ae6
 ```
+
+## About dialog
+
+The About dialog shows the current app version (`v2.1.0`) and developer signature in a native-looking in-app modal rather than a browser alert.
 
 ## Landscape layout
 

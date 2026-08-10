@@ -39,7 +39,7 @@
         <div class="goalrow simple-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade">OFF</button></div>
         <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy">ON</button></div>
         <div class="goalrow"><label>ریست شمارنده سشن</label><button class="btn btn-secondary btn-sm">Reset</button></div>
-        <div class="goalrow"><label>درباره</label><button class="btn btn-secondary btn-sm">About</button></div>
+        <div class="goalrow"><label>درباره</label><button id="aboutBtn" class="btn btn-secondary btn-sm" type="button">About</button></div>
       </div>
     </details>
   </div>
@@ -317,6 +317,23 @@
   </div>
 </div>
 
+
+<div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="aboutmodal" role="document">
+    <div class="aboutmodal-head">
+      <h2 id="aboutTitle">Trade Manager</h2>
+      <button id="aboutCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="aboutmodal-body">
+      <div class="aboutcredit">Designed &amp; Developed by</div>
+      <div class="aboutauthor">re3ae6</div>
+      <div class="aboutversion" id="aboutVersion">v2.1.0 • © 2026</div>
+    </div>
+    <div class="aboutmodal-actions">
+      <button id="aboutOkBtn" class="aboutok" type="button">OK</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="src/js/app.js"></script>
 <!-- App logic moved to src/js/app.js -->
