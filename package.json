@@ -1,12 +1,12 @@
 {
   "name": "trade-manager",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
-  "description": "Offline-first Simple + Masaniello trade manager.",
+  "description": "Offline-first Simple + Masaniello trade manager with performance dashboard and local backup/restore.",
   "scripts": {
     "build": "node scripts/build-web.mjs",
     "test": "node --test tests/**/*.test.mjs",
-    "check": "node --check src/js/app.js && node --check src/js/core/format.js && node --check src/js/core/history.js && node --check src/js/core/masaniello.js && node --check src/js/core/simple.js && node --check src/js/core/trading-plan.js && node --check src/js/storage/state.js"
+    "check": "node --check src/js/app.js && node --check src/js/core/analytics.js && node --check src/js/core/format.js && node --check src/js/core/history.js && node --check src/js/core/masaniello.js && node --check src/js/core/simple.js && node --check src/js/core/trading-plan.js && node --check src/js/storage/state.js"
   },
   "dependencies": {
     "@capacitor/core": "latest",

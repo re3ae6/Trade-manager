@@ -1,4 +1,4 @@
-# Trade Manager V2.1
+# Trade Manager V2.2.0
 
 Offline-first Simple + Masaniello trade manager, structured for GitHub Actions and Capacitor Android builds.
 
@@ -48,7 +48,7 @@ re3ae6
 
 ## About dialog
 
-The About dialog shows the current app version (`v2.1.0`) and developer signature in a native-looking in-app modal rather than a browser alert.
+The About dialog shows the current app version (`v2.2.0`) and developer signature in a native-looking in-app modal rather than a browser alert.
 
 ## Landscape layout
 
@@ -60,9 +60,16 @@ On short phone landscape screens, the three main columns use equal widths with `
 - BE means neither win nor loss and does not consume a Masaniello plan trade.
 - Session history persists locally through `localStorage` so closing/reopening the app does not erase it.
 - Tapping the session pill starts a new session; holding it for 3 seconds opens the existing confirmation for resetting the session counter.
-- The current confirmation dialogs are intentionally retained.
+- Confirmation dialogs use the app's dark custom dialog so the UI stays consistent in the APK.
 - The app is built as a personal offline APK through GitHub Actions; the Android project is generated during CI and is not committed.
 
 ## Refactor policy
 
 Visual/UI improvements are allowed, but business calculations and trading behavior are not changed without explicit approval.
+
+
+## V2.2
+- داشبورد عملکرد آفلاین
+- محاسبه Win Rate، سود/زیان، بهترین/بدترین سشن و Drawdown بر اساس پایان سشن‌ها
+- پشتیبان JSON و بازیابی آفلاین
+- مقایسه سود واقعی با هدف Trading Plan

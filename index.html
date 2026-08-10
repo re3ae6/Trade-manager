@@ -255,6 +255,11 @@
             <label>موجودی هدف</label>
             <span id="tpTargetBalance">-</span>
           </div>
+          <div class="tp-risk-section">
+            <div class="tp-risk-heading">برنامه پیشنهادی بر اساس ریسک</div>
+            <div class="tp-risk-payout">Payout مبنا: <b id="tpRiskPayout">-</b></div>
+            <div id="tpRiskOptions" class="tp-risk-options"></div>
+          </div>
 
           <div class="row">
             <label>سود باقی‌مانده تا هدف</label>
@@ -279,6 +284,20 @@
           <div class="row">
             <label>سود لازم هر سشن</label>
             <span id="tpRequiredAvgProfit">-</span>
+          </div>
+
+          <div class="tp-actual">
+            <div class="tp-actual-head">
+              <span>برنامه در برابر عملکرد واقعی</span>
+              <b id="tpActualProfit">-</b>
+            </div>
+            <div class="tp-progress" aria-label="پیشرفت واقعی نسبت به سود هدف">
+              <span id="tpPlanProgressBar" aria-valuenow="0"></span>
+            </div>
+            <div class="tp-actual-foot">
+              <span>فاصله تا سود هدف</span>
+              <b id="tpPlanGap">-</b>
+            </div>
           </div>
 
           <div class="subactions">
@@ -312,11 +331,54 @@
         </div>
       </div>
 
+      <div class="panel" id="dashboardPanel">
+        <div class="panel-title">داشبورد عملکرد</div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessions">0</div><div class="l">سشن</div></div>
+          <div class="statbox"><div class="n" id="dashTrades">0</div><div class="l">معامله</div></div>
+          <div class="statbox"><div class="n" id="dashWinRate">-</div><div class="l">Win Rate</div></div>
+        </div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashNetProfit">-</div><div class="l">سود/زیان کل</div></div>
+          <div class="statbox"><div class="n" id="dashCurrentBalance">-</div><div class="l">موجودی</div></div>
+        </div>
+        <div class="row"><label>بهترین سشن</label><strong id="dashBest">-</strong></div>
+        <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
+        <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
+        <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
+        <div id="dashLiveStatus" class="small-center small">سشن جاری: هنوز معامله‌ای ثبت نشده</div>
+
+        <div class="backupbox">
+          <div class="backup-title">پشتیبان آفلاین</div>
+          <div class="small">یک فایل JSON از تاریخچه و تنظیمات برنامه بسازید تا برای تعویض گوشی یا بازیابی اطلاعات استفاده شود.</div>
+          <div class="subactions backup-actions">
+            <button id="backupExportBtn" class="btn btn-secondary">ساخت پشتیبان</button>
+            <button id="backupImportBtn" class="btn btn-secondary" type="button">بازیابی پشتیبان</button>
+            <input id="backupImportInput" type="file" accept=".json,application/json" hidden>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 </div>
 
+
+<div class="modal-backdrop" id="appDialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle">
+  <div class="appdialog" role="document">
+    <div class="appdialog-head">
+      <h2 id="appDialogTitle">تأیید</h2>
+    </div>
+    <div class="appdialog-body">
+      <div id="appDialogMessage"></div>
+    </div>
+    <div class="appdialog-actions">
+      <button id="appDialogCancel" class="dialog-cancel hidden" type="button">انصراف</button>
+      <button id="appDialogOk" class="dialog-ok" type="button">تأیید</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
   <div class="aboutmodal" role="document">
@@ -327,7 +389,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.1.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.2.0 • © 2026</div>
     </div>
     <div class="aboutmodal-actions">
       <button id="aboutOkBtn" class="aboutok" type="button">OK</button>
