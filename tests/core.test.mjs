@@ -5,6 +5,7 @@ import { calculateSimpleNextStake } from '../src/js/core/simple.js';
 import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/core/history.js';
 import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions } from '../src/js/core/trading-plan.js';
 import { computePerformanceStats } from '../src/js/core/analytics.js';
+import { csvEscape } from '../src/js/core/format.js';
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -133,4 +134,44 @@ test('CSV export includes BE and keeps the requested signature only', () => {
   assert.match(csv, /Session,Mode,Trades,Wins,BE,Losses/);
   assert.ok(csv.trimEnd().endsWith('re3ae6'));
   assert.doesNotMatch(csv, /Signature/);
+});
+
+
+test('Planner returns null for targets beyond the search cap', () => {
+  assert.equal(computePlan('high', 1, 0.01, 1e9, 1), null);
+});
+
+test('Masaniello rejects non-finite stake results safely', () => {
+  const result = masanielloStake(Number.MAX_VALUE, 2, 1, Number.MAX_VALUE, 1, 2, 1);
+  assert.deepEqual(result, { stake: 0, reason: 'target-impossible' });
+});
+
+test('CSV escaping neutralizes spreadsheet formula prefixes', () => {
+  assert.equal(csvEscape('=SUM(A1:A2)'), '\t=SUM(A1:A2)');
+  assert.equal(csvEscape('+123'), '\t+123');
+  assert.equal(csvEscape('-123'), '\t-123');
+  assert.equal(csvEscape('@cmd'), '\t@cmd');
+});
+
+import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from '../src/js/core/planner.js';
+
+test('Planner builds three Masaniello risk options without changing engine outputs', () => {
+  const plans = buildMasanielloPlans(1000, 85, 100, 1);
+  assert.equal(plans.length, 3);
+  assert.ok(plans.every(p => p.risk && Object.hasOwn(p,'valid')));
+  assert.ok(plans.some(p => p.valid));
+});
+
+test('Masaniello custom planner validates N and allowed losses', () => {
+  const result = validateMasanielloCustom(1000, 85, 100, 20, 5, 1);
+  assert.equal(result.valid, true);
+  assert.equal(result.n, 20);
+  assert.equal(result.k, 15);
+  assert.equal(result.losses, 5);
+});
+
+test('Simple planner returns risk profiles with executable stake information', () => {
+  const plans = buildSimplePlans(1000, 85, 100, 1);
+  assert.equal(plans.length, 3);
+  assert.ok(plans.every(p => Number.isFinite(p.profitPerWin)));
 });
