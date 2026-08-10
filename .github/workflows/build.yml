@@ -12,21 +12,28 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "21"
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json found — using npm ci for a reproducible install."
+            npm ci
+          else
+            echo "No package-lock.json yet — using npm install. Commit the generated lockfile to switch to npm ci."
+            npm install
+          fi
 
       - name: Check JavaScript syntax
         run: npm run check
@@ -49,6 +56,12 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Remove INTERNET permission (offline-only app)
+        run: |
+          sed -i '/android.permission.INTERNET/d' android/app/src/main/AndroidManifest.xml
+          echo "AndroidManifest.xml after removal:"
+          cat android/app/src/main/AndroidManifest.xml
+
       - name: Prepare app icon source
         run: |
           mkdir -p assets
@@ -60,6 +73,20 @@ jobs:
       - name: Sync web assets and plugins into Android project
         run: npx cap sync android
 
+      - name: Re-assert INTERNET permission removal after sync
+        run: |
+          # `cap sync` can re-merge manifest entries from plugins, so the
+          # permission is stripped again here, right before the Gradle build.
+          sed -i '/android.permission.INTERNET/d' android/app/src/main/AndroidManifest.xml
+
+      - name: Verify INTERNET permission is absent
+        run: |
+          if grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml; then
+            echo "::error::android.permission.INTERNET is present in AndroidManifest.xml. This app must remain offline-only (see project spec, section 23)."
+            exit 1
+          fi
+          echo "Confirmed: no INTERNET permission in AndroidManifest.xml."
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
@@ -67,7 +94,7 @@ jobs:
         run: cd android && ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TradeManager-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
