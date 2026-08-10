@@ -11,12 +11,14 @@ import { computePerformanceStats } from './core/analytics.js';
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.0';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
 let balance = 0;
 let locked = false;
+let lockReason = null; // target | stoploss | balance | plan-complete | plan-impossible
+let selectedPlannerRisk = null;
 
 let sessionCounter = 1;
 let sessionHistory = [];           // {session, mode, trades, wins, losses, initial, finalBalance, profit, date, endedAt}
@@ -158,20 +160,42 @@ function updateSessionCounter(){
   saveState();
 }
 
+function getDialogEls(){
+  return {
+    modal: document.getElementById('appDialog'),
+    title: document.getElementById('appDialogTitle'),
+    message: document.getElementById('appDialogMessage'),
+    cancel: document.getElementById('appDialogCancel'),
+    alt: document.getElementById('appDialogAlt'),
+    ok: document.getElementById('appDialogOk')
+  };
+}
+
+function closeDialog(){
+  const {modal, cancel, alt, ok} = getDialogEls();
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  cancel?.classList.add('hidden');
+  alt?.classList.add('hidden');
+  ok?.classList.remove('hidden');
+}
+
 function showAppMessage(message, title='پیام'){
   return new Promise(resolve => {
-    const modal = document.getElementById('appDialog');
+    const {modal, title: titleEl, message: messageEl, cancel, alt, ok} = getDialogEls();
     if(!modal) return resolve();
-    document.getElementById('appDialogTitle').textContent = title;
-    document.getElementById('appDialogMessage').textContent = message;
-    document.getElementById('appDialogCancel').classList.add('hidden');
-    const ok = document.getElementById('appDialogOk');
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    cancel.classList.add('hidden');
+    alt.classList.add('hidden');
+    ok.classList.remove('hidden');
     ok.textContent = 'باشه';
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
+
     const finish = () => {
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden','true');
+      closeDialog();
       ok.removeEventListener('click', finish);
       resolve();
     };
@@ -181,33 +205,53 @@ function showAppMessage(message, title='پیام'){
 }
 
 function showAppConfirm(message, title='تأیید'){
+  return showAppChoice(message, title, {
+    primary:'تأیید',
+    secondary:null,
+    cancel:'انصراف'
+  }).then(choice => choice === 'primary');
+}
+
+/**
+ * Three-way dialog:
+ * primary = save/confirm, secondary = discard, cancel = do nothing.
+ * This deliberately stays open until the user taps one of the buttons.
+ */
+function showAppChoice(message, title='تأیید', labels = {}){
   return new Promise(resolve => {
-    const modal = document.getElementById('appDialog');
-    if(!modal) return resolve(false);
-    document.getElementById('appDialogTitle').textContent = title;
-    document.getElementById('appDialogMessage').textContent = message;
-    const cancel = document.getElementById('appDialogCancel');
-    const ok = document.getElementById('appDialogOk');
+    const {modal, title: titleEl, message: messageEl, cancel, alt, ok} = getDialogEls();
+    if(!modal) return resolve('cancel');
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    cancel.textContent = labels.cancel || 'انصراف';
+    ok.textContent = labels.primary || 'تأیید';
+    alt.textContent = labels.secondary || 'ذخیره نشود و حذف شود';
     cancel.classList.remove('hidden');
-    ok.textContent = 'تأیید';
+    ok.classList.remove('hidden');
+    alt.classList.toggle('hidden', !labels.secondary);
+
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
+
     let done = false;
     const finish = value => {
       if(done) return;
       done = true;
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden','true');
+      closeDialog();
       ok.removeEventListener('click', onOk);
       cancel.removeEventListener('click', onCancel);
+      alt.removeEventListener('click', onAlt);
       modal.removeEventListener('click', onBackdrop);
       resolve(value);
     };
-    const onOk = () => finish(true);
-    const onCancel = () => finish(false);
-    const onBackdrop = event => { if(event.target === event.currentTarget) finish(false); };
+    const onOk = () => finish('primary');
+    const onCancel = () => finish('cancel');
+    const onAlt = () => finish('secondary');
+    const onBackdrop = event => { if(event.target === event.currentTarget) finish('cancel'); };
+
     ok.addEventListener('click', onOk);
     cancel.addEventListener('click', onCancel);
+    alt.addEventListener('click', onAlt);
     modal.addEventListener('click', onBackdrop);
     ok.focus();
   });
@@ -512,15 +556,19 @@ function evaluateLockState(){
   } else {
     if(balance <= 0){
       locked = true;
+      lockReason = 'balance';
       setStatus('⚠ موجودی تمام شد — سشن جدید شروع کنید.', 'warn');
     } else if(kRemaining <= 0){
       locked = true;
+      lockReason = 'target';
       setStatus('✅ سود هدف محقق شد! می‌توانید سشن جدید شروع کنید.', 'ok');
     } else if(nRemaining <= 0){
       locked = true;
+      lockReason = 'plan-complete';
       setStatus('⚠ معاملات برنامه بدون رسیدن به هدف تمام شد.', 'warn');
     } else if(kRemaining > nRemaining){
       locked = true;
+      lockReason = 'plan-impossible';
       setStatus('⚠ رسیدن به هدف با معاملات باقی‌مانده دیگر ممکن نیست.', 'warn');
     }
   }
@@ -540,6 +588,7 @@ function undoLastTrade(){
   streakLoss = 0;
   currentStreakCount = 0;
   locked = false;
+  lockReason = null;
   clearAlert();
 
   if(mode === 'simple'){
@@ -564,6 +613,7 @@ function checkStopLoss(){
 
   if(balance <= stopLossBalance){
     locked = true;
+    lockReason = 'stoploss';
     showAlert('⚠ به حد ضرر (Stop Loss) رسیدید — معامله در این سشن قفل شد.', 'alert');
     return;
   }
@@ -620,6 +670,8 @@ function setStatus(text, cls){
 // newSession() (which already confirmed + saved before calling this).
 function resetTradesState(){
   trades = [];
+  lockReason = null;
+  selectedPlannerRisk = null;
   streakLoss = 0;
   currentStreakCount = 0;
   locked = false;
@@ -635,23 +687,48 @@ function resetTradesState(){
 // here has no other confirmation step before it, so this one confirms
 // and saves the current session to history itself before wiping it —
 // otherwise a single misclick would silently destroy the whole table.
+function getLockReasonText(){
+  const labels = {
+    target:'هدف سشن محقق شده است.',
+    stoploss:'حد ضرر سشن فعال شده است.',
+    balance:'موجودی برای ادامه کافی نیست.',
+    'plan-complete':'برنامه معاملات تمام شده است.',
+    'plan-impossible':'رسیدن به هدف با معاملات باقی‌مانده دیگر ممکن نیست.'
+  };
+  return labels[lockReason] || 'پایان دستی سشن.';
+}
+
 async function clearTrades(){
-  if(trades.length > 0){
-    if(!await showAppConfirm('جدول معاملات جاری پاک شود؟\n\nسشن در تاریخچه ثبت خواهد شد.', 'پاک کردن جدول')) return;
-    saveSession();
+  if(trades.length === 0){
+    resetTradesState();
+    return;
   }
+
+  const reason = lockReason ? `\n\nوضعیت پایان: ${getLockReasonText()}` : '';
+  const choice = await showAppChoice(
+    `این سشن پاک شود؟${reason}\n\nمی‌توانید آن را در تاریخچه ذخیره کنید یا بدون ذخیره حذف کنید.`,
+    'پاک کردن سشن',
+    {primary:'ذخیره و حذف', secondary:'حذف بدون ذخیره', cancel:'انصراف'}
+  );
+  if(choice === 'cancel') return;
+  if(choice === 'primary') saveSession();
   resetTradesState();
 }
 
 async function newSession(){
   if(trades.length > 0){
-    const choice = await showAppConfirm('سشن فعلی ثبت شود و سشن جدید شروع شود؟', 'سشن جدید');
-    if(!choice) return;
-    saveSession();
-  }
+    const reason = lockReason ? `\n\nعلت پایان: ${getLockReasonText()}` : '';
+    const choice = await showAppChoice(
+      `سشن فعلی تمام شود و سشن جدید شروع شود؟${reason}`,
+      'سشن جدید',
+      {primary:'ذخیره و شروع', secondary:'بدون ذخیره و شروع', cancel:'انصراف'}
+    );
+    if(choice === 'cancel') return;
+    if(choice === 'primary') saveSession();
 
-  if(document.getElementById('t-autoCopy')?.textContent === 'ON' && trades.length > 0){
-    document.getElementById('initialCapital').value = formatNumber(balance);
+    if(document.getElementById('t-autoCopy')?.textContent === 'ON'){
+      document.getElementById('initialCapital').value = formatNumber(balance);
+    }
   }
 
   sessionCounter++;
@@ -932,13 +1009,28 @@ function renderTradingPlan(){
   const riskWrap = document.getElementById('tpRiskOptions');
   if(riskWrap){
     const options = Array.isArray(tradingPlan.riskOptions) ? tradingPlan.riskOptions : [];
+    if(!selectedPlannerRisk && options.length) selectedPlannerRisk = options.find(o => o.risk === 'medium')?.risk || options[0].risk;
     riskWrap.innerHTML = options.map(option => `
-      <div class="tp-risk-card ${riskClasses[option.risk] || ''}">
+      <button type="button" class="tp-risk-card selectable ${riskClasses[option.risk] || ''} ${selectedPlannerRisk === option.risk ? 'selected' : ''}" data-planner-risk="${option.risk}">
         <div class="tp-risk-title">${riskLabels[option.risk] || option.risk}</div>
         <div><b>${option.n || '-'}</b><span> معامله</span></div>
         <div><b>${option.k || '-'}</b><span> برد لازم</span></div>
         <div><b>${Number.isFinite(option.n) && Number.isFinite(option.k) ? option.n - option.k : '-'}</b><span> باخت مجاز</span></div>
-      </div>`).join('');
+      </button>`).join('');
+    riskWrap.querySelectorAll('[data-planner-risk]').forEach(btn => {
+      btn.addEventListener('click', () => selectPlannerRisk(btn.dataset.plannerRisk));
+    });
+  }
+
+  const selectedOption = Array.isArray(tradingPlan.riskOptions)
+    ? tradingPlan.riskOptions.find(o => o.risk === selectedPlannerRisk)
+    : null;
+  const editN = document.getElementById('tpEditTrades');
+  const editLosses = document.getElementById('tpEditLosses');
+  if(selectedOption && editN && editLosses){
+    if(document.activeElement !== editN) editN.value = selectedOption.n || '';
+    if(document.activeElement !== editLosses) editLosses.value =
+      Number.isFinite(selectedOption.n) && Number.isFinite(selectedOption.k) ? selectedOption.n - selectedOption.k : '';
   }
 
   const stats = computeTradingPlanStats();
@@ -1025,6 +1117,7 @@ function createTradingPlan(planName, planStartBalance, targetPercent, targetBala
     planCreatedAt: new Date().toISOString(),
     status: 'running'
   };
+  selectedPlannerRisk = 'medium';
   return tradingPlan;
 }
 
@@ -1045,6 +1138,62 @@ function cancelTradingPlan(){
 
 function completeTradingPlan(){
   if(tradingPlan) tradingPlan.status = 'completed';
+}
+
+function selectPlannerRisk(risk){
+  if(!tradingPlan || !Array.isArray(tradingPlan.riskOptions)) return;
+  const option = tradingPlan.riskOptions.find(o => o.risk === risk);
+  if(!option) return;
+  selectedPlannerRisk = risk;
+  const n = document.getElementById('tpEditTrades');
+  const losses = document.getElementById('tpEditLosses');
+  if(n) n.value = option.n || '';
+  if(losses) losses.value = Number.isFinite(option.n) && Number.isFinite(option.k) ? option.n - option.k : '';
+  render();
+}
+
+function previewPlannerEdit(){
+  const n = parseInt(document.getElementById('tpEditTrades')?.value,10);
+  const losses = parseInt(document.getElementById('tpEditLosses')?.value,10);
+  const hint = document.getElementById('tpEditHint');
+  if(!hint || !tradingPlan) return;
+  if(!Number.isFinite(n) || n < 1 || !Number.isFinite(losses) || losses < 0 || losses >= n){
+    hint.textContent = 'تعداد معاملات باید بیشتر از باخت مجاز باشد.';
+    hint.className = 'small warn';
+    return;
+  }
+  const k = n - losses;
+  hint.textContent = `برنامه ویرایش‌شده: ${n} معامله، ${k} برد لازم و ${losses} باخت مجاز. موتور Masaniello همین n/k را در سشن بعدی اجرا می‌کند.`;
+  hint.className = 'small';
+}
+
+async function applyPlannerEdit(){
+  if(!tradingPlan) return;
+  if(trades.length > 0){
+    await showAppMessage('ابتدا سشن فعلی را تمام کنید؛ برنامه انتخاب‌شده برای سشن بعدی اعمال می‌شود.', 'اجرای برنامه');
+    return;
+  }
+  const n = parseInt(document.getElementById('tpEditTrades')?.value,10);
+  const losses = parseInt(document.getElementById('tpEditLosses')?.value,10);
+  if(!Number.isFinite(n) || n < 1 || !Number.isFinite(losses) || losses < 0 || losses >= n){
+    await showAppMessage('تعداد معاملات و باخت مجاز را معتبر وارد کنید.', 'اطلاعات برنامه');
+    return;
+  }
+
+  // This only selects/configures the existing Masaniello engine; it does not
+  // replace or alter its sizing formulas.
+  if(mode !== 'masaniello'){
+    setMode('masaniello');
+  }
+  document.getElementById('manualToggle').checked = true;
+  document.getElementById('manualWrap').classList.add('show');
+  document.getElementById('manualN').value = n;
+  document.getElementById('manualK').value = n - losses;
+  document.getElementById('initialCapital').value = formatNumber(balance > 0 ? balance : tradingPlan.planStartBalance);
+  document.getElementById('targetProfit').value = Math.max(0.01, tradingPlan.targetBalance - (balance > 0 ? balance : tradingPlan.planStartBalance)).toFixed(2);
+  selectedPlannerRisk = null;
+  onSetupChange();
+  await showAppMessage(`برنامه انتخاب شد: ${n} معامله با ${losses} باخت مجاز.\n\nبرای شروع سشن بعدی، همین برنامه Masaniello اجرا می‌شود.`, 'برنامه انتخاب شد');
 }
 
 async function onTradingPlanFormSubmit(){
@@ -1425,6 +1574,10 @@ function bindUI(){
   document.querySelectorAll('input[name="tpTargetType"]').forEach(input => input.addEventListener('change', onTradingPlanTargetTypeChange));
   const planCreateButton = $('tradingPlanCreateView')?.querySelector('.subactions .btn');
   planCreateButton?.addEventListener('click', onTradingPlanFormSubmit);
+  $('tpEditTrades')?.addEventListener('input', previewPlannerEdit);
+  $('tpEditLosses')?.addEventListener('input', previewPlannerEdit);
+  $('tpApplyBtn')?.addEventListener('click', applyPlannerEdit);
+
   const activeButtons = $('tradingPlanActiveView')?.querySelectorAll('.subactions .btn') || [];
   activeButtons[0]?.addEventListener('click', onTradingPlanEdit);
   activeButtons[1]?.addEventListener('click', onTradingPlanComplete);
@@ -1440,11 +1593,21 @@ function bindUI(){
   $('copyBtn')?.addEventListener('click', copyLog);
 }
 
+function applyNativeTheme(){
+  try{
+    const native = window.Capacitor?.Plugins?.StatusBar;
+    if(!native) return;
+    native.setBackgroundColor?.({color:'#171c26'});
+    native.setStyle?.({style:'LIGHT'});
+  }catch(_){ /* web/PWA has no native status-bar plugin */ }
+}
+
 /* =====================================================
    INITIALIZATION
 ===================================================== */
 
 bindUI();
+applyNativeTheme();
 
 const restored = loadState();
 if(!restored){
