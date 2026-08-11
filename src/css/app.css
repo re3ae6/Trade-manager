@@ -993,3 +993,149 @@ input,select,textarea{color:var(--text);}
   .scenario-summary{grid-template-columns:repeat(2,1fr);}
   .scenario-row{grid-template-columns:32px 48px 1fr 1fr 1fr;font-size:12px;}
 }
+
+/* What-If Lab */
+.btn-whatif{background:var(--panel2);border:1px solid var(--teal);color:var(--text);}
+.whatif-modal{width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);}
+.whatif-body{padding:14px 16px 18px;}
+.whatif-intro{font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:12px;}
+.whatif-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px;}
+.whatif-controls label{display:grid;gap:5px;font-size:12px;color:var(--muted);}
+.whatif-controls select{width:100%;min-height:42px;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:10px;padding:0 10px;font:inherit;}
+.whatif-controls .btn{min-height:42px;white-space:nowrap;}
+.whatif-legend,.whatif-summary>div{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;align-items:center;}
+.whatif-legend{padding:8px 10px;background:var(--panel2);border-radius:10px 10px 0 0;font-size:12px;color:var(--muted);}
+.whatif-summary{border:1px solid var(--border);border-top:0;border-radius:0 0 10px 10px;overflow:hidden;}
+.whatif-summary>div{padding:9px 10px;border-top:1px solid var(--border);font-size:12px;}
+.whatif-summary>div:first-child{border-top:0;}
+.whatif-summary span{color:var(--muted);}
+.whatif-summary b{text-align:right;}
+.whatif-delta{margin-top:12px;padding:12px;border-radius:10px;background:var(--panel2);text-align:center;font-size:13px;}
+.whatif-delta.pos strong{color:var(--green);}
+.whatif-delta.neg strong{color:var(--red);}
+.whatif-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.whatif-status>div{padding:10px;border:1px solid var(--border);border-radius:10px;font-size:12px;}
+.whatif-status b{display:block;margin-top:4px;}
+.whatif-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.7;}
+@media(max-width:600px){.whatif-controls{grid-template-columns:1fr 1fr}.whatif-controls .btn{grid-column:1/-1}.whatif-status{grid-template-columns:1fr}.whatif-legend,.whatif-summary>div{grid-template-columns:1.1fr 1fr 1fr;font-size:11px}}
+
+
+/* =========================================================
+   V2.8 MODERN COCKPIT UI
+   Focus: essential actions visible; secondary tools tucked away.
+========================================================= */
+:root{
+  --radius-sm:10px;
+  --radius-md:14px;
+  --shadow-soft:0 8px 24px rgba(0,0,0,.16);
+}
+.app{
+  border-color:rgba(255,255,255,.07);
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+}
+.panel{
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-soft);
+  border-color:rgba(255,255,255,.09);
+}
+.panel-title{
+  border-radius:10px;
+  background:rgba(255,255,255,.055);
+}
+.menu-section{
+  margin:8px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.menu-section summary{
+  list-style:none;
+  cursor:pointer;
+  padding:10px 2px;
+  font-size:12px;
+  color:var(--text);
+  font-weight:800;
+}
+.menu-section summary::-webkit-details-marker{display:none;}
+.menu-section summary::after{
+  content:'⌄';
+  float:left;
+  opacity:.65;
+  transition:transform .18s ease;
+}
+.menu-section[open] summary::after{transform:rotate(180deg);}
+.menu-tool-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  padding:0 0 9px;
+}
+.menu-tool-grid button{
+  min-height:40px;
+  margin:0;
+}
+.summary-hint{
+  margin-inline-start:auto;
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:0;
+}
+#performanceDetails:not([open]) .dashboard-body{display:none;}
+#performanceDetails:not([open]) .collapsible-summary{
+  margin-bottom:0;
+}
+#performanceDetails .collapsible-summary{
+  min-height:42px;
+}
+#tradingPlanPanel > .subactions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+#tradingPlanPanel > .subactions button{
+  width:100%;
+  min-height:42px;
+  margin:0;
+}
+#tradingPlanPanel .planner-tool-buttons{display:none;}
+#tradingPlanPanel .panel-title{margin-bottom:8px;}
+.stakebox{
+  background:rgba(43,191,164,.06);
+  border:1px solid rgba(43,191,164,.18);
+  border-radius:11px;
+  padding:9px 10px;
+  margin-top:8px;
+}
+.actions{
+  gap:9px;
+}
+.actions button{
+  min-height:52px;
+  border-radius:12px;
+  font-size:15px;
+}
+.subactions{
+  gap:8px;
+}
+#undoBtn{min-height:40px;}
+.right-column{
+  gap:10px;
+}
+#historyDetails .histsummary{
+  min-height:40px;
+  display:flex;
+  align-items:center;
+}
+@media(max-width:600px){
+  body{padding:8px;}
+  .app{border-radius:14px;}
+  .titlebar{border-radius:14px 14px 0 0;padding-inline:10px;}
+  .grid{padding:10px;gap:10px;}
+  #tradingPlanPanel > .subactions{grid-template-columns:1fr 1fr;}
+  .summary-hint{font-size:9px;}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .grid{gap:10px;padding:10px;}
+  .panel{padding:10px;}
+  .actions button{min-height:46px;}
+}
