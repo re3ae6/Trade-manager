@@ -2145,3 +2145,38 @@ Presentation and responsive-layout corrections only. No changes to trading-engin
 
 ### Validation
 - Source and `www` copies synchronized for `index.html`, `src/css/app.css`, and `src/js/app.js`.
+
+
+## V2.9.0 UI Polish — Final Pass (2026-08-12)
+
+### Scope
+Presentation-only refinement based on the agreed UI review. Trading engines, calculations, persistence and business rules were not changed.
+
+### Changes
+- Compact Target & Plan inputs into a two-column layout while keeping the final target/advisor information full-width.
+- Standardized editable numeric inputs to a shared left-aligned visual rhythm.
+- Fixed the portrait main-menu drawer positioning so the overlay opens as an actual floating panel instead of leaving only the backdrop visible.
+- Kept the Landscape header controls on one compact vertical baseline.
+- Applied a consistent lightweight title-bar treatment to dialogs, tools and floating panels.
+- Reduced tool/analysis modal footprint so it behaves like a floating window rather than a full-screen page.
+- Removed the duplicate decorative Tools arrows and kept a single clean disclosure arrow.
+- Preserved the existing Exit and Save action labels: Cancel / Discard & Exit / Save & Exit.
+
+### Verification
+- `npm test` — 61/61 PASS
+- `npm run check` — PASS
+- `npm run build` — PASS
+- Build regenerated `www/` from the source tree.
+
+### Explicitly unchanged
+- Simple engine
+- Masaniello formula/engine
+- BE semantics
+- Recovery engine
+- Planner calculations
+- Risk engine
+- Session state logic
+- History/storage logic
+
+### Remaining visual verification
+Final visual confirmation should be performed on the target Android device in both Portrait and Landscape orientations, because device-specific WebView viewport and safe-area behavior cannot be fully reproduced by static source checks alone.
