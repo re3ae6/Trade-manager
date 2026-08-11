@@ -2119,3 +2119,29 @@ Refine the already-stabilized cockpit UI without changing trading logic, calcula
 - `npm test` — 61/61 PASS
 - `npm run build` — PASS
 - `www/` regenerated from `src/`
+
+
+## 2026-08-12 — UI Control Pass: Portrait Restore / Landscape Alignment
+
+### Scope
+Presentation and responsive-layout corrections only. No changes to trading-engine formulas or business logic.
+
+### Changes
+- Restored the previously approved compact Portrait header layout; Landscape-specific positioning no longer leaks into Portrait.
+- Centered Session, Balance, mode toggle, and the single menu trigger in one compact Landscape row.
+- Kept the system clock/notifications untouched and visible.
+- Kept the Landscape menu drawer anchored to the right while its trigger remains centered.
+- Restored independent vertical scrolling for the Landscape middle calculation column so content below the Medium Risk / Trades summary remains reachable.
+- Replaced the oversized Tools icon disclosure with a compact `ابزارها` text label and arrow.
+- Changed the Tools panel to a smaller floating overlay card with margin and shadow instead of a full-screen drawer.
+- Kept a single navigation menu; no Gear/Settings button was added to the main page.
+- Compressed Initial Balance and Payout presentation into aligned symbol + numeric controls; labels remain accessible but are visually hidden.
+- Standardized editable numeric-field alignment to the left.
+- Preserved numeric input types and numeric keyboard behavior.
+- Restored compact Strategy/Risk button typography and spacing.
+- Session-end confirmation now uses the compact `Exit and Save` title with English actions: `Cancel`, `Discard & Exit`, `Save & Exit`; the Persian explanatory message remains.
+- Kept menu outside-tap closing behavior.
+- Kept all trading calculations, Simple, Masaniello, BE, Recovery, Planner, Target and persistence logic unchanged.
+
+### Validation
+- Source and `www` copies synchronized for `index.html`, `src/css/app.css`, and `src/js/app.js`.

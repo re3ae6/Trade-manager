@@ -38,7 +38,7 @@
       <div class="optionpanel">
         <div class="menu-nav-title">منوی اصلی</div>
         <details class="menu-section" open>
-          <summary aria-label="ابزارها">🧰</summary>
+          <summary aria-label="ابزارها">ابزارها <span class="menu-tools-arrow">⌄</span></summary>
           <div class="menu-tool-grid planner-tool-buttons">
             <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
             <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
@@ -139,14 +139,16 @@
 
         <!-- ===================== SHARED TARGET / SINGLE SOURCE ===================== -->
         <div class="target-master-fields">
-          <div class="row">
-            <label>Balance اولیه</label>
-            <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00">
+          <div class="row compact-value-row">
+            <label class="visually-hidden">Balance اولیه</label>
+            <span class="value-symbol">$</span>
+            <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00" aria-label="Balance اولیه">
           </div>
 
-          <div class="row">
-            <label>Payout %</label>
-            <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
+          <div class="row compact-value-row">
+            <label class="visually-hidden">Payout %</label>
+            <span class="value-symbol">%</span>
+            <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint" aria-label="Payout">
             <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
           </div>
 
