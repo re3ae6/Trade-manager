@@ -819,7 +819,7 @@ input,select,textarea{color:var(--text);}
 /* In landscape the app always has three explicit columns: trades, planner, dashboard/history. */
 @media (orientation:landscape){
   .grid{
-    grid-template-columns:minmax(0,1.25fr) minmax(0,1.05fr) minmax(0,.9fr);
+    grid-template-columns:repeat(3,minmax(0,1fr));
     align-items:start;
   }
   .trade-column,.calc-column,.right-column{
@@ -1375,4 +1375,179 @@ input,select,textarea{color:var(--text);}
   .advisor-copy strong{font-size:9px;}
   .advisor-copy span{font-size:8px;}
   .about-history .histwrap{max-height:180px;}
+}
+
+
+/* =====================================================
+   R1 FIX — drawer and landscape scrolling
+   Keep the main layout completely stationary while the menu opens.
+===================================================== */
+@media (max-width:900px){
+  .titlebar{direction:ltr;}
+  .titlebar > .sessionpill{grid-column:1;justify-self:start;direction:rtl;}
+  .titlebar > .titlebar-center{grid-column:2;justify-self:center;direction:rtl;min-width:0;}
+  .titlebar > .optionsmenu{grid-column:3;justify-self:end;direction:rtl;}
+}
+
+/* The menu is an overlay drawer; opening it must never resize/reflow .app or .grid. */
+.optionsmenu[open]::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:999;
+  background:rgba(0,0,0,.42);
+}
+.optionsmenu .optionpanel{
+  position:fixed;
+  top:0;
+  right:0;
+  left:auto;
+  width:min(320px,86vw);
+  height:100dvh;
+  max-height:none;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  z-index:1000;
+  border-radius:0 0 0 14px;
+  padding-top:calc(12px + env(safe-area-inset-top));
+  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  box-shadow:-18px 0 45px rgba(0,0,0,.5);
+}
+/* Drawer is intentionally static: no layout jump and no slide-in that can expose
+   intermediate viewport states in Android WebView. */
+.optionsmenu[open] .optionpanel{animation:none;transform:none;opacity:1;}
+
+/* Landscape: every column gets the full viewport height and its own scroll. */
+@media (orientation:landscape) and (max-height:600px){
+  html,body{height:100%;}
+  body{overflow:hidden;padding:0;}
+  .app{box-sizing:border-box;height:100dvh;height:100vh;display:flex;flex-direction:column;overflow:hidden;border-radius:0;}
+  .grid{
+    box-sizing:border-box;
+    flex:1 1 auto;
+    min-height:0;
+    height:auto;
+    grid-template-rows:minmax(0,1fr);
+    align-items:stretch;
+    overflow:hidden;
+  }
+  .grid > *{
+    min-width:0;
+    min-height:0;
+    height:100%;
+    max-height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .grid > .trade-column{overflow-y:auto;}
+  .grid > .calc-column{overflow-y:auto;}
+  .grid > .right-column{overflow-y:auto;}
+  .trade-body{max-height:none;overflow:visible;}
+}
+
+/* V2.9 completion — decision-support tools */
+.analyzer-bad{background:rgba(227,87,106,.16);border-color:var(--red);color:#ffd9df;}
+.comparison-modal,.stress-modal{width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 28px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);}
+.comparison-body,.stress-body{padding:14px;}
+.comparison-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;}
+.comparison-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;display:grid;gap:7px;}
+.comparison-card.invalid{opacity:.55;}
+.comparison-title{font-weight:900;font-size:14px;color:var(--teal);padding-bottom:5px;border-bottom:1px solid var(--border);}
+.comparison-card>div:not(.comparison-title){display:flex;justify-content:space-between;gap:8px;font-size:11px;}
+.comparison-card span{color:var(--muted);}
+.comparison-card b{font-family:var(--mono);}
+.stress-inputs{display:grid;gap:8px;margin-bottom:12px}.stress-inputs label{display:grid;gap:4px;color:var(--muted);font-size:11px}.stress-probabilities{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stress-probabilities label{background:var(--panel2);padding:8px;border-radius:10px}.stress-probabilities input{width:100%;box-sizing:border-box}.stress-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.stress-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;display:grid;gap:6px;}
+.stress-card strong{font-size:13px;color:var(--teal);}
+.stress-card span{font-size:10px;color:var(--muted);line-height:1.5;word-break:break-word;}
+.stress-card b{font:800 16px var(--mono);}
+.stress-card small{font-size:9.5px;color:var(--muted);}
+@media(max-width:600px){.comparison-grid{grid-template-columns:1fr;}.stress-grid{grid-template-columns:1fr;}}
+
+
+/* =====================================================
+   PHASE 1 — UI STABILITY / SAFE VIEWPORT
+   These rules are intentionally layout-only.
+===================================================== */
+*,*::before,*::after{box-sizing:border-box;}
+
+#alertBox:empty{display:none;}
+#alertBox > div{
+  margin:7px 0;
+  padding:7px 9px;
+  border:1px solid rgba(240,168,60,.45);
+  border-radius:8px;
+  background:rgba(240,168,60,.09);
+  color:var(--text);
+  font-size:11px;
+  line-height:1.6;
+}
+
+input[aria-invalid="true"]{
+  border-color:var(--orange)!important;
+  box-shadow:0 0 0 2px rgba(240,168,60,.12);
+}
+
+@media (orientation:landscape) and (max-height:600px){
+  html,body,#root{
+    height:100%;
+    min-height:0;
+  }
+  .app{
+    width:100%;
+    max-width:none;
+    min-height:0;
+  }
+  .titlebar{
+    flex:0 0 auto;
+  }
+  .grid{
+    width:100%;
+    min-width:0;
+    min-height:0;
+    height:auto;
+  }
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    min-width:0;
+    min-height:0;
+    height:100%;
+    max-height:none;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;
+  }
+  .grid > .trade-column{
+    overflow-y:auto;
+  }
+  .grid > .calc-column{
+    display:block;
+  }
+}
+
+@media (max-width:900px){
+  body{
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  .app{
+    width:100%;
+    max-width:none;
+    min-width:0;
+  }
+  .grid{
+    min-width:0;
+  }
+  .optionsmenu .optionpanel{
+    right:0;
+    left:auto;
+    width:min(320px,calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)));
+    height:100dvh;
+    max-height:none;
+  }
 }
