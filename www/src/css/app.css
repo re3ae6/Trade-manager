@@ -435,7 +435,7 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 
 /* ---------------- APP DIALOG ---------------- */
 .appdialog{
-  width:min(420px, 100%);
+  width:min(360px, calc(100% - 28px));
   background:linear-gradient(180deg, var(--panel), var(--panel2));
   color:var(--text);
   border:1px solid var(--border);
@@ -445,11 +445,11 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   direction:rtl;
   text-align:right;
 }
-.appdialog-head{padding:16px 18px 10px;border-bottom:1px solid #2a3140;}
-.appdialog-head h2{margin:0;font-size:18px;}
-.appdialog-body{padding:18px;line-height:1.8;font-size:13px;white-space:pre-line;}
-.appdialog-actions{display:flex;justify-content:flex-start;gap:8px;padding:10px 18px 16px;}
-.dialog-ok,.dialog-cancel{min-width:82px;padding:9px 18px;border:none;border-radius:8px;font-weight:800;cursor:pointer;}
+.appdialog-head{padding:12px 16px 8px;border-bottom:1px solid #2a3140;}
+.appdialog-head h2{margin:0;font-size:16px;}
+.appdialog-body{padding:12px 16px;line-height:1.65;font-size:12px;white-space:pre-line;}
+.appdialog-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:10px 12px 12px;}
+.dialog-ok,.dialog-cancel{min-width:0;width:100%;min-height:42px;padding:8px 7px;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;}
 .dialog-ok{background:var(--teal);color:#062820;}
 .dialog-cancel{background:#333c4e;color:var(--text);border:1px solid var(--border);}
 .dialog-ok:hover,.dialog-cancel:hover{filter:brightness(1.08);}
@@ -648,12 +648,11 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
-.appdialog-actions{
-  flex-wrap:wrap;
-}
 .dialog-alt{
-  min-width:82px;
-  padding:9px 12px;
+  min-width:0;
+  width:100%;
+  min-height:42px;
+  padding:8px 7px;
   border:1px solid var(--border);
   border-radius:8px;
   background:#242b38;
@@ -762,3 +761,381 @@ input,select,textarea{color:var(--text);}
 .tp-risk-card{color:var(--text);}
 .tp-risk-card span{color:#b7c0d1;}
 @media(max-width:900px){.planner-edit-grid{gap:5px;}.planner-edit-grid input{width:68px;}}
+
+/* ---------------- V2.4.1 TARGET / LANDSCAPE POLISH ---------------- */
+.target-master{
+  padding:12px;
+}
+.target-master-fields{
+  padding:4px 2px 8px;
+}
+.goal-divider{
+  margin:10px 0 2px;
+  padding:7px 8px;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.025);
+  border-radius:6px;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  color:var(--teal);
+}
+.target-final-row{
+  margin-top:4px;
+  padding-top:8px;
+  border-top:1px solid var(--border);
+}
+.target-final-row strong{
+  font-family:var(--mono);
+  font-size:16px;
+  color:var(--teal);
+}
+/* Keep planner action buttons identical in width, height and alignment. */
+#tradingPlanPanel > .subactions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px;
+  align-items:stretch;
+}
+#tradingPlanPanel > .subactions button{
+  width:100%;
+  min-width:0;
+  min-height:42px;
+  margin:0;
+  padding:10px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
+}
+.right-column{
+  min-width:0;
+}
+.trade-column,.calc-column,.right-column{
+  min-width:0;
+}
+/* In landscape the app always has three explicit columns: trades, planner, dashboard/history. */
+@media (orientation:landscape){
+  .grid{
+    grid-template-columns:minmax(0,1.25fr) minmax(0,1.05fr) minmax(0,.9fr);
+    align-items:start;
+  }
+  .trade-column,.calc-column,.right-column{
+    width:100%;
+    min-width:0;
+  }
+  .right-column{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    overflow-y:auto;
+  }
+  .right-column > .panel,
+  .right-column > .collapsible-panel{
+    width:100%;
+    box-sizing:border-box;
+    margin-bottom:0;
+  }
+  #performanceDetails{flex:0 0 auto;}
+  .right-column #historyDetails{max-height:none;}
+}
+@media (orientation:landscape) and (max-height:500px){
+  #tradingPlanPanel > .subactions button{min-height:34px;padding:7px 5px;font-size:10.5px;}
+  .target-master{padding:7px;}
+  .target-final-row strong{font-size:13px;}
+  .right-column{overflow-y:auto;}
+}
+
+/* ---------------- V2.5 PLAN RISK ANALYZER ---------------- */
+#analyzePlanBtn{
+  width:100%;
+  margin-top:7px;
+  min-height:40px;
+  font-weight:800;
+}
+.btn-analyze{background:#25354a;color:var(--text);border:1px solid var(--teal);}
+.plan-analyzer-modal{
+  width:min(560px,calc(100vw - 24px));
+  max-height:min(760px,calc(100vh - 24px));
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+}
+.plan-analyzer-body{padding:12px;}
+.analyzer-status{padding:10px;border-radius:9px;font-weight:800;line-height:1.7;margin-bottom:10px;}
+.analyzer-good{background:rgba(53,211,170,.10);border:1px solid rgba(53,211,170,.35);color:var(--teal);}
+.analyzer-warn{background:rgba(255,190,80,.10);border:1px solid rgba(255,190,80,.35);color:#ffd18a;}
+.analyzer-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.analyzer-grid>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);}
+.analyzer-grid span{color:var(--muted);font-size:11px;}
+.analyzer-grid b{font-family:var(--mono);font-size:12px;}
+.analyzer-checks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;}
+.analyzer-checks>div{padding:8px;border-radius:8px;text-align:center;font-weight:800;font-size:11px;background:var(--panel2);}
+.analyzer-checks .ok{color:var(--teal);border:1px solid rgba(53,211,170,.3);}
+.analyzer-checks .bad{color:#ff9d9d;border:1px solid rgba(255,100,100,.3);}
+.analyzer-section-title{margin:12px 0 7px;font-weight:800;font-size:12px;}
+.analyzer-loss-list{border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.analyzer-loss-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+.analyzer-loss-row:last-child{border-bottom:0;}
+.analyzer-loss-row span{color:var(--muted);font-size:11px;}
+.analyzer-loss-row b,.analyzer-loss-row strong{text-align:center;font-family:var(--mono);font-size:11px;}
+.analyzer-note{margin-top:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);font-size:10.5px;line-height:1.8;}
+@media(max-width:420px){
+  .analyzer-grid{grid-template-columns:1fr;}
+  .analyzer-checks{grid-template-columns:1fr;}
+}
+
+/* ---------------- PLANNER TOOLS ---------------- */
+.planner-tool-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.btn-analyze,.btn-scenario{
+  width:100%;
+  min-height:42px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-weight:800;
+  color:#fff;
+}
+.btn-analyze{background:#176b61;}
+.btn-scenario{background:#51406f;}
+.btn-analyze:hover,.btn-scenario:hover{filter:brightness(1.1);}
+
+.dashboard-section-title{
+  margin:14px 0 8px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+  font-weight:800;
+  color:var(--teal);
+}
+
+/* ---------------- SCENARIO SIMULATOR ---------------- */
+.scenario-modal{
+  width:min(760px,94vw);
+  max-height:88vh;
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
+.scenario-body{padding:14px 16px 18px;}
+.scenario-controls{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:10px;
+}
+.scenario-controls .btn{min-height:40px;}
+.scenario-input{
+  width:100%;
+  min-height:44px;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  font-size:15px;
+  direction:ltr;
+  text-align:left;
+  outline:none;
+}
+.scenario-input:focus{border-color:var(--teal);}
+.scenario-summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:12px 0;
+}
+.scenario-summary>div{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:9px;
+  min-width:0;
+}
+.scenario-summary span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px;}
+.scenario-summary b{font-size:14px;overflow-wrap:anywhere;}
+.scenario-table{
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.scenario-row{
+  display:grid;
+  grid-template-columns:42px 64px 1fr 1fr 1fr;
+  gap:8px;
+  align-items:center;
+  padding:9px 10px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.scenario-row:last-child{border-bottom:0;}
+.scenario-head{background:var(--panel2);color:var(--muted);font-size:11px;}
+.scenario-row.not-executed{opacity:.55;}
+.scenario-error{
+  margin-top:10px;
+  padding:12px;
+  border-radius:8px;
+  background:rgba(227,87,106,.12);
+  border:1px solid rgba(227,87,106,.4);
+}
+@media (max-width:600px){
+  .planner-tool-buttons{grid-template-columns:1fr;}
+  .scenario-controls{grid-template-columns:repeat(2,1fr);}
+  .scenario-summary{grid-template-columns:repeat(2,1fr);}
+  .scenario-row{grid-template-columns:32px 48px 1fr 1fr 1fr;font-size:12px;}
+}
+
+/* What-If Lab */
+.btn-whatif{background:var(--panel2);border:1px solid var(--teal);color:var(--text);}
+.whatif-modal{width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);}
+.whatif-body{padding:14px 16px 18px;}
+.whatif-intro{font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:12px;}
+.whatif-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px;}
+.whatif-controls label{display:grid;gap:5px;font-size:12px;color:var(--muted);}
+.whatif-controls select{width:100%;min-height:42px;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:10px;padding:0 10px;font:inherit;}
+.whatif-controls .btn{min-height:42px;white-space:nowrap;}
+.whatif-legend,.whatif-summary>div{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;align-items:center;}
+.whatif-legend{padding:8px 10px;background:var(--panel2);border-radius:10px 10px 0 0;font-size:12px;color:var(--muted);}
+.whatif-summary{border:1px solid var(--border);border-top:0;border-radius:0 0 10px 10px;overflow:hidden;}
+.whatif-summary>div{padding:9px 10px;border-top:1px solid var(--border);font-size:12px;}
+.whatif-summary>div:first-child{border-top:0;}
+.whatif-summary span{color:var(--muted);}
+.whatif-summary b{text-align:right;}
+.whatif-delta{margin-top:12px;padding:12px;border-radius:10px;background:var(--panel2);text-align:center;font-size:13px;}
+.whatif-delta.pos strong{color:var(--green);}
+.whatif-delta.neg strong{color:var(--red);}
+.whatif-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.whatif-status>div{padding:10px;border:1px solid var(--border);border-radius:10px;font-size:12px;}
+.whatif-status b{display:block;margin-top:4px;}
+.whatif-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.7;}
+@media(max-width:600px){.whatif-controls{grid-template-columns:1fr 1fr}.whatif-controls .btn{grid-column:1/-1}.whatif-status{grid-template-columns:1fr}.whatif-legend,.whatif-summary>div{grid-template-columns:1.1fr 1fr 1fr;font-size:11px}}
+
+
+/* =========================================================
+   V2.8 MODERN COCKPIT UI
+   Focus: essential actions visible; secondary tools tucked away.
+========================================================= */
+:root{
+  --radius-sm:10px;
+  --radius-md:14px;
+  --shadow-soft:0 8px 24px rgba(0,0,0,.16);
+}
+.app{
+  border-color:rgba(255,255,255,.07);
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+}
+.panel{
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-soft);
+  border-color:rgba(255,255,255,.09);
+}
+.panel-title{
+  border-radius:10px;
+  background:rgba(255,255,255,.055);
+}
+.menu-section{
+  margin:8px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.menu-section summary{
+  list-style:none;
+  cursor:pointer;
+  padding:10px 2px;
+  font-size:12px;
+  color:var(--text);
+  font-weight:800;
+}
+.menu-section summary::-webkit-details-marker{display:none;}
+.menu-section summary::after{
+  content:'⌄';
+  float:left;
+  opacity:.65;
+  transition:transform .18s ease;
+}
+.menu-section[open] summary::after{transform:rotate(180deg);}
+.menu-tool-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  padding:0 0 9px;
+}
+.menu-tool-grid button{
+  min-height:40px;
+  margin:0;
+}
+.summary-hint{
+  margin-inline-start:auto;
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:0;
+}
+#performanceDetails:not([open]) .dashboard-body{display:none;}
+#performanceDetails:not([open]) .collapsible-summary{
+  margin-bottom:0;
+}
+#performanceDetails .collapsible-summary{
+  min-height:42px;
+}
+#tradingPlanPanel > .subactions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+#tradingPlanPanel > .subactions button{
+  width:100%;
+  min-height:42px;
+  margin:0;
+}
+#tradingPlanPanel .planner-tool-buttons{display:none;}
+#tradingPlanPanel .panel-title{margin-bottom:8px;}
+.stakebox{
+  background:rgba(43,191,164,.06);
+  border:1px solid rgba(43,191,164,.18);
+  border-radius:11px;
+  padding:9px 10px;
+  margin-top:8px;
+}
+.actions{
+  gap:9px;
+}
+.actions button{
+  min-height:52px;
+  border-radius:12px;
+  font-size:15px;
+}
+.subactions{
+  gap:8px;
+}
+#undoBtn{min-height:40px;}
+.right-column{
+  gap:10px;
+}
+#historyDetails .histsummary{
+  min-height:40px;
+  display:flex;
+  align-items:center;
+}
+@media(max-width:600px){
+  body{padding:8px;}
+  .app{border-radius:14px;}
+  .titlebar{border-radius:14px 14px 0 0;padding-inline:10px;}
+  .grid{padding:10px;gap:10px;}
+  #tradingPlanPanel > .subactions{grid-template-columns:1fr 1fr;}
+  .summary-hint{font-size:9px;}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .grid{gap:10px;padding:10px;}
+  .panel{padding:10px;}
+  .actions button{min-height:46px;}
+}
