@@ -166,6 +166,108 @@ function intNum(id){
   return Number.isFinite(v) ? v : 0;
 }
 
+/* UI-only protection: explain invalid input instead of allowing a
+   calculation path to look frozen or fail silently. */
+const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
+
+function validateSetupInputs({showMessage=false} = {}){
+  const checks = [
+    ['initialCapital', value => Number.isFinite(value) && value > 0, 'موجودی اولیه باید یک عدد بزرگ‌تر از صفر باشد.'],
+    ['payout', value => Number.isFinite(value) && value > 0 && value <= 500, 'Payout باید بین 0.01٪ و 500٪ باشد.'],
+    ['mainTargetValue', value => Number.isFinite(value) && value > 0, 'Target باید یک عدد بزرگ‌تر از صفر باشد.']
+  ];
+  if(mode === 'simple'){
+    checks.push(['stopLossPct', value => Number.isFinite(value) && value > 0 && value <= 100, 'Stop Loss باید بین 0.01٪ و 100٪ باشد.']);
+  }
+  for(const [id, rule, message] of checks){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const raw = String(el.value ?? '').replace(/[$,\s]/g,'');
+    const value = parseFloat(raw);
+    if(!raw || !rule(value)){
+      showInputAdjustment(id, message);
+      if(showMessage) showAppMessage(message, 'ورودی نامعتبر');
+      return {valid:false, id, message};
+    }
+    showInputAdjustment(id, '');
+  }
+  return {valid:true};
+}
+
+function getUiDisclosureState(){
+  try{
+    const raw = localStorage.getItem(UI_DISCLOSURE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  }catch(_){ return {}; }
+}
+
+function saveUiDisclosureState(id, open){
+  try{
+    const state = getUiDisclosureState();
+    state[id] = !!open;
+    localStorage.setItem(UI_DISCLOSURE_KEY, JSON.stringify(state));
+  }catch(_){ /* UI preference only */ }
+}
+
+function restoreUiDisclosures(){
+  const state = getUiDisclosureState();
+  document.querySelectorAll('details.collapsible-panel[id], #advDetails, #historyDetails').forEach(details => {
+    if(Object.prototype.hasOwnProperty.call(state, details.id)){
+      details.open = !!state[details.id];
+    }
+    details.addEventListener('toggle', () => saveUiDisclosureState(details.id, details.open));
+  });
+}
+
+function renderRiskAdvisor(){
+  const statusEl = document.getElementById('riskAdvisorStatus');
+  const detailEl = document.getElementById('riskAdvisorDetail');
+  const strip = document.getElementById('riskAdvisorStrip');
+  if(!statusEl || !detailEl || !strip) return;
+
+  const validation = validateSetupInputs();
+  if(!validation.valid){
+    statusEl.textContent = '⚠ ورودی نیاز به بررسی دارد';
+    detailEl.textContent = validation.message;
+    strip.dataset.state = 'warn';
+    return;
+  }
+
+  const plan = getAnalyzerPlan();
+  if(!plan || plan.valid === false){
+    statusEl.textContent = '⚠ برنامه قابل اجرا نیست';
+    detailEl.textContent = 'Target، Payout، Stop Loss یا ریسک انتخابی را بررسی کنید.';
+    strip.dataset.state = 'warn';
+    return;
+  }
+
+  const target = getUnifiedTarget();
+  const result = analyzePlan({
+    mode,
+    capital: num('initialCapital'),
+    payoutPct: num('payout'),
+    targetBalance: target.targetBalance,
+    stopLossBalance: getStopLossBalance(),
+    plan,
+    minStake: MIN_STAKE
+  });
+
+  if(!result.valid){
+    statusEl.textContent = '⚠ تحلیل کامل نشد';
+    detailEl.textContent = 'ورودی‌ها یا برنامه فعلی قابل تحلیل نیستند.';
+    strip.dataset.state = 'warn';
+    return;
+  }
+
+  const safe = result.status === 'safe' && result.targetReachable && result.stopLossSafe;
+  const next = trades.length && !locked ? getNextStake() : null;
+  const stakeText = next?.reason === 'ok' ? money(next.stake) : (result.initialStake !== null ? money(result.initialStake) : '—');
+  statusEl.textContent = safe ? '✓ برنامه فعلی قابل اجراست' : '⚠ برنامه فعلی فشار ریسک دارد';
+  detailEl.textContent = `${mode === 'simple' ? 'Simple' : 'Masaniello'} · Stake ${stakeText} · Max DD ${money(result.maxDrawdown)}`;
+  strip.dataset.state = safe ? 'ok' : 'warn';
+}
+
 function formatCapitalInput(){
   const el=document.getElementById('initialCapital');
   const v=num('initialCapital');
@@ -382,6 +484,13 @@ function onSetupChange(){
   selectedPlannerPlan=null;
   syncUnifiedTarget();
   syncTradingPlanStartBalance();
+  const validation = validateSetupInputs();
+  if(!validation.valid){
+    clearTimeout(setupDebounceTimer);
+    setStatus(validation.message, 'warn');
+    renderRiskAdvisor();
+    return;
+  }
   if(trades.length === 0){
     if(mode === 'masaniello'){
       // computePlan searches many (n,k) combinations under extreme
@@ -525,6 +634,9 @@ function logTrade(result){
   const now = Date.now();
   if(now - lastTradeAt < 350) return; // guard against accidental double-tap/double-fire
   lastTradeAt = now;
+
+  const validation = validateSetupInputs({showMessage:true});
+  if(!validation.valid) return;
 
   if(sessionPaused){
     showAlert('⏸ سشن در حالت مکث است — ابتدا آن را ادامه دهید.','warning');
@@ -862,6 +974,7 @@ function renderHistory(){
   `).join('');
 
   renderDashboard();
+  renderRiskAdvisor();
   saveState();
 }
 
@@ -1956,76 +2069,21 @@ function saveSelectedPlan(){
 
 function bindUI(){
   const $ = id => document.getElementById(id);
-
-  // V2.9 Clean Cockpit: navigation is UI-only and does not touch trading state.
-  const menuBtn = $('mainMenuBtn');
-  const menuDrawer = $('mainMenuDrawer');
-  const menuBackdrop = $('mainMenuBackdrop');
-  const closeMenuBtn = $('mainMenuCloseBtn');
-  const closeMenu = () => {
-    menuDrawer?.classList.remove('open');
-    menuBackdrop?.classList.remove('open');
-    menuDrawer?.setAttribute('aria-hidden','true');
-    menuBackdrop?.setAttribute('aria-hidden','true');
-    menuBtn?.setAttribute('aria-expanded','false');
-  };
-  const openMenu = () => {
-    menuDrawer?.classList.add('open');
-    menuBackdrop?.classList.add('open');
-    menuDrawer?.setAttribute('aria-hidden','false');
-    menuBackdrop?.setAttribute('aria-hidden','false');
-    menuBtn?.setAttribute('aria-expanded','true');
-  };
-  menuBtn?.addEventListener('click', () => {
-    if(menuDrawer?.classList.contains('open')) closeMenu(); else openMenu();
-  });
-  closeMenuBtn?.addEventListener('click', closeMenu);
-  menuBackdrop?.addEventListener('click', closeMenu);
-  document.addEventListener('keydown', event => { if(event.key === 'Escape') closeMenu(); });
-
-  $('drawerSettingsBtn')?.addEventListener('click', () => {
-    closeMenu();
-    const details = $('optionsMenu');
-    if(details) details.open = true;
-  });
-  $('drawerSessionBtn')?.addEventListener('click', () => {
-    closeMenu();
-    $('winBtn')?.scrollIntoView({behavior:'smooth', block:'center'});
-  });
-  $('drawerPlannerBtn')?.addEventListener('click', () => {
-    closeMenu();
-    $('targetPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
-  });
-
-  const historyPanel = $('historyPanel');
-  const historyOpenBtn = $('historyOpenBtn');
-  const closeHistoryBtn = $('closeHistoryBtn');
-  const historyBackdrop = $('mainMenuBackdrop');
-  const closeHistory = () => historyPanel?.classList.remove('open');
-  const openHistory = () => {
-    closeMenu();
-    historyPanel?.classList.add('open');
-  };
-  historyOpenBtn?.addEventListener('click', openHistory);
-  closeHistoryBtn?.addEventListener('click', closeHistory);
-
-  // Persist only visual open/closed state; never store trading state here.
-  document.querySelectorAll('details[data-collapsible-key]').forEach(details => {
-    const key = 'tm_v29_ui_' + details.dataset.collapsibleKey;
-    const saved = localStorage.getItem(key);
-    if(saved === 'open') details.open = true;
-    if(saved === 'closed') details.open = false;
-    details.addEventListener('toggle', () => {
-      try { localStorage.setItem(key, details.open ? 'open' : 'closed'); } catch {}
-    });
-  });
   $('modeBtnSimple')?.addEventListener('click', () => setMode('simple'));
   $('modeBtnMasaniello')?.addEventListener('click', () => setMode('masaniello'));
   $('stopLossAlertPct')?.addEventListener('input', render);
   $('t-sessionEnd')?.addEventListener('click', () => toggleBtn('t-sessionEnd'));
   $('t-lowTrade')?.addEventListener('click', () => toggleBtn('t-lowTrade'));
   $('t-autoCopy')?.addEventListener('click', () => toggleBtn('t-autoCopy'));
-  document.querySelector('.optionpanel .btn-secondary.btn-sm')?.addEventListener('click', resetSessionCounter);
+  $('resetSessionCounterBtn')?.addEventListener('click', resetSessionCounter);
+  $('menuSessionBtn')?.addEventListener('click', () => {
+    $('optionsMenu').open = false;
+    $('tradePanelDetails')?.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  $('menuPlannerBtn')?.addEventListener('click', () => {
+    $('optionsMenu').open = false;
+    $('targetPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+  });
   $('aboutBtn')?.addEventListener('click', showAbout);
   $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
   $('scenarioSimulatorBtn')?.addEventListener('click', openScenarioSimulator);
@@ -2102,6 +2160,7 @@ function applyNativeTheme(){
 ===================================================== */
 
 bindUI();
+restoreUiDisclosures();
 applyNativeTheme();
 
 const restored = loadState();
