@@ -8,13 +8,15 @@ import { computePerformanceStats } from './core/analytics.js';
 import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from './core/planner.js';
 import { applyTradeOutcome } from './core/session.js';
 import { analyzePlan } from './core/plan-analyzer.js';
+import { computeSessionStatistics } from './core/session-statistics.js';
+import { simulateScenario, parseScenario } from './core/scenario-simulator.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.6.0';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -939,6 +941,29 @@ function renderDashboard(){
   set('dashCurrentBalance', stats.currentBalance !== null ? money(stats.currentBalance) : '-');
 
   const current = getLiveSessionSummary();
+  const initialSessionBalance = mode === 'simple' ? num('initialCapital') : capital0;
+  const sessionStats = computeSessionStatistics(trades, initialSessionBalance);
+  const next = trades.length === 0 || locked ? null : getNextStake();
+  set('dashSessionBalance', money(sessionStats.finalBalance));
+  set('dashSessionProfit', signedMoney(sessionStats.profit));
+  set('dashSessionReturn', sessionStats.returnPct.toFixed(1) + '%');
+  set('dashSessionBE', sessionStats.breakevens);
+  set('dashSessionLossRate', sessionStats.lossRate.toFixed(1) + '%');
+  set('dashCurrentWinStreak', sessionStats.currentWinStreak);
+  set('dashCurrentLossStreak', sessionStats.currentLossStreak);
+  set('dashMaxLossStreak', sessionStats.maxLossStreak);
+  set('dashSessionDrawdown', money(sessionStats.maxDrawdown));
+  set('dashSessionDrawdownPct', sessionStats.maxDrawdownPct.toFixed(1) + '%');
+  set('dashNextStake', next && next.reason === 'ok' ? money(next.stake) : '—');
+  set('dashToTarget', (() => {
+    const target = getUnifiedTarget();
+    return Number.isFinite(target.targetBalance) ? money(Math.max(0, target.targetBalance - balance)) : '—';
+  })());
+  set('dashToStopLoss', (() => {
+    const sl = getStopLossBalance();
+    return Number.isFinite(sl) ? money(Math.max(0, balance - sl)) : '—';
+  })());
+
   const liveEl = document.getElementById('dashLiveStatus');
   if(liveEl){
     liveEl.textContent = current
@@ -1132,6 +1157,118 @@ function openPlanAnalyzer(){
   `;
   modal.classList.add('show');
   modal.setAttribute('aria-hidden','false');
+}
+
+
+function getScenarioPlan(){
+  return getAnalyzerPlan();
+}
+
+function openScenarioSimulator(){
+  const plan = getScenarioPlan();
+  if(!plan || plan.valid === false){
+    showAppMessage('ابتدا یک برنامه معتبر بسازید تا سناریو قابل شبیه‌سازی باشد.', 'شبیه‌ساز سناریو');
+    return;
+  }
+  const modal = document.getElementById('scenarioSimulatorModal');
+  const input = document.getElementById('scenarioInput');
+  if(!modal || !input) return;
+  input.value = input.value || 'W → L → BE → L → W';
+  renderScenarioSimulation();
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  setTimeout(() => input.focus(), 0);
+}
+
+function closeScenarioSimulator(){
+  const modal = document.getElementById('scenarioSimulatorModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
+function appendScenarioResult(result){
+  const input = document.getElementById('scenarioInput');
+  if(!input) return;
+  const values = parseScenario(input.value);
+  values.push(result);
+  input.value = values.join(' → ');
+  renderScenarioSimulation();
+}
+
+function clearScenarioInput(){
+  const input = document.getElementById('scenarioInput');
+  if(input) input.value = '';
+  renderScenarioSimulation();
+}
+
+function renderScenarioSimulation(){
+  const plan = getScenarioPlan();
+  const input = document.getElementById('scenarioInput');
+  const body = document.getElementById('scenarioSimulatorBody');
+  if(!plan || !input || !body) return;
+  const target = getUnifiedTarget();
+  const result = simulateScenario({
+    mode,
+    capital: num('initialCapital'),
+    payout: getValidPayout(),
+    targetProfit: target.targetProfit,
+    stopLossBalance: getStopLossBalance(),
+    plan,
+    results: input.value,
+    minStake: MIN_STAKE
+  });
+  if(!result.valid){
+    body.innerHTML = `<div class="scenario-error">⚠ ورودی سناریو نامعتبر است. فقط W، BE و L مجاز هستند.</div>`;
+    return;
+  }
+  const signed = v => (v > 0 ? '+' : '') + money(v);
+  const reasonText = {
+    target:'Target',
+    stoploss:'Stop Loss',
+    'plan-complete':'پایان برنامه',
+    'no-trades-left':'پایان معاملات',
+    'target-impossible':'هدف غیرممکن',
+    'insufficient-balance':'موجودی ناکافی',
+    'invalid-payout':'Payout نامعتبر'
+  };
+  const rows = result.rows.length ? result.rows.map(r => `
+    <div class="scenario-row ${r.executed ? '' : 'not-executed'}">
+      <b>${r.no}</b><strong>${r.result}</strong>
+      <span>${r.executed ? money(r.stake) : '—'}</span>
+      <span>${money(r.balance)}</span>
+      <span class="${r.profit < 0 ? 'neg' : 'pos'}">${signed(r.profit)}</span>
+    </div>`).join('') : '<div class="small-center small">سناریویی وارد نشده است.</div>';
+  body.innerHTML = `
+    <div class="scenario-controls">
+      <button class="btn btnW" data-scenario-result="W" type="button">Win</button>
+      <button class="btn btnBE" data-scenario-result="BE" type="button">BE</button>
+      <button class="btn btnL" data-scenario-result="L" type="button">Loss</button>
+      <button class="btn btn-secondary" id="scenarioClearBtn" type="button">پاک کردن</button>
+    </div>
+    <input id="scenarioInput" class="scenario-input" value="${input.value.replace(/"/g,'&quot;')}" aria-label="نتایج سناریو" placeholder="W → L → BE → L → W">
+    <div class="scenario-summary">
+      <div><span>معاملات</span><b>${result.trades}</b></div>
+      <div><span>Win / BE / Loss</span><b>${result.wins} / ${result.breakevens} / ${result.losses}</b></div>
+      <div><span>موجودی نهایی</span><b>${money(result.finalBalance)}</b></div>
+      <div><span>Profit</span><b>${signed(result.profit)}</b></div>
+      <div><span>Win Rate</span><b>${result.winRate.toFixed(1)}%</b></div>
+      <div><span>Max Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
+      <div><span>Max Loss Streak</span><b>${result.maxLossStreak}</b></div>
+      <div><span>وضعیت</span><b>${result.locked ? (reasonText[result.lockReason] || result.lockReason) : 'ادامه‌پذیر'}</b></div>
+    </div>
+    <div class="scenario-table">
+      <div class="scenario-row scenario-head"><b>#</b><b>نتیجه</b><b>Stake</b><b>Balance</b><b>Profit</b></div>
+      ${rows}
+    </div>`;
+  body.querySelectorAll('[data-scenario-result]').forEach(btn => {
+    btn.addEventListener('click', () => appendScenarioResult(btn.dataset.scenarioResult));
+  });
+  body.querySelector('#scenarioClearBtn')?.addEventListener('click', clearScenarioInput);
+  body.querySelector('#scenarioInput')?.addEventListener('input', event => {
+    input.value = event.target.value;
+    renderScenarioSimulation();
+  });
 }
 
 function closePlanAnalyzer(){
@@ -1718,6 +1855,9 @@ function bindUI(){
   document.querySelector('.optionpanel .btn-secondary.btn-sm')?.addEventListener('click', resetSessionCounter);
   $('aboutBtn')?.addEventListener('click', showAbout);
   $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
+  $('scenarioSimulatorBtn')?.addEventListener('click', openScenarioSimulator);
+  $('scenarioSimulatorCloseBtn')?.addEventListener('click', closeScenarioSimulator);
+  $('scenarioSimulatorModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeScenarioSimulator(); });
   $('planAnalyzerCloseBtn')?.addEventListener('click', closePlanAnalyzer);
   $('planAnalyzerModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closePlanAnalyzer(); });
   $('aboutCloseBtn')?.addEventListener('click', hideAbout);
