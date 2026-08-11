@@ -1732,27 +1732,44 @@ render();
 renderHistory();
 updateSessionCounter();
 
-/* Session pill: tap = new session, long-press = reset session counter (shortcut for the Settings option) */
+/* Session pill: normal click = new session, long-press = reset counter.
+   Use a native click for the normal action because Android WebView can deliver
+   pointer timing differently from desktop browsers. The long-press path marks
+   the following click as consumed so it cannot start a second session. */
 (function(){
   const pill = document.getElementById('sessionPill');
   if(!pill) return;
   const LONG_MS = 3000;
-  const TAP_MS = 250;
-  let timer = null, longFired = false, downAt = 0;
+  let timer = null;
+  let longFired = false;
+  let suppressClick = false;
+
+  pill.addEventListener('click', () => {
+    if(suppressClick){
+      suppressClick = false;
+      return;
+    }
+    newSession();
+  });
+
   function down(){
     longFired = false;
-    downAt = Date.now();
-    timer = setTimeout(() => { longFired = true; timer = null; resetSessionCounter(); }, LONG_MS);
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      longFired = true;
+      suppressClick = true;
+      resetSessionCounter();
+    }, LONG_MS);
   }
-  function up(){
-    if(timer){ clearTimeout(timer); timer = null; }
-    if(!longFired && (Date.now() - downAt) <= TAP_MS) newSession();
-  }
+
   function cancel(){
     if(timer){ clearTimeout(timer); timer = null; }
+    if(!longFired) suppressClick = false;
   }
+
   pill.addEventListener('pointerdown', down);
-  pill.addEventListener('pointerup', up);
+  pill.addEventListener('pointerup', cancel);
   pill.addEventListener('pointerleave', cancel);
   pill.addEventListener('pointercancel', cancel);
 })();
