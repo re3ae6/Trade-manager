@@ -40,6 +40,14 @@
         <div class="goalrow simple-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade">OFF</button></div>
         <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy">ON</button></div>
         <div class="goalrow"><label>ریست شمارنده سشن</label><button class="btn btn-secondary btn-sm">Reset</button></div>
+        <details class="menu-section">
+          <summary>🧰 ابزارها</summary>
+          <div class="menu-tool-grid planner-tool-buttons">
+            <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
+            <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
+            <button id="whatIfBtn" class="btn btn-whatif" type="button">🔀 What-If Lab</button>
+          </div>
+        </details>
         <div class="goalrow"><label>درباره</label><button id="aboutBtn" class="btn btn-secondary btn-sm" type="button">About</button></div>
       </div>
     </details>
@@ -48,7 +56,7 @@
   <div class="grid">
 
     <!-- LEFT: TRADE LOG (shared) -->
-    <div class="panel">
+    <div class="trade-column panel">
 
       <div class="actions">
         <button id="winBtn" class="btnW">Win</button>
@@ -114,25 +122,25 @@
 
 
     <!-- MIDDLE: CALCULATIONS -->
-    <div>
+    <div class="calc-column">
 
-      <div class="panel">
-        <div class="panel-title panel-title-accent">تنظیمات هدف</div>
+      <div class="panel target-master" id="targetPanel">
+        <div class="panel-title panel-title-accent">تنظیمات هدف و هدف نهایی</div>
 
-        <div class="row">
-          <label>Balance</label>
-          <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00">
-        </div>
+        <!-- ===================== SHARED TARGET / SINGLE SOURCE ===================== -->
+        <div class="target-master-fields">
+          <div class="row">
+            <label>Balance اولیه</label>
+            <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00">
+          </div>
 
-        <div class="row">
-          <label>Payout %</label>
-          <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
-          <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
-        </div>
+          <div class="row">
+            <label>Payout %</label>
+            <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
+            <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
+          </div>
 
-        <!-- ===================== SHARED TARGET ===================== -->
-        <div class="targetbox">
-          <div class="panel-title panel-title-accent">هدف اصلی</div>
+          <div class="goal-divider">هدف مشترک برنامه و سشن</div>
           <div class="row">
             <label>نوع هدف</label>
             <span class="inline-field type-toggle">
@@ -144,8 +152,8 @@
             <label id="mainTargetValueLabel">هدف %</label>
             <input id="mainTargetValue" type="number" min="0.01" step="0.01" value="1">
           </div>
-          <div class="row">
-            <label>موجودی هدف</label>
+          <div class="row target-final-row">
+            <label>موجودی هدف نهایی</label>
             <strong id="unifiedTargetBalance">-</strong>
           </div>
         </div>
@@ -231,11 +239,13 @@
         <div id="savedPlanInfo" class="small planner-info"></div>
       </div>
 
-    <!-- RIGHT: SESSION CONTROL (shared) -->
-    <div>
+    </div>
 
-      <details id="performanceDetails" class="panel collapsible-panel" open>
-        <summary class="panel-title collapsible-summary">داشبورد عملکرد</summary>
+    <!-- RIGHT / THIRD COLUMN: PERFORMANCE + HISTORY -->
+    <div class="right-column">
+
+      <details id="performanceDetails" class="panel collapsible-panel">
+        <summary class="panel-title collapsible-summary">داشبورد عملکرد <span class="summary-hint">جزئیات سشن و عملکرد</span></summary>
         <div id="dashboardPanel" class="dashboard-body">
         <div class="statsrow">
           <div class="statbox"><div class="n" id="dashSessions">0</div><div class="l">سشن</div></div>
@@ -250,6 +260,25 @@
         <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
         <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
         <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
+
+        <div class="dashboard-section-title">سشن جاری</div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessionBalance">-</div><div class="l">Balance</div></div>
+          <div class="statbox"><div class="n" id="dashSessionProfit">-</div><div class="l">Profit</div></div>
+          <div class="statbox"><div class="n" id="dashSessionReturn">-</div><div class="l">Return</div></div>
+        </div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessionBE">0</div><div class="l">BE</div></div>
+          <div class="statbox"><div class="n" id="dashSessionLossRate">-</div><div class="l">Loss Rate</div></div>
+          <div class="statbox"><div class="n" id="dashNextStake">—</div><div class="l">Stake بعدی</div></div>
+        </div>
+        <div class="row"><label>Win Streak جاری</label><strong id="dashCurrentWinStreak">0</strong></div>
+        <div class="row"><label>Loss Streak جاری</label><strong id="dashCurrentLossStreak">0</strong></div>
+        <div class="row"><label>Max Loss Streak</label><strong id="dashMaxLossStreak">0</strong></div>
+        <div class="row"><label>Drawdown سشن</label><strong id="dashSessionDrawdown">-</strong></div>
+        <div class="row"><label>فاصله تا Target</label><strong id="dashToTarget">-</strong></div>
+        <div class="row"><label>فاصله تا Stop Loss</label><strong id="dashToStopLoss">-</strong></div>
+
         <div id="dashLiveStatus" class="small-center small">سشن جاری: هنوز معامله‌ای ثبت نشده</div>
 
         </div>
@@ -298,6 +327,38 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="planAnalyzerModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="planAnalyzerTitle">
+  <div class="plan-analyzer-modal" role="document">
+    <div class="appdialog-head">
+      <h2 id="planAnalyzerTitle">تحلیل ریسک و برنامه</h2>
+      <button id="planAnalyzerCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="plan-analyzer-body" id="planAnalyzerBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="scenarioSimulatorModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="scenarioSimulatorTitle">
+  <div class="scenario-modal" role="document">
+    <div class="appdialog-head">
+      <h2 id="scenarioSimulatorTitle">شبیه‌ساز سناریو</h2>
+      <button id="scenarioSimulatorCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="scenario-body" id="scenarioSimulatorBody">
+      <input id="scenarioInput" class="scenario-input" value="W → L → BE → L → W" aria-label="نتایج سناریو">
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="whatIfModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="whatIfTitle">
+  <div class="whatif-modal" role="document">
+    <div class="appdialog-head">
+      <h2 id="whatIfTitle">What-If Lab</h2>
+      <button id="whatIfCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="whatif-body" id="whatIfBody"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
   <div class="aboutmodal" role="document">
     <div class="aboutmodal-head">
@@ -307,7 +368,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.4.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.8.0 • © 2026</div>
       <div class="backupbox about-backup">
         <div class="backup-title">پشتیبانی آفلاین</div>
         <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
