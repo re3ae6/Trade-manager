@@ -11,6 +11,10 @@ import { analyzePlan } from './core/plan-analyzer.js';
 import { computeSessionStatistics } from './core/session-statistics.js';
 import { simulateScenario, parseScenario } from './core/scenario-simulator.js';
 import { buildWhatIfComparison } from './core/what-if.js';
+import { scoreRisk } from './core/risk-engine.js';
+import { calculateRecoveryStake, simulateRecoverySequence } from './core/recovery.js';
+import { compareStrategies } from './core/strategy-comparison.js';
+import { stressTestPlan, stressTestRecovery } from './core/stress-testing.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
@@ -18,6 +22,36 @@ import { buildWhatIfComparison } from './core/what-if.js';
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
 const APP_VERSION = '2.9.0';
+
+// Runtime error guard: unexpected JavaScript failures must never look like a
+// silent freeze to the user. Keep the technical details in the console while
+// showing a short, actionable message in the existing application dialog.
+let runtimeErrorDialogOpen = false;
+function reportRuntimeError(kind, error){
+  try{ console.error(`[Trade Manager] ${kind}`, error); }catch(_){ /* ignore logging failures */ }
+  if(runtimeErrorDialogOpen) return;
+  runtimeErrorDialogOpen = true;
+  const message = kind === 'unhandledrejection'
+    ? 'یک عملیات غیرمنتظره کامل نشد. ورودی‌ها را بررسی کنید و دوباره تلاش کنید.'
+    : 'یک خطای غیرمنتظره رخ داد. ورودی‌ها را بررسی کنید و دوباره تلاش کنید.';
+  try{
+    Promise.resolve(showAppMessage(message, 'خطای برنامه')).finally(() => {
+      runtimeErrorDialogOpen = false;
+    });
+  }catch(_){
+    runtimeErrorDialogOpen = false;
+    const alertBox = document.getElementById('alertBox');
+    if(alertBox){
+      alertBox.textContent = message;
+      alertBox.className = 'alert warn';
+    }
+  }
+}
+
+if(typeof window !== 'undefined'){
+  window.addEventListener('error', event => reportRuntimeError('error', event.error || event.message));
+  window.addEventListener('unhandledrejection', event => reportRuntimeError('unhandledrejection', event.reason));
+}
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -185,10 +219,12 @@ function validateSetupInputs({showMessage=false} = {}){
     const raw = String(el.value ?? '').replace(/[$,\s]/g,'');
     const value = parseFloat(raw);
     if(!raw || !rule(value)){
+      el.setAttribute('aria-invalid','true');
       showInputAdjustment(id, message);
       if(showMessage) showAppMessage(message, 'ورودی نامعتبر');
       return {valid:false, id, message};
     }
+    el.removeAttribute('aria-invalid');
     showInputAdjustment(id, '');
   }
   return {valid:true};
@@ -933,6 +969,15 @@ function saveSession(){
     initial,
     finalBalance,
     profit: finalBalance - initial,
+    winProfit: trades.filter(t => t.result === 'W').reduce((sum,t) => sum + Math.max(0, Number(t.ret)||0), 0),
+    lossAmount: trades.filter(t => t.result === 'L').reduce((sum,t) => sum + Math.max(0, -(Number(t.ret)||0)), 0),
+    maxWinStreak: computeSessionStatistics(trades, initial).maxWinStreak,
+    maxLossStreak: computeSessionStatistics(trades, initial).maxLossStreak,
+    maxDrawdown: computeSessionStatistics(trades, initial).maxDrawdown,
+    maxDrawdownPct: computeSessionStatistics(trades, initial).maxDrawdownPct,
+    averageStake: trades.length ? trades.reduce((sum,t) => sum + Math.max(0, Number(t.amount) || 0), 0) / trades.length : 0,
+    maxStake: trades.length ? Math.max(...trades.map(t => Math.max(0, Number(t.amount) || 0))) : 0,
+    endReason: lockReason || 'MANUAL',
     date: formatDateTime(new Date()),
     endedAt: new Date().toISOString()
   });
@@ -1052,6 +1097,12 @@ function renderDashboard(){
   set('dashWorst', stats.worstSession ? signedMoney(stats.worstSession.profit) : '-');
   set('dashDrawdown', stats.trades ? money(stats.maxDrawdownDollar) : '-');
   set('dashDrawdownPct', stats.trades ? stats.maxDrawdownPercent.toFixed(1) + '%' : '-');
+  set('dashBERate', stats.trades ? stats.beRate.toFixed(1) + '%' : '-');
+  set('dashLossRate', stats.trades ? stats.lossRate.toFixed(1) + '%' : '-');
+  set('dashProfitFactor', stats.profitFactor === Infinity ? '∞' : (stats.trades ? stats.profitFactor.toFixed(2) : '-'));
+  set('dashAverageStake', stats.averageStake !== null ? money(stats.averageStake) : '-');
+  set('dashMaxStake', stats.maxStake !== null ? money(stats.maxStake) : '-');
+  set('dashHistoricalMaxLossStreak', stats.maxLossStreak !== null ? String(stats.maxLossStreak) : '-');
   set('dashCurrentBalance', stats.currentBalance !== null ? money(stats.currentBalance) : '-');
 
   const current = getLiveSessionSummary();
@@ -1077,6 +1128,11 @@ function renderDashboard(){
     const sl = getStopLossBalance();
     return Number.isFinite(sl) ? money(Math.max(0, balance - sl)) : '—';
   })());
+  set('dashBERate', stats.beRate.toFixed(1) + '%');
+  set('dashLossRate', stats.lossRate.toFixed(1) + '%');
+  set('dashAverageWin', money(stats.averageWin));
+  set('dashAverageLoss', money(stats.averageLoss));
+  set('dashProfitFactor', Number.isFinite(stats.profitFactor) ? stats.profitFactor.toFixed(2) : '∞');
 
   const liveEl = document.getElementById('dashLiveStatus');
   if(liveEl){
@@ -1231,48 +1287,103 @@ function openPlanAnalyzer(){
     return;
   }
   const target = getUnifiedTarget();
-  const result = analyzePlan({
-    mode,
-    capital: num('initialCapital'),
-    payoutPct: num('payout'),
-    targetBalance: target.targetBalance,
-    stopLossBalance: getStopLossBalance(),
-    plan,
-    minStake: MIN_STAKE
+  const capital = num('initialCapital');
+  const stopLossBalance = getStopLossBalance();
+  const result = analyzePlan({ mode, capital, payoutPct:num('payout'), targetBalance:target.targetBalance, stopLossBalance, plan, minStake:MIN_STAKE });
+  const modal=document.getElementById('planAnalyzerModal'), body=document.getElementById('planAnalyzerBody');
+  if(!modal||!body||!result.valid) return;
+  const risk=scoreRisk({
+    capital,
+    targetBalance:target.targetBalance,
+    stopLossBalance,
+    initialStake:result.initialStake,
+    maxStake:result.maxStake,
+    maxDrawdown:result.maxDrawdown,
+    maxLossStreak:result.maxLossStreak,
+    recoveryExposure:result.losses.reduce((sum,row)=>sum+(Number(row.stake)||0),0)
   });
-  const modal = document.getElementById('planAnalyzerModal');
-  const body = document.getElementById('planAnalyzerBody');
-  if(!modal || !body || !result.valid) return;
-  const signed = value => (value > 0 ? '+' : '') + money(value);
-  const statusClass = result.status === 'safe' ? 'analyzer-good' : 'analyzer-warn';
-  const statusText = result.status === 'safe' ? '✓ برنامه قابل اجرا و از نظر سناریوی بدترین حالت قابل قبول است' : '⚠ برنامه در سناریوی فشار ریسک محدودیت دارد';
-  const lossRows = result.losses.length
-    ? result.losses.map(row => `<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason === 'loss' ? money(row.stake) : '—'}</b><strong>${money(row.balance)}</strong></div>`).join('')
-    : '<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
-  body.innerHTML = `
-    <div class="analyzer-status ${statusClass}">${statusText}</div>
+  const signed=v=>(v>0?'+':'')+money(v);
+  const levelClass={safe:'analyzer-good',moderate:'analyzer-good',high:'analyzer-warn',extreme:'analyzer-bad'}[risk.level]||'analyzer-warn';
+  const lossRows=result.losses.length?result.losses.map(row=>`<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason==='loss'?money(row.stake):'—'}</b><strong>${money(row.balance)}</strong></div>`).join(''):'<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
+  const recovery=calculateRecoveryStake({balance:capital,payout:num('payout')/100,targetProfit:target.targetProfit,accumulatedLoss:0,stopLossBalance,maxStake:result.maxStake,maxDrawdown:Math.max(0,capital-stopLossBalance),maxAttempts:3,minStake:MIN_STAKE});
+  body.innerHTML=`
+    <div class="analyzer-status ${levelClass}">● ${risk.label} · امتیاز ساختاری ${risk.score}/100</div>
     <div class="analyzer-grid">
       <div><span>سرمایه</span><b>${money(result.capital)}</b></div>
       <div><span>Target</span><b>${money(result.targetBalance)}</b></div>
-      <div><span>Stop Loss</span><b>${result.stopLossBalance === null ? '—' : money(result.stopLossBalance)}</b></div>
-      <div><span>Stake اولیه</span><b>${result.initialStake === null ? '—' : money(result.initialStake)}</b></div>
+      <div><span>Stop Loss</span><b>${result.stopLossBalance===null?'—':money(result.stopLossBalance)}</b></div>
+      <div><span>Stake اولیه</span><b>${result.initialStake===null?'—':money(result.initialStake)}</b></div>
       <div><span>بیشترین Stake</span><b>${money(result.maxStake)}</b></div>
-      <div><span>حداکثر باخت پیاپی</span><b>${result.maxLossStreak}</b></div>
-      <div><span>حداکثر Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
-      <div><span>نتیجه بدترین حالت</span><b>${result.worstCaseFinal === null ? '—' : money(result.worstCaseFinal)}</b></div>
+      <div><span>Max Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
+      <div><span>Max Loss Streak</span><b>${result.maxLossStreak}</b></div>
+      <div><span>نتیجه بدترین حالت</span><b>${result.worstCaseFinal===null?'—':money(result.worstCaseFinal)}</b></div>
     </div>
     <div class="analyzer-checks">
-      <div class="${result.targetReachable ? 'ok' : 'bad'}">${result.targetReachable ? '✓' : '✕'} رسیدن به Target</div>
-      <div class="${result.stopLossSafe ? 'ok' : 'bad'}">${result.stopLossSafe ? '✓' : '✕'} حفاظت Stop Loss</div>
+      <div class="${result.targetReachable?'ok':'bad'}">${result.targetReachable?'✓':'✕'} رسیدن به Target</div>
+      <div class="${result.stopLossSafe?'ok':'bad'}">${result.stopLossSafe?'✓':'✕'} حفاظت Stop Loss</div>
     </div>
+    <div class="analyzer-section-title">Recovery محدودشده</div>
+    <div class="analyzer-note">${recovery.canRecover?`Stake لازم برای جبران زیان فعلی و سود هدف: <b>${money(recovery.stake)}</b>`:'Recovery با محدودیت‌های فعلی قابل اجرا نیست.'} · Recovery موتور جدیدی برای تغییر Simple/Masaniello نیست؛ فقط ابزار تصمیم‌گیری است.</div>
     <div class="analyzer-section-title">اگر چند باخت پشت‌سرهم داشته باشم چه می‌شود؟</div>
     <div class="analyzer-loss-list">${lossRows}</div>
-    <div class="analyzer-note">این تحلیل فقط از موتور فعلی ${mode === 'simple' ? 'Simple' : 'Masaniello'} برای شبیه‌سازی استفاده می‌کند و هیچ مقدار واقعی سشن یا برنامه را تغییر نمی‌دهد.</div>
-  `;
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
+    <div class="analyzer-note">${risk.warnings.length?risk.warnings.map(w=>`• ${w}`).join('<br>'):'هشدار ساختاری خاصی در این ورودی دیده نشد.'}</div>
+    <div class="analyzer-note">این امتیاز یک مدل شفاف و ساختاری برای مقایسه است، نه احتمال برد/باخت بازار.</div>`;
+  modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
 }
 
+function openStrategyComparison(){
+  const target=getUnifiedTarget();
+  const comparison=compareStrategies({capital:num('initialCapital'),payoutPct:num('payout'),targetBalance:target.targetBalance,stopLossBalance:getStopLossBalance(),minStake:MIN_STAKE});
+  if(!comparison.valid){ showAppMessage('برای مقایسه، Capital، Payout و Target معتبر لازم است.','مقایسه استراتژی'); return; }
+  const modal=document.getElementById('strategyComparisonModal'), body=document.getElementById('strategyComparisonBody');
+  if(!modal||!body) return;
+  const cells=comparison.rows.map(r=>{
+    const scenario=r.scenario||{}; const worst=r.worstCase||{}; const risk=r.risk||{};
+    return `<div class="comparison-card ${r.valid?'':'invalid'}"><div class="comparison-title">${r.strategy}</div>
+      <div><span>ریسک ساختاری</span><b>${risk.label||'نامشخص'}${risk.valid?' · '+money(risk.score):''}</b></div>
+      <div><span>Stake اولیه</span><b>${r.initialStake==null?'—':money(r.initialStake)}</b></div>
+      <div><span>میانگین Stake</span><b>${money(r.averageStake)}</b></div>
+      <div><span>Max Stake</span><b>${money(r.maxStake)}</b></div>
+      <div><span>Max DD</span><b>${money(r.maxDrawdown)}</b></div>
+      <div><span>Worst Case Balance</span><b>${money(r.worstCaseFinal)}</b></div>
+      <div><span>سناریوی فعلی</span><b>${money(scenario.finalBalance)} · ${scenario.trades} معامله</b></div>
+      <div><span>Target</span><b>${scenario.targetHit?'رسید':'نرسید'}</b></div>
+      <div><span>Stop Loss</span><b>${scenario.stopLossHit?'فعال شد':'فعال نشد'}</b></div>
+      ${!r.valid?`<div class="analyzer-bad"><span>وضعیت</span><b>${r.invalidReason||'نامعتبر'}</b></div>`:''}
+    </div>`;
+  }).join('');
+  body.innerHTML=`<div class="small">هر سه رویکرد با Capital، Payout، Target و Stop Loss یکسان مقایسه می‌شوند. Worst Case با سناریوی تمام Loss و طول کافی محاسبه شده است. امتیاز Risk یک امتیاز ساختاری تصمیم‌یار است، نه احتمال واقعی ضرر.</div><div class="comparison-grid">${cells}</div>`;
+  modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
+}
+
+function openStressTesting(){
+  const target=getUnifiedTarget();
+  const plan=getScenarioPlan();
+  const modal=document.getElementById('stressTestingModal'),body=document.getElementById('stressTestingBody');
+  if(!modal||!body) return;
+  if(!plan||plan.valid===false){ showAppMessage('ابتدا یک برنامه معتبر انتخاب کنید.','Stress Test'); return; }
+  modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
+  const run=()=>{
+    const customInput=document.getElementById('stressCustomInput');
+    const custom=parseScenario(customInput?.value||'');
+    const probs={
+      win:Number(document.getElementById('stressWinProb')?.value)/100,
+      loss:Number(document.getElementById('stressLossProb')?.value)/100,
+      be:Number(document.getElementById('stressBEProb')?.value)/100
+    };
+    const result=stressTestPlan({mode,capital:num('initialCapital'),payout:getValidPayout(),targetProfit:target.targetProfit,stopLossBalance:getStopLossBalance(),plan,minStake:MIN_STAKE,seed:42,trades:Math.max(8,Number(plan.n)||8),customResults:custom,probabilities:probs});
+    const results=document.getElementById('stressResults');
+    if(!results) return;
+    if(!result.valid){ results.innerHTML=`<div class="scenario-error">⚠ ${result.reason==='invalid-probabilities'?'احتمال‌های Win / Loss / BE باید جمعاً 100٪ شوند.':'Stress Test قابل اجرا نیست.'}</div>`; return; }
+    const labels={best:'Best Case',normal:'Normal Case',worst:'Worst Case',custom:'Custom',random:'Random (seed 42)'};
+    results.innerHTML=`<div class="stress-grid">${result.scenarios.map(sc=>{const r=sc.simulation;return `<div class="stress-card"><strong>${labels[sc.kind]}</strong><span>${sc.results.length?sc.results.join(' → '):'—'}</span><b>${money(r.finalBalance)}</b><small>Profit ${r.profit>0?'+':''}${money(r.profit)} · DD ${money(r.maxDrawdown)} · Max Loss Streak ${r.maxLossStreak}</small><small>${r.locked?(r.lockReason||'قفل'):'ادامه‌پذیر'} · ${r.targetHit?'Target ✓':'Target —'} · ${r.stopLossHit?'Stop Loss ✓':'Stop Loss —'}</small></div>`}).join('')}</div><div class="small">Random با seed ثابت 42 قابل تکرار است. احتمال‌ها فقط برای ساخت سناریوی تصادفی هستند و Random جایگزین محاسبه قطعی برنامه نیست.</div>`;
+  };
+  document.getElementById('stressRunBtn')?.addEventListener('click',run);
+  run();
+}
+
+function closeStrategyComparison(){ const m=document.getElementById('strategyComparisonModal'); if(m){m.classList.remove('show');m.setAttribute('aria-hidden','true');} }
+function closeStressTesting(){ const m=document.getElementById('stressTestingModal'); if(m){m.classList.remove('show');m.setAttribute('aria-hidden','true');} }
 
 function getScenarioPlan(){
   return getAnalyzerPlan();
@@ -2087,11 +2198,17 @@ function bindUI(){
   $('aboutBtn')?.addEventListener('click', showAbout);
   $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
   $('scenarioSimulatorBtn')?.addEventListener('click', openScenarioSimulator);
+  $('stressTestingBtn')?.addEventListener('click', openStressTesting);
+  $('strategyComparisonBtn')?.addEventListener('click', openStrategyComparison);
   $('whatIfBtn')?.addEventListener('click', openWhatIfLab);
   $('whatIfCloseBtn')?.addEventListener('click', closeWhatIfLab);
   $('whatIfModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeWhatIfLab(); });
   $('scenarioSimulatorCloseBtn')?.addEventListener('click', closeScenarioSimulator);
   $('scenarioSimulatorModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeScenarioSimulator(); });
+  $('stressTestingCloseBtn')?.addEventListener('click', closeStressTesting);
+  $('stressTestingModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeStressTesting(); });
+  $('strategyComparisonCloseBtn')?.addEventListener('click', closeStrategyComparison);
+  $('strategyComparisonModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeStrategyComparison(); });
   $('planAnalyzerCloseBtn')?.addEventListener('click', closePlanAnalyzer);
   $('planAnalyzerModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closePlanAnalyzer(); });
   $('aboutCloseBtn')?.addEventListener('click', hideAbout);
