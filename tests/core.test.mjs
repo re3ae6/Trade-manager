@@ -6,6 +6,7 @@ import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/co
 import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions } from '../src/js/core/trading-plan.js';
 import { computePerformanceStats } from '../src/js/core/analytics.js';
 import { csvEscape } from '../src/js/core/format.js';
+import { applyTradeOutcome, sessionEndAction } from '../src/js/core/session.js';
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -153,7 +154,7 @@ test('CSV escaping neutralizes spreadsheet formula prefixes', () => {
   assert.equal(csvEscape('@cmd'), '\t@cmd');
 });
 
-import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from '../src/js/core/planner.js';
+import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom, buildSimplePlan } from '../src/js/core/planner.js';
 
 test('Planner builds three Masaniello risk options without changing engine outputs', () => {
   const plans = buildMasanielloPlans(1000, 85, 100, 1);
@@ -171,7 +172,73 @@ test('Masaniello custom planner validates N and allowed losses', () => {
 });
 
 test('Simple planner returns risk profiles with executable stake information', () => {
-  const plans = buildSimplePlans(1000, 85, 100, 1);
+  const plans = buildSimplePlans(1000, 85, 100, 1, 900);
   assert.equal(plans.length, 3);
   assert.ok(plans.every(p => Number.isFinite(p.profitPerWin)));
+});
+
+
+test('BE is a consumed Masaniello trade without changing balance or kRemaining', () => {
+  const state = applyTradeOutcome({ balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0 }, 'BE', 10, 0.85);
+  assert.equal(state.balance, 100);
+  assert.equal(state.nRemaining, 9);
+  assert.equal(state.kRemaining, 5);
+  assert.equal(state.trades, 1);
+  assert.equal(state.breakevens, 1);
+  assert.equal(state.wins, 0);
+  assert.equal(state.losses, 0);
+});
+
+test('Masaniello Win and Loss update N/K correctly', () => {
+  const win = applyTradeOutcome({ balance: 100, nRemaining: 10, kRemaining: 5 }, 'W', 10, 0.85);
+  assert.equal(win.balance, 108.5);
+  assert.equal(win.nRemaining, 9);
+  assert.equal(win.kRemaining, 4);
+  const loss = applyTradeOutcome({ balance: 100, nRemaining: 10, kRemaining: 5 }, 'L', 10, 0.85);
+  assert.equal(loss.balance, 90);
+  assert.equal(loss.nRemaining, 9);
+  assert.equal(loss.kRemaining, 5);
+});
+
+test('Undo replay restores the state after Win → Loss → BE → Loss', () => {
+  const initial = { balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0, wins: 0, losses: 0, breakevens: 0, trades: 0 };
+  const results = ['W','L','BE','L'];
+  let state = initial;
+  for (const result of results) state = applyTradeOutcome(state, result, 10, 0.85);
+  assert.equal(state.balance, 88.5); assert.equal(state.nRemaining, 6); assert.equal(state.kRemaining, 4);
+  state = initial;
+  for (const result of results.slice(0,-1)) state = applyTradeOutcome(state, result, 10, 0.85);
+  assert.equal(state.balance, 98.5); assert.equal(state.nRemaining, 7); assert.equal(state.kRemaining, 4); assert.equal(state.trades, 3); assert.equal(state.breakevens, 1);
+});
+
+test('Session end has save, delete and cancel actions', () => {
+  assert.equal(sessionEndAction('primary'), 'save-and-delete');
+  assert.equal(sessionEndAction('secondary'), 'delete-without-save');
+  assert.equal(sessionEndAction('cancel'), 'continue');
+});
+
+test('Simple planner uses the configured stop-loss balance', () => {
+  const profile = { risk: 'medium', n: 15, k: 10, label: 'medium' };
+  const plan = buildSimplePlan(profile, 1000, 85, 50, 1, 950);
+  assert.equal(plan.valid, false);
+  assert.equal(plan.reason, 'stoploss');
+});
+
+test('BE leaves Simple balance unchanged and still counts as a trade', () => {
+  const state = applyTradeOutcome({ balance: 100, streakLoss: 0, currentStreakCount: 0 }, 'BE', 10, 0.85);
+  assert.equal(state.balance, 100);
+  assert.equal(state.trades, 1);
+  assert.equal(state.breakevens, 1);
+  assert.equal(state.wins, 0);
+  assert.equal(state.losses, 0);
+});
+
+test('Three consecutive BE outcomes keep balance fixed and consume three trades', () => {
+  let state = { balance: 100, nRemaining: 10, kRemaining: 5 };
+  for(let i = 0; i < 3; i++) state = applyTradeOutcome(state, 'BE', 10, 0.85);
+  assert.equal(state.balance, 100);
+  assert.equal(state.trades, 3);
+  assert.equal(state.breakevens, 3);
+  assert.equal(state.nRemaining, 7);
+  assert.equal(state.kRemaining, 5);
 });
