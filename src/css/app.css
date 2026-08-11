@@ -435,7 +435,7 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 
 /* ---------------- APP DIALOG ---------------- */
 .appdialog{
-  width:min(420px, 100%);
+  width:min(360px, calc(100% - 28px));
   background:linear-gradient(180deg, var(--panel), var(--panel2));
   color:var(--text);
   border:1px solid var(--border);
@@ -445,11 +445,11 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   direction:rtl;
   text-align:right;
 }
-.appdialog-head{padding:16px 18px 10px;border-bottom:1px solid #2a3140;}
-.appdialog-head h2{margin:0;font-size:18px;}
-.appdialog-body{padding:18px;line-height:1.8;font-size:13px;white-space:pre-line;}
-.appdialog-actions{display:flex;justify-content:flex-start;gap:8px;padding:10px 18px 16px;}
-.dialog-ok,.dialog-cancel{min-width:82px;padding:9px 18px;border:none;border-radius:8px;font-weight:800;cursor:pointer;}
+.appdialog-head{padding:12px 16px 8px;border-bottom:1px solid #2a3140;}
+.appdialog-head h2{margin:0;font-size:16px;}
+.appdialog-body{padding:12px 16px;line-height:1.65;font-size:12px;white-space:pre-line;}
+.appdialog-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:10px 12px 12px;}
+.dialog-ok,.dialog-cancel{min-width:0;width:100%;min-height:42px;padding:8px 7px;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;}
 .dialog-ok{background:var(--teal);color:#062820;}
 .dialog-cancel{background:#333c4e;color:var(--text);border:1px solid var(--border);}
 .dialog-ok:hover,.dialog-cancel:hover{filter:brightness(1.08);}
@@ -648,12 +648,11 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
-.appdialog-actions{
-  flex-wrap:wrap;
-}
 .dialog-alt{
-  min-width:82px;
-  padding:9px 12px;
+  min-width:0;
+  width:100%;
+  min-height:42px;
+  padding:8px 7px;
   border:1px solid var(--border);
   border-radius:8px;
   background:#242b38;
@@ -847,4 +846,45 @@ input,select,textarea{color:var(--text);}
   .target-master{padding:7px;}
   .target-final-row strong{font-size:13px;}
   .right-column{overflow-y:auto;}
+}
+
+/* ---------------- V2.5 PLAN RISK ANALYZER ---------------- */
+#analyzePlanBtn{
+  width:100%;
+  margin-top:7px;
+  min-height:40px;
+  font-weight:800;
+}
+.btn-analyze{background:#25354a;color:var(--text);border:1px solid var(--teal);}
+.plan-analyzer-modal{
+  width:min(560px,calc(100vw - 24px));
+  max-height:min(760px,calc(100vh - 24px));
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+}
+.plan-analyzer-body{padding:12px;}
+.analyzer-status{padding:10px;border-radius:9px;font-weight:800;line-height:1.7;margin-bottom:10px;}
+.analyzer-good{background:rgba(53,211,170,.10);border:1px solid rgba(53,211,170,.35);color:var(--teal);}
+.analyzer-warn{background:rgba(255,190,80,.10);border:1px solid rgba(255,190,80,.35);color:#ffd18a;}
+.analyzer-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.analyzer-grid>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);}
+.analyzer-grid span{color:var(--muted);font-size:11px;}
+.analyzer-grid b{font-family:var(--mono);font-size:12px;}
+.analyzer-checks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;}
+.analyzer-checks>div{padding:8px;border-radius:8px;text-align:center;font-weight:800;font-size:11px;background:var(--panel2);}
+.analyzer-checks .ok{color:var(--teal);border:1px solid rgba(53,211,170,.3);}
+.analyzer-checks .bad{color:#ff9d9d;border:1px solid rgba(255,100,100,.3);}
+.analyzer-section-title{margin:12px 0 7px;font-weight:800;font-size:12px;}
+.analyzer-loss-list{border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.analyzer-loss-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+.analyzer-loss-row:last-child{border-bottom:0;}
+.analyzer-loss-row span{color:var(--muted);font-size:11px;}
+.analyzer-loss-row b,.analyzer-loss-row strong{text-align:center;font-family:var(--mono);font-size:11px;}
+.analyzer-note{margin-top:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);font-size:10.5px;line-height:1.8;}
+@media(max-width:420px){
+  .analyzer-grid{grid-template-columns:1fr;}
+  .analyzer-checks{grid-template-columns:1fr;}
 }
