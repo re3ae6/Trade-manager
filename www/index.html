@@ -45,6 +45,8 @@
           <div class="menu-tool-grid planner-tool-buttons">
             <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
             <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
+            <button id="stressTestingBtn" class="btn btn-scenario" type="button">🧯 Stress Test</button>
+            <button id="strategyComparisonBtn" class="btn btn-analyze" type="button">⚖ مقایسه استراتژی</button>
             <button id="whatIfBtn" class="btn btn-whatif" type="button">🔀 What-If Lab</button>
           </div>
         </details>
@@ -278,6 +280,12 @@
         <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
         <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
         <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
+        <div class="row"><label>BE Rate</label><strong id="dashBERate">-</strong></div>
+        <div class="row"><label>Loss Rate</label><strong id="dashLossRate">-</strong></div>
+        <div class="row"><label>Profit Factor</label><strong id="dashProfitFactor">-</strong></div>
+        <div class="row"><label>Average Stake</label><strong id="dashAverageStake">-</strong></div>
+        <div class="row"><label>Max Stake</label><strong id="dashMaxStake">-</strong></div>
+        <div class="row"><label>Max Loss Streak</label><strong id="dashHistoricalMaxLossStreak">-</strong></div>
 
         <div class="dashboard-section-title">سشن جاری</div>
         <div class="statsrow">
@@ -302,7 +310,7 @@
         </div>
       </details>
 
-/div>
+</div>
 
 
 
@@ -360,6 +368,33 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="strategyComparisonModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="strategyComparisonTitle">
+  <div class="comparison-modal" role="document">
+    <div class="appdialog-head"><h2 id="strategyComparisonTitle">مقایسه استراتژی</h2><button id="strategyComparisonCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button></div>
+    <div class="comparison-body" id="strategyComparisonBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="stressTestingModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stressTestingTitle">
+  <div class="stress-modal" role="document">
+    <div class="appdialog-head"><h2 id="stressTestingTitle">Stress Test</h2><button id="stressTestingCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button></div>
+    <div class="stress-body" id="stressTestingBody">
+      <div class="stress-inputs">
+        <label>سناریوی سفارشی
+          <input id="stressCustomInput" class="scenario-input" value="W → L → BE → L → W" aria-label="سناریوی سفارشی">
+        </label>
+        <div class="stress-probabilities">
+          <label>Win <input id="stressWinProb" type="number" min="0" max="100" step="1" value="50"></label>
+          <label>Loss <input id="stressLossProb" type="number" min="0" max="100" step="1" value="25"></label>
+          <label>BE <input id="stressBEProb" type="number" min="0" max="100" step="1" value="25"></label>
+        </div>
+        <button id="stressRunBtn" class="btn btn-secondary" type="button">اجرای Stress Test</button>
+      </div>
+      <div id="stressResults"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
   <div class="aboutmodal" role="document">
     <div class="aboutmodal-head">
@@ -369,7 +404,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.8.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.9.0 • © 2026</div>
       <div class="backupbox about-backup">
         <div class="backup-title">پشتیبانی آفلاین</div>
         <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
