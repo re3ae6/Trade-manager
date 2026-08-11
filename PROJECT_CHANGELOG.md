@@ -2079,3 +2079,43 @@ must all pass before this build is considered the next Release Candidate.
 - Third landscape column is open by default.
 - Three primary landscape columns have equal width.
 - BE consumes one Masaniello trade while remaining balance-neutral and not changing `kRemaining`.
+
+## V2.9.x — UI Polish Pass: Compact Cockpit & Navigation Cleanup — 2026-08-12
+
+### Objective
+Refine the already-stabilized cockpit UI without changing trading logic, calculations, or strategy engines.
+
+### Confirmed Changes
+- Kept Persian text in the Session End dialog while reducing dialog and button geometry.
+- Kept the existing toggle control size; removed unnecessary explanatory text and reduced surrounding whitespace.
+- Removed the "هدف مشترک برنامه و سشن" divider from Target & Plan.
+- Put the target type selector and target numeric input into a compact, aligned row.
+- Kept numeric inputs aligned with consistent height/width rhythm.
+- Corrected Stress Test number-input text contrast so entered values are readable.
+- Kept all Stress Test probability fields as numeric inputs.
+- Preserved the system clock/notifications; reduced only the application's header height and internal spacing.
+- Kept Session, Balance, Mode toggle and main menu compactly aligned in the available header space.
+- Removed duplicate Session/Planner entries from the main navigation menu; those functions remain on the main cockpit where they are actively used.
+- Kept a single main menu for tools/settings/about.
+- Changed the tools section header to an icon-only affordance inside the single menu.
+- Added a real clickable drawer backdrop so tapping outside the menu closes it immediately.
+- Preserved overlay behavior: opening the menu must not resize/reflow the application.
+- Preserved equal landscape column widths and third-column default-open behavior.
+- Preserved independent landscape scrolling.
+
+### Deliberately Unchanged
+- Simple engine
+- Masaniello engine
+- BE semantics
+- Recovery engine
+- Planner calculations
+- Risk engine calculations
+- Scenario/Stress algorithms
+- Storage schema
+- Target calculation semantics
+
+### Verification
+- `npm run check` — PASS
+- `npm test` — 61/61 PASS
+- `npm run build` — PASS
+- `www/` regenerated from `src/`
