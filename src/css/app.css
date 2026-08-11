@@ -1551,3 +1551,154 @@ input[aria-invalid="true"]{
     max-height:none;
   }
 }
+
+/* =====================================================
+   UI POLISH — compact, aligned, single-menu cockpit
+   No business-logic changes.
+===================================================== */
+.visually-hidden{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+
+/* Compact target controls: one line, equal visual rhythm. */
+.target-goal-row{
+  display:grid;
+  grid-template-columns:auto minmax(88px,130px);
+  align-items:center;
+  justify-content:start;
+  gap:8px;
+  padding:6px 2px 7px;
+}
+.compact-type-toggle{
+  height:34px;
+  display:inline-flex;
+  align-items:stretch;
+}
+.compact-type-toggle label{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:42px;
+  height:34px;
+  padding:0 10px;
+  font-size:12px;
+}
+.target-goal-input{
+  width:100%;
+  height:34px;
+  padding:6px 8px;
+  text-align:center;
+  color:var(--text);
+  background:#252c3a;
+  border:1px solid var(--border);
+  border-radius:7px;
+  font-family:var(--mono);
+  font-size:12px;
+}
+.target-master .goal-divider{display:none;}
+.target-master .target-final-row{margin-top:2px;padding-top:7px;}
+.target-master .advisor-strip{margin-top:5px;}
+
+/* Inputs in dialogs/tools must show the entered values clearly. */
+.stress-probabilities input,
+.stress-inputs input,
+.stress-modal input[type="number"]{
+  color:var(--text)!important;
+  -webkit-text-fill-color:var(--text)!important;
+  background:#252c3a!important;
+  caret-color:var(--text);
+}
+.stress-probabilities input:focus,
+.stress-inputs input:focus{
+  border-color:var(--teal)!important;
+  outline:none;
+  box-shadow:0 0 0 2px rgba(43,191,164,.12);
+}
+
+/* Session-end dialog: same Persian content, much tighter geometry. */
+.appdialog{
+  width:min(340px,calc(100vw - 34px));
+  border-radius:12px;
+}
+.appdialog-head{padding:9px 12px 6px;}
+.appdialog-head h2{font-size:14px;}
+.appdialog-body{padding:8px 12px;font-size:11px;line-height:1.5;}
+.appdialog-actions{gap:6px;padding:8px 9px 9px;}
+.dialog-ok,.dialog-cancel,.dialog-alt{
+  min-height:36px;
+  padding:6px 5px;
+  border-radius:7px;
+  font-size:10.5px;
+  line-height:1.2;
+  white-space:nowrap;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Header: tighter vertically, while leaving system time/notifications untouched. */
+.titlebar{
+  min-height:46px;
+  padding-block:7px;
+  gap:7px;
+}
+.sessionpill{padding:6px 8px;font-size:10.5px;}
+.titlebar-center{gap:6px;}
+.titlebar-balance{font-size:11.5px;}
+.modetabs{padding:2px;gap:1px;}
+.modetabs button{padding:5px 9px;font-size:10.5px;}
+.optionsmenu summary{width:34px;height:30px;font-size:17px;}
+
+/* The only main menu: Session/Planner remain on the dashboard; tools/settings/about are here. */
+.optionsmenu .optionpanel{width:min(300px,82vw);}
+.menu-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  border:0;
+  background:rgba(0,0,0,.42);
+  padding:0;
+  margin:0;
+  cursor:pointer;
+}
+.optionsmenu .optionpanel{z-index:1000;}
+.optionsmenu[open]::after{display:none;}
+.optionsmenu .menu-section summary{display:flex;align-items:center;justify-content:flex-start;min-height:30px;}
+
+/* Keep every compact control aligned on a shared vertical rhythm. */
+.row input,.row select,
+.planner-edit-grid input,
+.target-goal-input,
+.stress-probabilities input{
+  min-height:32px;
+  box-sizing:border-box;
+}
+.planner-edit-grid input{width:76px;text-align:center;}
+
+/* Landscape: use the top row efficiently; keep all three columns equal. */
+@media (orientation:landscape) and (max-height:600px){
+  .titlebar{min-height:40px;padding-block:4px;padding-inline:8px;}
+  .sessionpill{padding:5px 7px;font-size:10px;}
+  .titlebar-center{gap:5px;}
+  .titlebar-balance{font-size:10.5px;}
+  .modetabs button{padding:4px 7px;font-size:9.5px;}
+  .optionsmenu summary{width:30px;height:27px;font-size:15px;}
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .grid > .calc-column{overflow-y:auto;overflow-x:hidden;min-height:0;}
+  .grid > .trade-column,
+  .grid > .right-column{overflow-y:auto;overflow-x:hidden;min-height:0;}
+}
+
+/* Preserve the third column's open-by-default behavior without changing widths. */
+@media (orientation:landscape){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+}
