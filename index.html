@@ -225,7 +225,10 @@
           <button id="tpApplyBtn" class="btn btn-secondary" type="button">اعمال تغییرات</button>
           <button id="savePlanBtn" class="btn btn-secondary" type="button">ذخیره برنامه</button>
         </div>
+        <div class="planner-tool-buttons">
         <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
+        <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
+      </div>
         <button id="startPlanBtn" class="btn btn-primary" type="button">✓ تأیید برنامه و شروع سشن</button>
         <button id="pauseSessionBtn" class="btn btn-secondary hidden" type="button">⏸ ذخیره و مکث سشن</button>
         <button id="resumeSessionBtn" class="btn btn-primary hidden" type="button">▶ ادامه سشن ذخیره‌شده</button>
@@ -253,6 +256,25 @@
         <div class="row"><label>بدترین سشن</label><strong id="dashWorst">-</strong></div>
         <div class="row"><label>بیشترین Drawdown</label><strong id="dashDrawdown">-</strong></div>
         <div class="row"><label>Drawdown %</label><strong id="dashDrawdownPct">-</strong></div>
+
+        <div class="dashboard-section-title">سشن جاری</div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessionBalance">-</div><div class="l">Balance</div></div>
+          <div class="statbox"><div class="n" id="dashSessionProfit">-</div><div class="l">Profit</div></div>
+          <div class="statbox"><div class="n" id="dashSessionReturn">-</div><div class="l">Return</div></div>
+        </div>
+        <div class="statsrow">
+          <div class="statbox"><div class="n" id="dashSessionBE">0</div><div class="l">BE</div></div>
+          <div class="statbox"><div class="n" id="dashSessionLossRate">-</div><div class="l">Loss Rate</div></div>
+          <div class="statbox"><div class="n" id="dashNextStake">—</div><div class="l">Stake بعدی</div></div>
+        </div>
+        <div class="row"><label>Win Streak جاری</label><strong id="dashCurrentWinStreak">0</strong></div>
+        <div class="row"><label>Loss Streak جاری</label><strong id="dashCurrentLossStreak">0</strong></div>
+        <div class="row"><label>Max Loss Streak</label><strong id="dashMaxLossStreak">0</strong></div>
+        <div class="row"><label>Drawdown سشن</label><strong id="dashSessionDrawdown">-</strong></div>
+        <div class="row"><label>فاصله تا Target</label><strong id="dashToTarget">-</strong></div>
+        <div class="row"><label>فاصله تا Stop Loss</label><strong id="dashToStopLoss">-</strong></div>
+
         <div id="dashLiveStatus" class="small-center small">سشن جاری: هنوز معامله‌ای ثبت نشده</div>
 
         </div>
@@ -311,6 +333,18 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="scenarioSimulatorModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="scenarioSimulatorTitle">
+  <div class="scenario-modal" role="document">
+    <div class="appdialog-head">
+      <h2 id="scenarioSimulatorTitle">شبیه‌ساز سناریو</h2>
+      <button id="scenarioSimulatorCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="scenario-body" id="scenarioSimulatorBody">
+      <input id="scenarioInput" class="scenario-input" value="W → L → BE → L → W" aria-label="نتایج سناریو">
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
   <div class="aboutmodal" role="document">
     <div class="aboutmodal-head">
@@ -320,7 +354,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.4.1 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.6.0 • © 2026</div>
       <div class="backupbox about-backup">
         <div class="backup-title">پشتیبانی آفلاین</div>
         <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
