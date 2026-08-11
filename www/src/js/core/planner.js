@@ -24,9 +24,9 @@ export function buildMasanielloPlans(capital, payoutPct, targetProfit, floor = 1
   });
 }
 
-export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor=1){
+export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor=1, configuredStopLossBalance=null){
   const payout = payoutPct / 100;
-  if(!Number.isFinite(capital) || !Number.isFinite(payout) || !Number.isFinite(targetProfit) || capital <= 0 || payout <= 0 || targetProfit <= 0) return { ...profile, valid:false };
+  if(!Number.isFinite(capital) || !Number.isFinite(payout) || !Number.isFinite(targetProfit) || !Number.isFinite(configuredStopLossBalance) || capital <= 0 || payout <= 0 || targetProfit <= 0 || configuredStopLossBalance < 0 || configuredStopLossBalance > capital) return { ...profile, valid:false };
   const profitPerWin = targetProfit / profile.k;
   let balance = capital;
   let streakLoss = 0;
@@ -36,7 +36,7 @@ export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor
   for(let i=0;i<profile.n;i++){
     const result = calculateSimpleNextStake({
       payout, targetProfit:profitPerWin, streakLoss, floor, balance,
-      stopLossBalance: capital - capital
+      stopLossBalance: configuredStopLossBalance
     });
     if(result.reason !== 'ok' || !Number.isFinite(result.stake) || result.stake <= 0){
       return {...profile, valid:false, profitPerWin, reason:result.reason};
@@ -55,11 +55,11 @@ export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor
       streakLoss = 0;
     }
   }
-  const stopLossAmount = stakes.slice(0, profile.n-profile.k).reduce((a,b)=>a+b,0);
-  const stopLossBalance = Math.max(0, capital - stopLossAmount);
+  const derivedStopLossAmount = stakes.slice(0, profile.n-profile.k).reduce((a,b)=>a+b,0);
+  const stopLossAmount = Math.max(0, capital - configuredStopLossBalance);
   return {
     ...profile, valid:true, profitPerWin, maxStake,
-    stopLossAmount, stopLossBalance,
+    stopLossAmount, stopLossBalance: configuredStopLossBalance,
     worstLoss:stopLossAmount,
     targetBalance:capital+targetProfit,
     expectedFinal:balance,
@@ -67,8 +67,8 @@ export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor
   };
 }
 
-export function buildSimplePlans(capital,payoutPct,targetProfit,floor=1){
-  return SIMPLE_PROFILES.map(profile => buildSimplePlan(profile,capital,payoutPct,targetProfit,floor));
+export function buildSimplePlans(capital,payoutPct,targetProfit,floor=1,stopLossBalance=null){
+  return SIMPLE_PROFILES.map(profile => buildSimplePlan(profile,capital,payoutPct,targetProfit,floor,stopLossBalance));
 }
 
 export function validateMasanielloCustom(capital,payoutPct,targetProfit,n,losses,floor=1){
