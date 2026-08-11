@@ -383,3 +383,32 @@ test('Masaniello scenario BE consumes nRemaining without changing kRemaining', (
   assert.equal(result.nRemaining, 9);
   assert.equal(result.kRemaining, 5);
 });
+
+import { buildWhatIfComparison } from '../src/js/core/what-if.js';
+
+test('What-If comparison replays actual and hypothetical outcomes without mutating either result', () => {
+  const plan = { valid:true, n:10, k:5 };
+  const actual = ['W','L','BE','L','W'];
+  const hypothetical = ['W','L','BE','W','W'];
+  const comparison = buildWhatIfComparison({
+    mode:'masaniello', capital:100, payout:85, targetProfit:20,
+    targetBalance:120, stopLossBalance:80, plan,
+    actualResults:actual, hypotheticalResults:hypothetical, minStake:1
+  });
+  assert.equal(comparison.valid, true);
+  assert.notEqual(comparison.actual.finalBalance, comparison.hypothetical.finalBalance);
+  assert.equal(comparison.actual.trades, 5);
+  assert.equal(comparison.hypothetical.trades, 5);
+  assert.equal(comparison.delta.finalBalance, comparison.hypothetical.finalBalance - comparison.actual.finalBalance);
+  assert.deepEqual(actual, ['W','L','BE','L','W']);
+});
+
+test('What-If comparison rejects mismatched sequences', () => {
+  const result = buildWhatIfComparison({
+    mode:'simple', capital:100, payout:85, targetProfit:10,
+    stopLossBalance:80, plan:{valid:true,n:10,k:5},
+    actualResults:['W'], hypotheticalResults:['L','BE'], minStake:1
+  });
+  assert.equal(result.valid, false);
+  assert.equal(result.reason, 'invalid-results');
+});
