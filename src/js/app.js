@@ -7,13 +7,14 @@ import { readStoredState, writeStoredState } from './storage/state.js';
 import { computePerformanceStats } from './core/analytics.js';
 import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from './core/planner.js';
 import { applyTradeOutcome } from './core/session.js';
+import { analyzePlan } from './core/plan-analyzer.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -1075,6 +1076,71 @@ function renderSimplePlanner(){
   }
 }
 
+function getAnalyzerPlan(){
+  if(mode === 'masaniello'){
+    const plans = buildMasanielloPlans(num('initialCapital'), num('payout'), getUnifiedTarget().targetProfit, MIN_STAKE);
+    return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
+  }
+  const plans = buildSimplePlans(num('initialCapital'), num('payout'), getWinProfitAmount(), MIN_STAKE, getStopLossBalance());
+  return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
+}
+
+function openPlanAnalyzer(){
+  const plan = getAnalyzerPlan();
+  if(!plan || plan.valid === false){
+    showAppMessage('با ورودی‌های فعلی برنامه معتبری برای تحلیل وجود ندارد. ابتدا Target، Payout و Stop Loss را بررسی کنید.', 'تحلیل برنامه');
+    return;
+  }
+  const target = getUnifiedTarget();
+  const result = analyzePlan({
+    mode,
+    capital: num('initialCapital'),
+    payoutPct: num('payout'),
+    targetBalance: target.targetBalance,
+    stopLossBalance: getStopLossBalance(),
+    plan,
+    minStake: MIN_STAKE
+  });
+  const modal = document.getElementById('planAnalyzerModal');
+  const body = document.getElementById('planAnalyzerBody');
+  if(!modal || !body || !result.valid) return;
+  const signed = value => (value > 0 ? '+' : '') + money(value);
+  const statusClass = result.status === 'safe' ? 'analyzer-good' : 'analyzer-warn';
+  const statusText = result.status === 'safe' ? '✓ برنامه قابل اجرا و از نظر سناریوی بدترین حالت قابل قبول است' : '⚠ برنامه در سناریوی فشار ریسک محدودیت دارد';
+  const lossRows = result.losses.length
+    ? result.losses.map(row => `<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason === 'loss' ? money(row.stake) : '—'}</b><strong>${money(row.balance)}</strong></div>`).join('')
+    : '<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
+  body.innerHTML = `
+    <div class="analyzer-status ${statusClass}">${statusText}</div>
+    <div class="analyzer-grid">
+      <div><span>سرمایه</span><b>${money(result.capital)}</b></div>
+      <div><span>Target</span><b>${money(result.targetBalance)}</b></div>
+      <div><span>Stop Loss</span><b>${result.stopLossBalance === null ? '—' : money(result.stopLossBalance)}</b></div>
+      <div><span>Stake اولیه</span><b>${result.initialStake === null ? '—' : money(result.initialStake)}</b></div>
+      <div><span>بیشترین Stake</span><b>${money(result.maxStake)}</b></div>
+      <div><span>حداکثر باخت پیاپی</span><b>${result.maxLossStreak}</b></div>
+      <div><span>حداکثر Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
+      <div><span>نتیجه بدترین حالت</span><b>${result.worstCaseFinal === null ? '—' : money(result.worstCaseFinal)}</b></div>
+    </div>
+    <div class="analyzer-checks">
+      <div class="${result.targetReachable ? 'ok' : 'bad'}">${result.targetReachable ? '✓' : '✕'} رسیدن به Target</div>
+      <div class="${result.stopLossSafe ? 'ok' : 'bad'}">${result.stopLossSafe ? '✓' : '✕'} حفاظت Stop Loss</div>
+    </div>
+    <div class="analyzer-section-title">اگر چند باخت پشت‌سرهم داشته باشم چه می‌شود؟</div>
+    <div class="analyzer-loss-list">${lossRows}</div>
+    <div class="analyzer-note">این تحلیل فقط از موتور فعلی ${mode === 'simple' ? 'Simple' : 'Masaniello'} برای شبیه‌سازی استفاده می‌کند و هیچ مقدار واقعی سشن یا برنامه را تغییر نمی‌دهد.</div>
+  `;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function closePlanAnalyzer(){
+  const modal=document.getElementById('planAnalyzerModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
 function renderTradingPlan(){
   const summary=document.getElementById('plannerSummary');
   const info=document.getElementById('savedPlanInfo');
@@ -1651,6 +1717,9 @@ function bindUI(){
   $('t-autoCopy')?.addEventListener('click', () => toggleBtn('t-autoCopy'));
   document.querySelector('.optionpanel .btn-secondary.btn-sm')?.addEventListener('click', resetSessionCounter);
   $('aboutBtn')?.addEventListener('click', showAbout);
+  $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
+  $('planAnalyzerCloseBtn')?.addEventListener('click', closePlanAnalyzer);
+  $('planAnalyzerModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closePlanAnalyzer(); });
   $('aboutCloseBtn')?.addEventListener('click', hideAbout);
   $('aboutOkBtn')?.addEventListener('click', hideAbout);
   $('aboutModal')?.addEventListener('click', event => {
@@ -1772,6 +1841,17 @@ updateSessionCounter();
   pill.addEventListener('pointerup', cancel);
   pill.addEventListener('pointerleave', cancel);
   pill.addEventListener('pointercancel', cancel);
+})();
+
+// Close the manual options menu when tapping anywhere outside it.
+// Native <details> still handles its own open/close state.
+(() => {
+  const menu = document.getElementById('optionsMenu');
+  if(!menu) return;
+  document.addEventListener('pointerdown', event => {
+    if(!menu.open || menu.contains(event.target)) return;
+    menu.open = false;
+  }, {passive:true});
 })();
 
 /* Android hardware/gesture back button: don't exit on a single press —
