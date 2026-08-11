@@ -34,14 +34,11 @@
 
     <details class="optionsmenu" id="optionsMenu">
       <summary aria-label="منوی اصلی">☰</summary>
+      <button id="menuBackdrop" class="menu-backdrop" type="button" aria-label="بستن منوی اصلی"></button>
       <div class="optionpanel">
         <div class="menu-nav-title">منوی اصلی</div>
-        <div class="menu-nav-grid">
-          <button id="menuSessionBtn" class="menu-nav-btn" type="button">▣ سشن / معامله</button>
-          <button id="menuPlannerBtn" class="menu-nav-btn" type="button">🎯 Planner</button>
-        </div>
         <details class="menu-section" open>
-          <summary>🧰 ابزارها</summary>
+          <summary aria-label="ابزارها">🧰</summary>
           <div class="menu-tool-grid planner-tool-buttons">
             <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
             <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
@@ -153,17 +150,13 @@
             <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
           </div>
 
-          <div class="goal-divider">هدف مشترک برنامه و سشن</div>
-          <div class="row">
-            <label>نوع هدف</label>
-            <span class="inline-field type-toggle">
+          <div class="target-goal-row">
+            <span class="type-toggle compact-type-toggle" aria-label="نوع هدف">
               <label id="mainTargetPercentLabel" class="active"><input type="radio" name="mainTargetType" value="percent" checked> %</label>
               <label id="mainTargetAmountLabel"><input type="radio" name="mainTargetType" value="amount"> $</label>
             </span>
-          </div>
-          <div class="row">
-            <label id="mainTargetValueLabel">هدف %</label>
-            <input id="mainTargetValue" type="number" min="0.01" step="0.01" value="1">
+            <input id="mainTargetValue" class="target-goal-input" type="number" min="0.01" step="0.01" value="1" aria-label="مقدار هدف">
+            <span id="mainTargetValueLabel" class="visually-hidden">هدف %</span>
           </div>
           <div class="row target-final-row">
             <label>موجودی هدف نهایی</label>
