@@ -902,8 +902,8 @@ async function promptSessionEnd(){
   const reason = getLockReasonText();
   const choice = await showAppChoice(
     `سشن به پایان رسیده است.\n\n${reason}\n\nذخیره و ورود به تاریخچه، یا حذف بدون ذخیره؟`,
-    'پایان سشن',
-    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
+    'Exit and Save',
+    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
   );
   sessionEndDialogOpen = false;
   if(choice === 'cancel') return;
@@ -920,8 +920,8 @@ async function clearTrades(){
   const reason = lockReason ? `\n\nوضعیت پایان: ${getLockReasonText()}` : '\n\nپایان دستی سشن.';
   const choice = await showAppChoice(
     `سشن خاتمه داده شود؟${reason}`,
-    'پایان سشن',
-    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
+    'Exit and Save',
+    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
   );
   if(choice === 'cancel') return;
   if(choice === 'primary') saveSession();
