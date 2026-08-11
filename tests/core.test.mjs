@@ -9,6 +9,11 @@ import { csvEscape } from '../src/js/core/format.js';
 import { applyTradeOutcome, replayTradeResults, sessionEndAction } from '../src/js/core/session.js';
 import { computeSessionStatistics } from '../src/js/core/session-statistics.js';
 import { parseScenario, simulateScenario } from '../src/js/core/scenario-simulator.js';
+import { scoreRisk } from '../src/js/core/risk-engine.js';
+import { calculateRecoveryStake, simulateRecoverySequence } from '../src/js/core/recovery.js';
+import { compareStrategies } from '../src/js/core/strategy-comparison.js';
+import { buildStressScenario, stressTestPlan, stressTestRecovery } from '../src/js/core/stress-testing.js';
+
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -411,4 +416,289 @@ test('What-If comparison rejects mismatched sequences', () => {
   });
   assert.equal(result.valid, false);
   assert.equal(result.reason, 'invalid-results');
+});
+
+
+test('Risk engine is deterministic and transparent', () => {
+  const a = scoreRisk({capital:1000,targetBalance:1100,stopLossBalance:800,initialStake:11.76,maxStake:50,maxDrawdown:100,maxLossStreak:5,recoveryExposure:150});
+  const b = scoreRisk({capital:1000,targetBalance:1100,stopLossBalance:800,initialStake:11.76,maxStake:50,maxDrawdown:100,maxLossStreak:5,recoveryExposure:150});
+  assert.deepEqual(a,b);
+  assert.ok(a.valid && a.score >= 0 && a.score <= 100);
+  assert.ok(['safe','moderate','high','extreme'].includes(a.level));
+});
+
+test('Recovery is bounded and is not Martingale doubling', () => {
+  const r = calculateRecoveryStake({balance:1000,payout:.85,accumulatedLoss:20,targetProfit:10,stopLossBalance:800,maxStake:50,maxDrawdown:200,drawdownUsed:20,maxAttempts:3,attemptsUsed:1,minStake:1});
+  assert.equal(r.canRecover,true);
+  assert.equal(r.stake,35.29);
+  const blocked = calculateRecoveryStake({balance:1000,payout:.85,accumulatedLoss:100,targetProfit:10,stopLossBalance:950,maxStake:50,maxDrawdown:200,drawdownUsed:0,maxAttempts:3,attemptsUsed:0,minStake:1});
+  assert.equal(blocked.canRecover,false);
+  assert.equal(blocked.reason,'limit-exceeded');
+});
+
+test('Recovery resets accumulated loss after Win and keeps BE neutral', () => {
+  const r = simulateRecoverySequence({capital:1000,payout:.85,targetProfit:10,stopLossBalance:800,maxStake:100,maxDrawdown:200,maxAttempts:3,results:['L','BE','W'],minStake:1});
+  assert.equal(r.valid,true);
+  assert.equal(r.rows[0].result,'L');
+  assert.equal(r.rows[1].result,'BE');
+  assert.equal(r.rows[2].result,'W');
+  assert.ok(r.balance > 1000);
+});
+
+test('Strategy comparison uses the same input without rewriting existing engines', () => {
+  const r = compareStrategies({capital:1000,payoutPct:85,targetBalance:1020,stopLossBalance:900,minStake:1});
+  assert.equal(r.valid,true);
+  assert.ok(r.rows.some(x=>x.strategy==='Simple'));
+  assert.ok(r.rows.some(x=>x.strategy==='Masaniello'));
+  assert.ok(r.rows.some(x=>x.strategy==='Recovery'));
+});
+
+test('Strategy comparison exposes decision-support metrics and deterministic worst case', () => {
+  const r = compareStrategies({
+    capital:1000, payoutPct:85, targetBalance:1100, stopLossBalance:800, minStake:1,
+    scenario:['W','L','BE','W']
+  });
+  assert.equal(r.valid,true);
+  assert.deepEqual(r.worstScenario, Array(20).fill('L'));
+  for (const row of r.rows) {
+    assert.ok('initialStake' in row);
+    assert.ok('averageStake' in row);
+    assert.ok('maxStake' in row);
+    assert.ok('maxDrawdown' in row);
+    assert.ok('worstCase' in row);
+    assert.ok('scenario' in row);
+    assert.ok(row.risk && row.risk.valid);
+  }
+});
+
+test('Strategy comparison rejects invalid scenario results', () => {
+  const r = compareStrategies({capital:1000,payoutPct:85,targetBalance:1100,stopLossBalance:800,scenario:['W','X']});
+  assert.equal(r.valid,false);
+  assert.equal(r.reason,'invalid-scenario');
+});
+
+test('Stress scenario generator is deterministic for random seed', () => {
+  assert.deepEqual(buildStressScenario('random',10,42), buildStressScenario('random',10,42));
+  assert.deepEqual(buildStressScenario('best',3), ['W','W','W']);
+  assert.deepEqual(buildStressScenario('worst',3), ['L','L','L']);
+});
+
+test('Stress test returns best, normal, worst and random scenarios', () => {
+  const plan = buildSimplePlans(1000,85,50,1,800).find(p=>p.valid);
+  const r = stressTestPlan({mode:'simple',capital:1000,payout:.85,targetProfit:50,stopLossBalance:800,plan,minStake:1,seed:42,trades:8});
+  assert.equal(r.valid,true);
+  assert.deepEqual(r.scenarios.map(x=>x.kind), ['best','normal','worst','custom','random']);
+});
+
+test('Stress testing supports custom scenarios and configurable random probabilities', () => {
+  const plan = buildSimplePlans(1000,85,50,1,800).find(p=>p.valid);
+  const r = stressTestPlan({mode:'simple',capital:1000,payout:.85,targetProfit:50,stopLossBalance:800,plan,minStake:1,seed:42,trades:8,customResults:['L','BE','W'],probabilities:{win:.6,loss:.2,be:.2}});
+  assert.equal(r.valid,true);
+  assert.deepEqual(r.scenarios.map(x=>x.kind), ['best','normal','worst','custom','random']);
+  assert.deepEqual(r.scenarios.find(x=>x.kind==='custom').results, ['L','BE','W']);
+  assert.deepEqual(r.probabilities,{win:.6,loss:.2,be:.2});
+  assert.deepEqual(r.scenarios.find(x=>x.kind==='random').results, buildStressScenario('random',8,42,{win:.6,loss:.2,be:.2}));
+});
+
+test('Stress testing rejects invalid random probabilities', () => {
+  const plan = buildSimplePlans(1000,85,50,1,800).find(p=>p.valid);
+  const r = stressTestPlan({mode:'simple',capital:1000,payout:.85,targetProfit:50,stopLossBalance:800,plan,probabilities:{win:.6,loss:.6,be:0}});
+  assert.equal(r.valid,false);
+  assert.equal(r.reason,'invalid-probabilities');
+});
+
+test('Recovery stress testing includes custom and random scenarios', () => {
+  const r = stressTestRecovery({capital:1000,payout:.85,targetProfit:20,stopLossBalance:800,maxStake:100,maxDrawdown:200,maxAttempts:3,minStake:1,seed:42,trades:6,customResults:['L','BE','W'],probabilities:{win:.5,loss:.3,be:.2}});
+  assert.equal(r.valid,true);
+  assert.deepEqual(r.scenarios.map(x=>x.kind), ['best','normal','worst','custom','random']);
+});
+
+test('BE remains a real trade in scenario stress metrics', () => {
+  const plan = buildSimplePlans(1000,85,20,1,900).find(p=>p.valid);
+  const r = simulateScenario({mode:'simple',capital:1000,payout:.85,targetProfit:20,stopLossBalance:900,plan,results:['BE','BE'],minStake:1});
+  assert.equal(r.trades,2);
+  assert.equal(r.breakevens,2);
+  assert.equal(r.winRate,0);
+  assert.equal(r.finalBalance,1000);
+});
+
+
+test('Service Worker app shell caches all runtime core modules and uses current cache version', async () => {
+  const fs = await import('node:fs/promises');
+  const sw = await fs.readFile(new URL('../service-worker.js', import.meta.url), 'utf8');
+  for (const path of [
+    './src/js/core/session.js',
+    './src/js/core/risk-engine.js',
+    './src/js/core/recovery.js',
+    './src/js/core/strategy-comparison.js',
+    './src/js/core/stress-testing.js'
+  ]) {
+    assert.ok(sw.includes(path), `missing offline app-shell asset: ${path}`);
+  }
+  assert.match(sw, /CACHE_VERSION = 'v2\.9\.0'/);
+});
+
+
+test('Risk engine is deterministic and exposes its policy', () => {
+  const input = {
+    capital: 1000,
+    targetBalance: 1100,
+    stopLossBalance: 900,
+    initialStake: 20,
+    maxStake: 100,
+    maxDrawdown: 80,
+    maxLossStreak: 3,
+    recoveryExposure: 120
+  };
+  const a = scoreRisk(input);
+  const b = scoreRisk(input);
+  assert.deepEqual(a, b);
+  assert.equal(a.valid, true);
+  assert.equal(a.policy.scoreMax, 100);
+  assert.equal(a.methodology.includes('not a market-risk probability'), true);
+});
+
+test('Risk engine includes loss streak in the structural score', () => {
+  const low = scoreRisk({ capital: 1000, targetBalance: 1050, stopLossBalance: 950, initialStake: 5, maxStake: 5, maxDrawdown: 10, maxLossStreak: 0 });
+  const high = scoreRisk({ capital: 1000, targetBalance: 1050, stopLossBalance: 950, initialStake: 5, maxStake: 5, maxDrawdown: 10, maxLossStreak: 10 });
+  assert.ok(high.score > low.score);
+  assert.ok(high.warnings.some(w => w.includes('باخت پیاپی')));
+});
+
+test('Risk engine supports an explicit policy without changing the default engine', () => {
+  const result = scoreRisk({
+    capital: 1000,
+    targetBalance: 1050,
+    stopLossBalance: 900,
+    initialStake: 10,
+    maxStake: 200,
+    maxDrawdown: 50,
+    policy: {
+      maxStakePctLimit: 10,
+      bands: { safeMax: 20, moderateMax: 40, highMax: 60 }
+    }
+  });
+  assert.equal(result.valid, true);
+  assert.ok(result.warnings.some(w => w.includes('بیشینه Stake')));
+  assert.ok(['safe','moderate','high','extreme'].includes(result.level));
+});
+
+
+test('Recovery refuses a minimum stake that exceeds available recovery capacity', () => {
+  const r = calculateRecoveryStake({
+    balance: 100,
+    payout: 0.85,
+    accumulatedLoss: 0,
+    targetProfit: 0,
+    stopLossBalance: 95,
+    maxStake: 50,
+    maxDrawdown: 10,
+    drawdownUsed: 0,
+    maxAttempts: 3,
+    attemptsUsed: 0,
+    minStake: 10
+  });
+  assert.equal(r.valid, true);
+  assert.equal(r.canRecover, false);
+  assert.equal(r.reason, 'minimum-stake-exceeds-capacity');
+});
+
+test('Recovery enforces maximum attempts before sizing a new stake', () => {
+  const r = calculateRecoveryStake({
+    balance: 1000,
+    payout: 0.85,
+    accumulatedLoss: 20,
+    targetProfit: 10,
+    stopLossBalance: 800,
+    maxStake: 100,
+    maxDrawdown: 200,
+    drawdownUsed: 20,
+    maxAttempts: 2,
+    attemptsUsed: 2,
+    minStake: 1
+  });
+  assert.equal(r.valid, true);
+  assert.equal(r.canRecover, false);
+  assert.equal(r.reason, 'max-attempts');
+});
+
+test('Recovery blocks a stake that would cross the stop-loss balance', () => {
+  const r = calculateRecoveryStake({
+    balance: 100,
+    payout: 0.85,
+    accumulatedLoss: 10,
+    targetProfit: 10,
+    stopLossBalance: 95,
+    maxStake: 100,
+    maxDrawdown: Infinity,
+    drawdownUsed: 0,
+    maxAttempts: 3,
+    attemptsUsed: 0,
+    minStake: 1
+  });
+  assert.equal(r.valid, true);
+  assert.equal(r.canRecover, false);
+  assert.equal(r.reason, 'limit-exceeded');
+});
+
+test('Recovery resets after Win and does not charge Balance for BE', () => {
+  const r = simulateRecoverySequence({
+    capital: 1000,
+    payout: 0.85,
+    targetProfit: 10,
+    stopLossBalance: 800,
+    maxStake: 100,
+    maxDrawdown: 200,
+    maxAttempts: 3,
+    results: ['L','BE','W'],
+    minStake: 1
+  });
+  assert.equal(r.valid, true);
+  assert.equal(r.rows[1].balance, r.rows[0].balance);
+  assert.ok(r.rows[2].profit > 0);
+  assert.ok(r.balance > 1000);
+});
+
+test('Advanced analytics aggregates BE rate, profit factor and stored stake metrics', () => {
+  const stats = computePerformanceStats([
+    {
+      session: 1, trades: 4, wins: 2, losses: 1, breakevens: 1,
+      initial: 100, finalBalance: 110, profit: 10,
+      winProfit: 20, lossAmount: 10,
+      averageStake: 8, maxStake: 12, maxLossStreak: 1, maxWinStreak: 2
+    },
+    {
+      session: 2, trades: 2, wins: 1, losses: 1, breakevens: 0,
+      initial: 110, finalBalance: 115, profit: 5,
+      winProfit: 15, lossAmount: 10,
+      averageStake: 10, maxStake: 14, maxLossStreak: 1, maxWinStreak: 1
+    }
+  ]);
+  assert.equal(stats.beRate, (1 / 6) * 100);
+  assert.equal(stats.lossRate, (2 / 6) * 100);
+  assert.equal(stats.profitFactor, 35 / 20);
+  assert.equal(stats.averageStake, (8 * 4 + 10 * 2) / 6);
+  assert.equal(stats.maxStake, 14);
+  assert.equal(stats.maxLossStreak, 1);
+  assert.equal(stats.maxWinStreak, 2);
+});
+
+test('Advanced analytics stays backward-compatible with old session history', () => {
+  const stats = computePerformanceStats([
+    { session: 1, trades: 2, wins: 1, losses: 1, breakevens: 0, initial: 100, finalBalance: 99, profit: -1 }
+  ]);
+  assert.equal(stats.averageStake, null);
+  assert.equal(stats.maxStake, null);
+  assert.equal(stats.maxLossStreak, null);
+  assert.equal(stats.maxWinStreak, null);
+});
+
+
+test('Release audit keeps a user-facing runtime error guard in app source', async () => {
+  const fs = await import('node:fs/promises');
+  const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
+  assert.match(appSource, /window\.addEventListener\('error'/);
+  assert.match(appSource, /window\.addEventListener\('unhandledrejection'/);
+  assert.match(appSource, /یک خطای غیرمنتظره رخ داد/);
+  assert.match(appSource, /یک عملیات غیرمنتظره کامل نشد/);
 });
