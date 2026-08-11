@@ -1139,3 +1139,97 @@ input,select,textarea{color:var(--text);}
   .panel{padding:10px;}
   .actions button{min-height:46px;}
 }
+
+/* =========================================================
+   V2.9 CLEAN COCKPIT UI
+   UI-only layer: no trading calculations or engine rules.
+========================================================= */
+.cockpit-menu-btn{
+  width:42px;height:40px;border:1px solid var(--border);border-radius:10px;
+  background:#1b212c;color:var(--text);font-size:21px;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.cockpit-menu-btn:hover{filter:brightness(1.12);}
+.cockpit-menu-btn:active{transform:scale(.97);}
+
+.cockpit-drawer{
+  position:fixed;top:0;right:0;z-index:1000;width:min(320px,88vw);height:100dvh;
+  background:linear-gradient(180deg,#171d29,#111620);border-left:1px solid var(--border);
+  box-shadow:-18px 0 50px rgba(0,0,0,.55);transform:translateX(105%);
+  transition:transform .2s ease;overflow:auto;padding-bottom:env(safe-area-inset-bottom);
+}
+.cockpit-drawer.open{transform:translateX(0);}
+.cockpit-drawer-head{
+  position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
+  background:#0c0f16;border-bottom:1px solid var(--border);
+}
+.cockpit-drawer-head strong{font-size:15px;color:var(--teal);}
+.cockpit-drawer-head button{
+  width:38px;height:38px;border:1px solid var(--border);border-radius:9px;
+  background:#222a38;color:var(--text);font-size:17px;font-weight:800;
+}
+.cockpit-nav{padding:12px;}
+.cockpit-nav button{
+  width:100%;min-height:46px;margin:0 0 7px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;background:#202736;color:var(--text);font-weight:800;font-size:13px;
+  display:flex;align-items:center;gap:10px;text-align:right;cursor:pointer;
+}
+.cockpit-nav button:hover{background:#2a3344;border-color:rgba(43,191,164,.35);}
+.cockpit-nav button span{flex:1;}
+.cockpit-nav-label{
+  color:var(--muted);font-size:11px;font-weight:800;padding:13px 5px 6px;
+}
+.cockpit-drawer-backdrop{
+  position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.5);
+  backdrop-filter:blur(2px);
+}
+.cockpit-drawer-backdrop.hidden{display:none;}
+
+.collapsible-summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  justify-content:space-between;user-select:none;
+}
+.collapsible-summary::-webkit-details-marker{display:none;}
+.collapsible-summary::after{
+  content:'⌄';font-size:14px;color:var(--muted);transition:transform .18s ease;
+}
+details[open] > .collapsible-summary::after{transform:rotate(180deg);}
+.collapsible-summary > span:first-child{flex:1;text-align:center;}
+#targetPanel > .collapsible-summary,
+#tradingPlanPanel > .collapsible-summary{min-height:42px;margin-bottom:10px;}
+#targetPanel:not([open]) > .collapsible-summary,
+#tradingPlanPanel:not([open]) > .collapsible-summary{margin-bottom:0;}
+#targetPanel > .collapsible-summary + *,
+#tradingPlanPanel > .collapsible-summary + *{min-width:0;}
+
+.history-panel{display:none;}
+.history-panel.history-external-open{
+  display:block;position:fixed;z-index:998;top:max(12px,env(safe-area-inset-top));
+  left:50%;right:auto;transform:translateX(-50%);width:min(720px,calc(100vw - 24px));
+  max-height:calc(100dvh - 24px);overflow:auto;margin:0;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);
+}
+.history-panel.history-external-open .histsummary{position:sticky;top:0;z-index:3;background:#333c4e;}
+.history-close-btn{
+  flex:0 0 auto;width:30px;height:30px;border:1px solid var(--border);border-radius:7px;
+  background:#252d3d;color:var(--text);font-weight:800;cursor:pointer;
+}
+.history-close-btn:hover{filter:brightness(1.15);}
+.history-panel.history-external-open .logwrap{max-height:45dvh;overflow:auto;}
+
+body.cockpit-drawer-lock{overflow:hidden;}
+@media(max-width:600px){
+  .cockpit-menu-btn{width:38px;height:38px;font-size:19px;}
+  .titlebar{grid-template-columns:auto minmax(0,1fr) auto;gap:7px;}
+  .titlebar-center{justify-content:center;gap:6px;min-width:0;}
+  .titlebar-balance{font-size:12px;}
+  .modetabs button{padding:6px 9px;font-size:11px;}
+  .history-panel.history-external-open{top:8px;max-height:calc(100dvh - 16px);width:calc(100vw - 16px);}
+}
+@media(orientation:landscape){
+  .cockpit-drawer{width:330px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .cockpit-drawer{transition:none;}
+}
