@@ -20,6 +20,7 @@
 <div class="app">
 
   <div class="titlebar">
+    <button class="cockpit-menu-btn" id="cockpitMenuBtn" type="button" aria-label="باز کردن منوی برنامه" aria-expanded="false">☰</button>
     <button class="sessionpill" id="sessionPill" title="تپ = سشن جدید · نگه‌دارید ۳ ثانیه = ریست شمارنده" aria-label="New Session — tap for new session, hold 3 seconds to reset counter">
       <span class="ic">⟳</span> Sess #<b id="sessionCounter">1</b>
     </button>
@@ -52,6 +53,26 @@
       </div>
     </details>
   </div>
+
+  <aside class="cockpit-drawer" id="cockpitDrawer" aria-hidden="true">
+    <div class="cockpit-drawer-head">
+      <strong>Trade Manager</strong>
+      <button id="cockpitDrawerClose" type="button" aria-label="بستن منو">✕</button>
+    </div>
+    <nav class="cockpit-nav" aria-label="منوی اصلی">
+      <button type="button" data-nav-target="trade-column">📈 <span>سشن / معامله</span></button>
+      <button type="button" data-nav-target="targetPanel">🎯 <span>Planner و Target</span></button>
+      <button type="button" data-nav-target="tradingPlanPanel">📋 <span>جزئیات برنامه</span></button>
+      <div class="cockpit-nav-label">ابزارها</div>
+      <button type="button" data-nav-action="analyze">📊 <span>تحلیل ریسک و برنامه</span></button>
+      <button type="button" data-nav-action="scenario">🧪 <span>شبیه‌ساز سناریو</span></button>
+      <button type="button" data-nav-action="whatif">🔀 <span>What-If Lab</span></button>
+      <button type="button" data-nav-action="history">🕘 <span>تاریخچه</span></button>
+      <button type="button" data-nav-action="settings">⚙️ <span>تنظیمات</span></button>
+      <button type="button" data-nav-action="about">ℹ️ <span>درباره</span></button>
+    </nav>
+  </aside>
+  <div class="cockpit-drawer-backdrop hidden" id="cockpitDrawerBackdrop"></div>
 
   <div class="grid">
 
@@ -124,8 +145,11 @@
     <!-- MIDDLE: CALCULATIONS -->
     <div class="calc-column">
 
-      <div class="panel target-master" id="targetPanel">
-        <div class="panel-title panel-title-accent">تنظیمات هدف و هدف نهایی</div>
+      <details class="panel target-master collapsible-panel" id="targetPanel" data-ui-key="target" open>
+        <summary class="panel-title panel-title-accent collapsible-summary">
+          <span>🎯 تنظیمات هدف و هدف نهایی</span>
+          <span class="summary-hint">Target · Plan</span>
+        </summary>
 
         <!-- ===================== SHARED TARGET / SINGLE SOURCE ===================== -->
         <div class="target-master-fields">
@@ -217,11 +241,15 @@
           </details>
         </div>
 
-      </div>
+      </details>
 
 
 
-      <div class="panel" id="tradingPlanPanel">
+      <details class="panel collapsible-panel" id="tradingPlanPanel" data-ui-key="planDetails">
+        <summary class="panel-title collapsible-summary">
+          <span>📋 جزئیات برنامه معاملاتی</span>
+          <span class="summary-hint">پیشنهادها و کنترل برنامه</span>
+        </summary>
         <div class="panel-title">برنامه معاملاتی</div>
         <div id="plannerSummary" class="planner-summary" aria-live="polite">در حال آماده‌سازی برنامه‌ها...</div>
         <div class="planner-edit-grid">
@@ -237,7 +265,7 @@
         <button id="pauseSessionBtn" class="btn btn-secondary hidden" type="button">⏸ ذخیره و مکث سشن</button>
         <button id="resumeSessionBtn" class="btn btn-primary hidden" type="button">▶ ادامه سشن ذخیره‌شده</button>
         <div id="savedPlanInfo" class="small planner-info"></div>
-      </div>
+      </details>
 
     </div>
 
@@ -284,9 +312,12 @@
         </div>
       </details>
 
-      <div class="panel">
+      <div class="panel history-panel" id="historyPanel">
         <details id="historyDetails">
-          <summary class="histsummary">تاریخچه سشن‌ها</summary>
+          <summary class="histsummary">
+            <span>🕘 تاریخچه سشن‌ها</span>
+            <button id="historyCloseBtn" type="button" class="history-close-btn" aria-label="بستن تاریخچه">✕</button>
+          </summary>
           <div class="histwrap" id="historyWrap">
             <div class="small small-center">هنوز سشنی ثبت نشده</div>
           </div>
