@@ -7,6 +7,8 @@ import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptio
 import { computePerformanceStats } from '../src/js/core/analytics.js';
 import { csvEscape } from '../src/js/core/format.js';
 import { applyTradeOutcome, replayTradeResults, sessionEndAction } from '../src/js/core/session.js';
+import { computeSessionStatistics } from '../src/js/core/session-statistics.js';
+import { parseScenario, simulateScenario } from '../src/js/core/scenario-simulator.js';
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -323,4 +325,61 @@ test('Plan analyzer flags a plan when the configured stop-loss is breached', () 
   assert.equal(result.valid, true);
   assert.equal(result.stopLossSafe, false);
   assert.equal(result.status, 'warning');
+});
+
+
+test('Session statistics count BE in trades and reset streaks correctly', () => {
+  const stats = computeSessionStatistics([
+    { result:'W', balance:110 },
+    { result:'L', balance:100 },
+    { result:'BE', balance:100 },
+    { result:'L', balance:90 },
+    { result:'W', balance:99 }
+  ], 100);
+  assert.equal(stats.trades, 5);
+  assert.equal(stats.wins, 2);
+  assert.equal(stats.breakevens, 1);
+  assert.equal(stats.losses, 2);
+  assert.equal(stats.winRate, 40);
+  assert.equal(stats.currentWinStreak, 1);
+  assert.equal(stats.currentLossStreak, 0);
+  assert.equal(stats.maxLossStreak, 1);
+  assert.equal(stats.maxDrawdown, 20);
+});
+
+test('Scenario parser accepts arrows, commas and whitespace', () => {
+  assert.deepEqual(parseScenario('W → L, BE / L'), ['W','L','BE','L']);
+});
+
+test('Simple scenario uses the real stake engine and keeps BE balance-neutral', () => {
+  const result = simulateScenario({
+    mode:'simple',
+    capital:100,
+    payout:0.85,
+    targetProfit:10,
+    stopLossBalance:80,
+    plan:{valid:true,n:10,k:5},
+    results:['W','BE','L']
+  });
+  assert.equal(result.valid, true);
+  assert.equal(result.trades, 3);
+  assert.equal(result.breakevens, 1);
+  assert.equal(result.rows[1].balance, result.rows[0].balance);
+  assert.ok(result.rows[0].stake > 0);
+});
+
+test('Masaniello scenario BE consumes nRemaining without changing kRemaining', () => {
+  const result = simulateScenario({
+    mode:'masaniello',
+    capital:100,
+    payout:0.85,
+    targetProfit:20,
+    stopLossBalance:80,
+    plan:{valid:true,n:10,k:5},
+    results:['BE']
+  });
+  assert.equal(result.valid, true);
+  assert.equal(result.rows[0].balance, 100);
+  assert.equal(result.nRemaining, 9);
+  assert.equal(result.kRemaining, 5);
 });
