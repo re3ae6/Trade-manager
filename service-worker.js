@@ -1,5 +1,5 @@
 /* Trade Manager V2 service worker. */
-const CACHE_VERSION = 'v2.4';
+const CACHE_VERSION = 'v2.8';
 const CACHE_NAME = `trade-manager-${CACHE_VERSION}`;
 
 const APP_SHELL = [
@@ -14,6 +14,10 @@ const APP_SHELL = [
   './src/js/core/masaniello.js',
   './src/js/core/simple.js',
   './src/js/core/trading-plan.js',
+  './src/js/core/plan-analyzer.js',
+  './src/js/core/session-statistics.js',
+  './src/js/core/scenario-simulator.js',
+  './src/js/core/what-if.js',
   './src/js/core/planner.js',
   './src/js/storage/state.js',
   './icons/icon-192.png',

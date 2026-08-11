@@ -1,12 +1,12 @@
 {
   "name": "trade-manager",
-  "version": "2.6.0",
+  "version": "2.8.0",
   "private": true,
-  "description": "Offline-first Simple + Masaniello trade manager with performance dashboard, planner risk analyzer, session statistics and scenario simulator.",
+  "description": "Offline-first Simple + Masaniello trade manager with a focused modern cockpit UI, planner risk analysis, session statistics, scenario simulator and What-If Lab.",
   "scripts": {
     "build": "node scripts/build-web.mjs",
     "test": "node --test tests/**/*.test.mjs",
-    "check": "node --check src/js/app.js && node --check src/js/core/analytics.js && node --check src/js/core/format.js && node --check src/js/core/history.js && node --check src/js/core/masaniello.js && node --check src/js/core/simple.js && node --check src/js/core/trading-plan.js && node --check src/js/core/session.js && node --check src/js/core/session-statistics.js && node --check src/js/core/scenario-simulator.js && node --check src/js/storage/state.js && node --check src/js/core/planner.js && node --check src/js/core/plan-analyzer.js"
+    "check": "node --check src/js/app.js && node --check src/js/core/analytics.js && node --check src/js/core/format.js && node --check src/js/core/history.js && node --check src/js/core/masaniello.js && node --check src/js/core/simple.js && node --check src/js/core/trading-plan.js && node --check src/js/core/session.js && node --check src/js/core/session-statistics.js && node --check src/js/core/scenario-simulator.js && node --check src/js/storage/state.js && node --check src/js/core/planner.js && node --check src/js/core/plan-analyzer.js && node --check src/js/core/what-if.js"
   },
   "dependencies": {
     "@capacitor/core": "8.5.0",

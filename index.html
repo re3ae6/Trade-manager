@@ -40,6 +40,14 @@
         <div class="goalrow simple-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade">OFF</button></div>
         <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy">ON</button></div>
         <div class="goalrow"><label>ریست شمارنده سشن</label><button class="btn btn-secondary btn-sm">Reset</button></div>
+        <details class="menu-section">
+          <summary>🧰 ابزارها</summary>
+          <div class="menu-tool-grid planner-tool-buttons">
+            <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
+            <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
+            <button id="whatIfBtn" class="btn btn-whatif" type="button">🔀 What-If Lab</button>
+          </div>
+        </details>
         <div class="goalrow"><label>درباره</label><button id="aboutBtn" class="btn btn-secondary btn-sm" type="button">About</button></div>
       </div>
     </details>
@@ -225,10 +233,6 @@
           <button id="tpApplyBtn" class="btn btn-secondary" type="button">اعمال تغییرات</button>
           <button id="savePlanBtn" class="btn btn-secondary" type="button">ذخیره برنامه</button>
         </div>
-        <div class="planner-tool-buttons">
-        <button id="analyzePlanBtn" class="btn btn-analyze" type="button">📊 تحلیل ریسک و برنامه</button>
-        <button id="scenarioSimulatorBtn" class="btn btn-scenario" type="button">🧪 شبیه‌ساز سناریو</button>
-      </div>
         <button id="startPlanBtn" class="btn btn-primary" type="button">✓ تأیید برنامه و شروع سشن</button>
         <button id="pauseSessionBtn" class="btn btn-secondary hidden" type="button">⏸ ذخیره و مکث سشن</button>
         <button id="resumeSessionBtn" class="btn btn-primary hidden" type="button">▶ ادامه سشن ذخیره‌شده</button>
@@ -240,8 +244,8 @@
     <!-- RIGHT / THIRD COLUMN: PERFORMANCE + HISTORY -->
     <div class="right-column">
 
-      <details id="performanceDetails" class="panel collapsible-panel" open>
-        <summary class="panel-title collapsible-summary">داشبورد عملکرد</summary>
+      <details id="performanceDetails" class="panel collapsible-panel">
+        <summary class="panel-title collapsible-summary">داشبورد عملکرد <span class="summary-hint">جزئیات سشن و عملکرد</span></summary>
         <div id="dashboardPanel" class="dashboard-body">
         <div class="statsrow">
           <div class="statbox"><div class="n" id="dashSessions">0</div><div class="l">سشن</div></div>
@@ -345,6 +349,16 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="whatIfModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="whatIfTitle">
+  <div class="whatif-modal" role="document">
+    <div class="appdialog-head">
+      <h2 id="whatIfTitle">What-If Lab</h2>
+      <button id="whatIfCloseBtn" class="aboutclose" type="button" aria-label="بستن">×</button>
+    </div>
+    <div class="whatif-body" id="whatIfBody"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="aboutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
   <div class="aboutmodal" role="document">
     <div class="aboutmodal-head">
@@ -354,7 +368,7 @@
     <div class="aboutmodal-body">
       <div class="aboutcredit">Designed &amp; Developed by</div>
       <div class="aboutauthor">re3ae6</div>
-      <div class="aboutversion" id="aboutVersion">v2.6.0 • © 2026</div>
+      <div class="aboutversion" id="aboutVersion">v2.8.0 • © 2026</div>
       <div class="backupbox about-backup">
         <div class="backup-title">پشتیبانی آفلاین</div>
         <div class="small">خروجی و بازیابی کامل اطلاعات ذخیره‌شده، تاریخچه و تنظیمات برنامه.</div>
