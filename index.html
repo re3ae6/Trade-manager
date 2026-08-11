@@ -116,23 +116,23 @@
     <!-- MIDDLE: CALCULATIONS -->
     <div>
 
-      <div class="panel">
-        <div class="panel-title panel-title-accent">تنظیمات هدف</div>
+      <div class="panel target-master">
+        <div class="panel-title panel-title-accent">تنظیمات هدف و هدف نهایی</div>
 
-        <div class="row">
-          <label>Balance</label>
-          <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00">
-        </div>
+        <!-- ===================== SHARED TARGET / SINGLE SOURCE ===================== -->
+        <div class="target-master-fields">
+          <div class="row">
+            <label>Balance اولیه</label>
+            <input id="initialCapital" type="text" inputmode="decimal" value="1,000.00">
+          </div>
 
-        <div class="row">
-          <label>Payout %</label>
-          <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
-          <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
-        </div>
+          <div class="row">
+            <label>Payout %</label>
+            <input id="payout" type="number" min="0.01" max="500" step="0.01" value="85" aria-describedby="payoutHint">
+            <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
+          </div>
 
-        <!-- ===================== SHARED TARGET ===================== -->
-        <div class="targetbox">
-          <div class="panel-title panel-title-accent">هدف اصلی</div>
+          <div class="goal-divider">هدف اصلی</div>
           <div class="row">
             <label>نوع هدف</label>
             <span class="inline-field type-toggle">
@@ -144,8 +144,8 @@
             <label id="mainTargetValueLabel">هدف %</label>
             <input id="mainTargetValue" type="number" min="0.01" step="0.01" value="1">
           </div>
-          <div class="row">
-            <label>موجودی هدف</label>
+          <div class="row target-final-row">
+            <label>موجودی هدف نهایی</label>
             <strong id="unifiedTargetBalance">-</strong>
           </div>
         </div>
@@ -231,8 +231,8 @@
         <div id="savedPlanInfo" class="small planner-info"></div>
       </div>
 
-    <!-- RIGHT: SESSION CONTROL (shared) -->
-    <div>
+    <!-- RIGHT / THIRD COLUMN: PERFORMANCE + HISTORY -->
+    <div class="right-column">
 
       <details id="performanceDetails" class="panel collapsible-panel" open>
         <summary class="panel-title collapsible-summary">داشبورد عملکرد</summary>
