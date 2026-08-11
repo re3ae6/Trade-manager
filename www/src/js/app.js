@@ -7,13 +7,17 @@ import { readStoredState, writeStoredState } from './storage/state.js';
 import { computePerformanceStats } from './core/analytics.js';
 import { buildMasanielloPlans, buildSimplePlans, validateMasanielloCustom } from './core/planner.js';
 import { applyTradeOutcome } from './core/session.js';
+import { analyzePlan } from './core/plan-analyzer.js';
+import { computeSessionStatistics } from './core/session-statistics.js';
+import { simulateScenario, parseScenario } from './core/scenario-simulator.js';
+import { buildWhatIfComparison } from './core/what-if.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.8.0';
 
 let mode = 'simple';               // 'simple' | 'masaniello'
 let trades = [];                   // {no, result, amount, ret, balance}
@@ -61,15 +65,13 @@ function getPersistableState(){
     inputs: {
       initialCapital: document.getElementById('initialCapital')?.value ?? '',
       payout: document.getElementById('payout')?.value ?? '',
-      targetProfit: document.getElementById('targetProfit')?.value ?? '',
-      accountGain: document.getElementById('accountGain')?.value ?? '',
+      mainTargetType: document.querySelector('input[name="mainTargetType"]:checked')?.value ?? 'percent',
+      mainTargetValue: document.getElementById('mainTargetValue')?.value ?? '',
       stopLossPct: document.getElementById('stopLossPct')?.value ?? '',
       stopLossAlertPct: document.getElementById('stopLossAlertPct')?.value ?? '',
       manualToggle: document.getElementById('manualToggle')?.checked ?? false,
       manualN: document.getElementById('manualN')?.value ?? '',
-      manualK: document.getElementById('manualK')?.value ?? '',
-      mainTargetType: document.querySelector('input[name="mainTargetType"]:checked')?.value ?? 'percent',
-      mainTargetValue: document.getElementById('mainTargetValue')?.value ?? ''
+      manualK: document.getElementById('manualK')?.value ?? ''
     }
   };
 }
@@ -118,8 +120,6 @@ function loadState(){
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
     if(inp.payout) document.getElementById('payout').value = inp.payout;
-    if(inp.targetProfit) document.getElementById('targetProfit').value = inp.targetProfit;
-    if(inp.accountGain) document.getElementById('accountGain').value = inp.accountGain;
     if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
     if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
@@ -155,7 +155,9 @@ function loadState(){
    BASIC HELPERS
 ===================================================== */
 function num(id){
-  const raw = String(document.getElementById(id).value ?? '').replace(/[$,\s]/g,'');
+  const el = document.getElementById(id);
+  if(!el) return 0;
+  const raw = String(el.value ?? '').replace(/[$,\s]/g,'');
   const value = parseFloat(raw);
   return Number.isFinite(value) ? value : 0;
 }
@@ -374,13 +376,6 @@ function syncUnifiedTarget(){
   document.getElementById('mainTargetAmountLabel')?.classList.toggle('active',type==='amount');
   const label=document.getElementById('mainTargetValueLabel');
   if(label) label.textContent=type==='percent'?'هدف %':'هدف ($)';
-  if(type==='percent'){
-    document.getElementById('accountGain').value=safeValue;
-    document.getElementById('targetProfit').value=(capital*safeValue/100).toFixed(2);
-  }else{
-    document.getElementById('targetProfit').value=safeValue;
-    document.getElementById('accountGain').value=(capital>0 ? safeValue/capital*100 : 0).toFixed(4);
-  }
 }
 
 function onSetupChange(){
@@ -477,9 +472,7 @@ function applySetup(){
    SIMPLE ENGINE (fixed target % + stop loss)
 ===================================================== */
 function getWinProfitAmount(){
-  const initialCapital = num('initialCapital');
-  const gain = num('accountGain') / 100;
-  return initialCapital * gain;
+  return getUnifiedTarget().targetProfit;
 }
 function getValidStopLossPct(){
   const raw = num('stopLossPct');
@@ -949,6 +942,29 @@ function renderDashboard(){
   set('dashCurrentBalance', stats.currentBalance !== null ? money(stats.currentBalance) : '-');
 
   const current = getLiveSessionSummary();
+  const initialSessionBalance = mode === 'simple' ? num('initialCapital') : capital0;
+  const sessionStats = computeSessionStatistics(trades, initialSessionBalance);
+  const next = trades.length === 0 || locked ? null : getNextStake();
+  set('dashSessionBalance', money(sessionStats.finalBalance));
+  set('dashSessionProfit', signedMoney(sessionStats.profit));
+  set('dashSessionReturn', sessionStats.returnPct.toFixed(1) + '%');
+  set('dashSessionBE', sessionStats.breakevens);
+  set('dashSessionLossRate', sessionStats.lossRate.toFixed(1) + '%');
+  set('dashCurrentWinStreak', sessionStats.currentWinStreak);
+  set('dashCurrentLossStreak', sessionStats.currentLossStreak);
+  set('dashMaxLossStreak', sessionStats.maxLossStreak);
+  set('dashSessionDrawdown', money(sessionStats.maxDrawdown));
+  set('dashSessionDrawdownPct', sessionStats.maxDrawdownPct.toFixed(1) + '%');
+  set('dashNextStake', next && next.reason === 'ok' ? money(next.stake) : '—');
+  set('dashToTarget', (() => {
+    const target = getUnifiedTarget();
+    return Number.isFinite(target.targetBalance) ? money(Math.max(0, target.targetBalance - balance)) : '—';
+  })());
+  set('dashToStopLoss', (() => {
+    const sl = getStopLossBalance();
+    return Number.isFinite(sl) ? money(Math.max(0, balance - sl)) : '—';
+  })());
+
   const liveEl = document.getElementById('dashLiveStatus');
   if(liveEl){
     liveEl.textContent = current
@@ -1086,6 +1102,292 @@ function renderSimplePlanner(){
   }
 }
 
+function getAnalyzerPlan(){
+  if(mode === 'masaniello'){
+    const plans = buildMasanielloPlans(num('initialCapital'), num('payout'), getUnifiedTarget().targetProfit, MIN_STAKE);
+    return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
+  }
+  const plans = buildSimplePlans(num('initialCapital'), num('payout'), getWinProfitAmount(), MIN_STAKE, getStopLossBalance());
+  return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
+}
+
+function openPlanAnalyzer(){
+  const plan = getAnalyzerPlan();
+  if(!plan || plan.valid === false){
+    showAppMessage('با ورودی‌های فعلی برنامه معتبری برای تحلیل وجود ندارد. ابتدا Target، Payout و Stop Loss را بررسی کنید.', 'تحلیل برنامه');
+    return;
+  }
+  const target = getUnifiedTarget();
+  const result = analyzePlan({
+    mode,
+    capital: num('initialCapital'),
+    payoutPct: num('payout'),
+    targetBalance: target.targetBalance,
+    stopLossBalance: getStopLossBalance(),
+    plan,
+    minStake: MIN_STAKE
+  });
+  const modal = document.getElementById('planAnalyzerModal');
+  const body = document.getElementById('planAnalyzerBody');
+  if(!modal || !body || !result.valid) return;
+  const signed = value => (value > 0 ? '+' : '') + money(value);
+  const statusClass = result.status === 'safe' ? 'analyzer-good' : 'analyzer-warn';
+  const statusText = result.status === 'safe' ? '✓ برنامه قابل اجرا و از نظر سناریوی بدترین حالت قابل قبول است' : '⚠ برنامه در سناریوی فشار ریسک محدودیت دارد';
+  const lossRows = result.losses.length
+    ? result.losses.map(row => `<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason === 'loss' ? money(row.stake) : '—'}</b><strong>${money(row.balance)}</strong></div>`).join('')
+    : '<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
+  body.innerHTML = `
+    <div class="analyzer-status ${statusClass}">${statusText}</div>
+    <div class="analyzer-grid">
+      <div><span>سرمایه</span><b>${money(result.capital)}</b></div>
+      <div><span>Target</span><b>${money(result.targetBalance)}</b></div>
+      <div><span>Stop Loss</span><b>${result.stopLossBalance === null ? '—' : money(result.stopLossBalance)}</b></div>
+      <div><span>Stake اولیه</span><b>${result.initialStake === null ? '—' : money(result.initialStake)}</b></div>
+      <div><span>بیشترین Stake</span><b>${money(result.maxStake)}</b></div>
+      <div><span>حداکثر باخت پیاپی</span><b>${result.maxLossStreak}</b></div>
+      <div><span>حداکثر Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
+      <div><span>نتیجه بدترین حالت</span><b>${result.worstCaseFinal === null ? '—' : money(result.worstCaseFinal)}</b></div>
+    </div>
+    <div class="analyzer-checks">
+      <div class="${result.targetReachable ? 'ok' : 'bad'}">${result.targetReachable ? '✓' : '✕'} رسیدن به Target</div>
+      <div class="${result.stopLossSafe ? 'ok' : 'bad'}">${result.stopLossSafe ? '✓' : '✕'} حفاظت Stop Loss</div>
+    </div>
+    <div class="analyzer-section-title">اگر چند باخت پشت‌سرهم داشته باشم چه می‌شود؟</div>
+    <div class="analyzer-loss-list">${lossRows}</div>
+    <div class="analyzer-note">این تحلیل فقط از موتور فعلی ${mode === 'simple' ? 'Simple' : 'Masaniello'} برای شبیه‌سازی استفاده می‌کند و هیچ مقدار واقعی سشن یا برنامه را تغییر نمی‌دهد.</div>
+  `;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+
+
+function getScenarioPlan(){
+  return getAnalyzerPlan();
+}
+
+function getWhatIfPlan(){
+  return getAnalyzerPlan();
+}
+
+function openWhatIfLab(){
+  const plan = getWhatIfPlan();
+  const modal = document.getElementById('whatIfModal');
+  const body = document.getElementById('whatIfBody');
+  if(!modal || !body) return;
+  if(!plan || plan.valid === false){
+    showAppMessage('ابتدا یک برنامه معتبر بسازید تا مقایسه سناریو ممکن باشد.', 'What-If Lab');
+    return;
+  }
+  const currentResults = trades.map(t => t.result).filter(Boolean);
+  if(currentResults.length === 0){
+    showAppMessage('برای تحلیل What-If ابتدا حداقل یک معامله در سشن ثبت کنید.', 'What-If Lab');
+    return;
+  }
+  renderWhatIfLab();
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function closeWhatIfLab(){
+  const modal=document.getElementById('whatIfModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
+function renderWhatIfLab(){
+  const plan=getWhatIfPlan();
+  const body=document.getElementById('whatIfBody');
+  if(!body || !plan) return;
+  const actual=trades.map(t=>t.result).filter(Boolean);
+  const target=getUnifiedTarget();
+  const options=actual.map((result,index)=>`
+    <option value="${index}">معامله ${index+1} — ${result}</option>`).join('');
+  body.innerHTML=`
+    <div class="whatif-intro">یک معامله از سشن فعلی را انتخاب کنید و نتیجه جایگزین را ببینید. سشن واقعی، موجودی و History تغییر نمی‌کنند.</div>
+    <div class="whatif-controls">
+      <label>معامله
+        <select id="whatIfTradeSelect">${options}</select>
+      </label>
+      <label>نتیجه جایگزین
+        <select id="whatIfResultSelect">
+          <option value="W">Win</option>
+          <option value="BE">BE</option>
+          <option value="L">Loss</option>
+        </select>
+      </label>
+      <button id="whatIfRunBtn" class="btn btn-primary" type="button">مقایسه</button>
+    </div>
+    <div id="whatIfResult" class="whatif-result"></div>`;
+  const selected=Number(document.getElementById('whatIfTradeSelect')?.value || 0);
+  document.getElementById('whatIfResultSelect').value = actual[selected] === 'W' ? 'L' : actual[selected] === 'L' ? 'W' : 'W';
+  document.getElementById('whatIfRunBtn')?.addEventListener('click', runWhatIfComparison);
+  runWhatIfComparison();
+}
+
+function runWhatIfComparison(){
+  const plan=getWhatIfPlan();
+  const target=getUnifiedTarget();
+  const tradeSelect=document.getElementById('whatIfTradeSelect');
+  const resultSelect=document.getElementById('whatIfResultSelect');
+  const body=document.getElementById('whatIfResult');
+  if(!plan || !tradeSelect || !resultSelect || !body) return;
+  const actual=trades.map(t=>t.result).filter(Boolean);
+  const index=Number(tradeSelect.value);
+  const hypothetical=parseScenario(actual);
+  hypothetical[index]=resultSelect.value;
+  const comparison=buildWhatIfComparison({
+    mode,
+    capital:num('initialCapital'),
+    payout:getValidPayout(),
+    targetProfit:target.targetProfit,
+    targetBalance:target.targetBalance,
+    stopLossBalance:getStopLossBalance(),
+    plan,
+    actualResults:actual,
+    hypotheticalResults:hypothetical,
+    minStake:MIN_STAKE
+  });
+  if(!comparison.valid){
+    body.innerHTML=`<div class="scenario-error">⚠ ${comparison.reason || 'مقایسه انجام نشد.'}</div>`;
+    return;
+  }
+  const signed=v=>(v>0?'+':'')+money(v);
+  const deltaClass=comparison.delta.finalBalance >= 0 ? 'pos' : 'neg';
+  const reasonText={target:'Target',stoploss:'Stop Loss','plan-complete':'پایان برنامه','target-impossible':'هدف غیرممکن','no-trades-left':'پایان معاملات','insufficient-balance':'موجودی ناکافی'};
+  const row=(label,a,b,format='money')=>`<div><span>${label}</span><b>${format==='money'?money(a):a}</b><b>${format==='money'?money(b):b}</b></div>`;
+  body.innerHTML=`
+    <div class="whatif-legend"><span></span><b>واقعی</b><b>اگر ${hypothetical[index]} می‌شد</b></div>
+    <div class="whatif-summary">
+      ${row('موجودی نهایی',comparison.actual.finalBalance,comparison.hypothetical.finalBalance)}
+      ${row('Profit',comparison.actual.profit,comparison.hypothetical.profit)}
+      ${row('معاملات',comparison.actual.trades,comparison.hypothetical.trades,'number')}
+      ${row('Win / BE / Loss',`${comparison.actual.wins} / ${comparison.actual.breakevens} / ${comparison.actual.losses}`,`${comparison.hypothetical.wins} / ${comparison.hypothetical.breakevens} / ${comparison.hypothetical.losses}`,'text')}
+      ${row('Max Drawdown',comparison.actual.maxDrawdown,comparison.hypothetical.maxDrawdown)}
+    </div>
+    <div class="whatif-delta ${deltaClass}">تغییر موجودی نهایی: <strong>${signed(comparison.delta.finalBalance)}</strong></div>
+    <div class="whatif-status">
+      <div>واقعی: <b>${comparison.actual.locked ? (reasonText[comparison.actual.lockReason] || comparison.actual.lockReason) : 'ادامه‌پذیر'}</b></div>
+      <div>فرضی: <b>${comparison.hypothetical.locked ? (reasonText[comparison.hypothetical.lockReason] || comparison.hypothetical.lockReason) : 'ادامه‌پذیر'}</b></div>
+    </div>
+    <div class="whatif-note">فقط نتیجه معامله ${index+1} تغییر داده شده است؛ تمام معاملات بعدی با موتور واقعی ${mode === 'simple' ? 'Simple' : 'Masaniello'} دوباره محاسبه شده‌اند.</div>`;
+}
+
+
+function openScenarioSimulator(){
+  const plan = getScenarioPlan();
+  if(!plan || plan.valid === false){
+    showAppMessage('ابتدا یک برنامه معتبر بسازید تا سناریو قابل شبیه‌سازی باشد.', 'شبیه‌ساز سناریو');
+    return;
+  }
+  const modal = document.getElementById('scenarioSimulatorModal');
+  const input = document.getElementById('scenarioInput');
+  if(!modal || !input) return;
+  input.value = input.value || 'W → L → BE → L → W';
+  renderScenarioSimulation();
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  setTimeout(() => input.focus(), 0);
+}
+
+function closeScenarioSimulator(){
+  const modal = document.getElementById('scenarioSimulatorModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
+function appendScenarioResult(result){
+  const input = document.getElementById('scenarioInput');
+  if(!input) return;
+  const values = parseScenario(input.value);
+  values.push(result);
+  input.value = values.join(' → ');
+  renderScenarioSimulation();
+}
+
+function clearScenarioInput(){
+  const input = document.getElementById('scenarioInput');
+  if(input) input.value = '';
+  renderScenarioSimulation();
+}
+
+function renderScenarioSimulation(){
+  const plan = getScenarioPlan();
+  const input = document.getElementById('scenarioInput');
+  const body = document.getElementById('scenarioSimulatorBody');
+  if(!plan || !input || !body) return;
+  const target = getUnifiedTarget();
+  const result = simulateScenario({
+    mode,
+    capital: num('initialCapital'),
+    payout: getValidPayout(),
+    targetProfit: target.targetProfit,
+    stopLossBalance: getStopLossBalance(),
+    plan,
+    results: input.value,
+    minStake: MIN_STAKE
+  });
+  if(!result.valid){
+    body.innerHTML = `<div class="scenario-error">⚠ ورودی سناریو نامعتبر است. فقط W، BE و L مجاز هستند.</div>`;
+    return;
+  }
+  const signed = v => (v > 0 ? '+' : '') + money(v);
+  const reasonText = {
+    target:'Target',
+    stoploss:'Stop Loss',
+    'plan-complete':'پایان برنامه',
+    'no-trades-left':'پایان معاملات',
+    'target-impossible':'هدف غیرممکن',
+    'insufficient-balance':'موجودی ناکافی',
+    'invalid-payout':'Payout نامعتبر'
+  };
+  const rows = result.rows.length ? result.rows.map(r => `
+    <div class="scenario-row ${r.executed ? '' : 'not-executed'}">
+      <b>${r.no}</b><strong>${r.result}</strong>
+      <span>${r.executed ? money(r.stake) : '—'}</span>
+      <span>${money(r.balance)}</span>
+      <span class="${r.profit < 0 ? 'neg' : 'pos'}">${signed(r.profit)}</span>
+    </div>`).join('') : '<div class="small-center small">سناریویی وارد نشده است.</div>';
+  body.innerHTML = `
+    <div class="scenario-controls">
+      <button class="btn btnW" data-scenario-result="W" type="button">Win</button>
+      <button class="btn btnBE" data-scenario-result="BE" type="button">BE</button>
+      <button class="btn btnL" data-scenario-result="L" type="button">Loss</button>
+      <button class="btn btn-secondary" id="scenarioClearBtn" type="button">پاک کردن</button>
+    </div>
+    <input id="scenarioInput" class="scenario-input" value="${input.value.replace(/"/g,'&quot;')}" aria-label="نتایج سناریو" placeholder="W → L → BE → L → W">
+    <div class="scenario-summary">
+      <div><span>معاملات</span><b>${result.trades}</b></div>
+      <div><span>Win / BE / Loss</span><b>${result.wins} / ${result.breakevens} / ${result.losses}</b></div>
+      <div><span>موجودی نهایی</span><b>${money(result.finalBalance)}</b></div>
+      <div><span>Profit</span><b>${signed(result.profit)}</b></div>
+      <div><span>Win Rate</span><b>${result.winRate.toFixed(1)}%</b></div>
+      <div><span>Max Drawdown</span><b>${money(result.maxDrawdown)}</b></div>
+      <div><span>Max Loss Streak</span><b>${result.maxLossStreak}</b></div>
+      <div><span>وضعیت</span><b>${result.locked ? (reasonText[result.lockReason] || result.lockReason) : 'ادامه‌پذیر'}</b></div>
+    </div>
+    <div class="scenario-table">
+      <div class="scenario-row scenario-head"><b>#</b><b>نتیجه</b><b>Stake</b><b>Balance</b><b>Profit</b></div>
+      ${rows}
+    </div>`;
+  body.querySelectorAll('[data-scenario-result]').forEach(btn => {
+    btn.addEventListener('click', () => appendScenarioResult(btn.dataset.scenarioResult));
+  });
+  body.querySelector('#scenarioClearBtn')?.addEventListener('click', clearScenarioInput);
+  body.querySelector('#scenarioInput')?.addEventListener('input', event => {
+    input.value = event.target.value;
+    renderScenarioSimulation();
+  });
+}
+
+function closePlanAnalyzer(){
+  const modal=document.getElementById('planAnalyzerModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
 function renderTradingPlan(){
   const summary=document.getElementById('plannerSummary');
   const info=document.getElementById('savedPlanInfo');
@@ -1105,7 +1407,7 @@ function renderTradingPlan(){
 }
 
 function renderMasanielloPlanner(summary){
-  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE);
+  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE);
   const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
   const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
   if(current?.valid){
@@ -1206,7 +1508,7 @@ function completeTradingPlan(){
 }
 
 function selectPlannerRisk(risk){
-  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
   const option = options.find(o => o.risk === risk);
   if(!option || option.valid === false) return;
   selectedPlannerRisk = risk;
@@ -1217,7 +1519,7 @@ function selectPlannerRisk(risk){
     document.getElementById('manualK').value = option.k;
     applySetup();
   } else {
-    document.getElementById('accountGain').value = ((option.profitPerWin / num('initialCapital')) * 100).toFixed(4);
+    // Target is already the shared targetBalance/targetProfit source; do not mirror it into legacy fields.
     document.getElementById('stopLossPct').value = ((option.stopLossAmount / num('initialCapital')) * 100).toFixed(2);
     applySetup();
   }
@@ -1231,7 +1533,7 @@ function previewPlannerEdit(){
   if(!hint) return;
   if(!Number.isInteger(n)||!Number.isInteger(losses)||n<1||losses<0||losses>=n){hint.textContent='تعداد معاملات باید بیشتر از باخت مجاز باشد.';hint.className='small warn';return;}
   if(mode==='masaniello'){
-    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),num('targetProfit'),n,losses,MIN_STAKE);
+    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,n,losses,MIN_STAKE);
     if(!checked.valid){hint.textContent='⚠ این ترکیب با Target فعلی قابل تضمین نیست.';hint.className='small warn';return;}
     hint.textContent=`Custom معتبر: ${n} معامله، ${n-losses} برد، ${losses} باخت مجاز، حداکثر Stake ${money(checked.maxStake)}.`;
   }else{
@@ -1252,7 +1554,7 @@ async function applyPlannerEdit(){
   if(mode !== 'masaniello') return;
   const capital = num('initialCapital');
   const payout = num('payout');
-  const target = num('targetProfit');
+  const target = getUnifiedTarget().targetProfit;
   const checked = validateMasanielloCustom(capital,payout,target,n,losses,MIN_STAKE);
   if(!checked.valid){
     await showAppMessage(checked.reason === 'target' ? 'این ترکیب N/K با سرمایه، Payout و Target فعلی نمی‌تواند هدف را طبق قواعد Masaniello تضمین کند.' : 'ترکیب تعداد معاملات و باخت مجاز معتبر یا قابل محاسبه نیست.', 'برنامه نامعتبر');
@@ -1416,7 +1718,7 @@ function computeSessionMetricsGeneric(){
 
   return Object.assign(base, {
     payout_percent: num('payout'),
-    account_gain_target_percent: num('accountGain'),
+    account_gain_target_percent: getUnifiedTarget().type === 'percent' ? getUnifiedTarget().value : (getUnifiedTarget().capital > 0 ? getUnifiedTarget().targetProfit / getUnifiedTarget().capital * 100 : 0),
     stop_loss_percent: num('stopLossPct'),
     stop_loss_balance_floor: Math.round(getStopLossBalance()*100)/100
   });
@@ -1577,13 +1879,12 @@ function render(){
 ===================================================== */
 function recalc(){
   const initialCapital = num('initialCapital');
-  const gainPct = num('accountGain') / 100;
-  const capitalFinal = initialCapital * (1 + gainPct);
-  const winProfit = getWinProfitAmount();
+  const target = getUnifiedTarget();
+  const capitalFinal = target.targetBalance;
+  const winProfit = target.targetProfit;
   const stopLossAmount = getStopLossAmount();
   const stopLossBalance = getStopLossBalance();
 
-  document.getElementById('capitalFinal').textContent = money(capitalFinal);
   document.getElementById('winProfit').textContent = money(winProfit);
   document.getElementById('stopLossAmt').textContent = money(stopLossBalance);
 
@@ -1621,7 +1922,6 @@ async function startSelectedPlan(){
     document.getElementById('manualK').value=p.k;
     riskLevel=p.risk==='custom'?'medium':p.risk;
   }else{
-    document.getElementById('accountGain').value=((selectedPlannerPlan.profitPerWin/num('initialCapital'))*100).toFixed(4);
     document.getElementById('stopLossPct').value=((selectedPlannerPlan.stopLossAmount/num('initialCapital'))*100).toFixed(2);
   }
   applySetup();
@@ -1664,6 +1964,15 @@ function bindUI(){
   $('t-autoCopy')?.addEventListener('click', () => toggleBtn('t-autoCopy'));
   document.querySelector('.optionpanel .btn-secondary.btn-sm')?.addEventListener('click', resetSessionCounter);
   $('aboutBtn')?.addEventListener('click', showAbout);
+  $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
+  $('scenarioSimulatorBtn')?.addEventListener('click', openScenarioSimulator);
+  $('whatIfBtn')?.addEventListener('click', openWhatIfLab);
+  $('whatIfCloseBtn')?.addEventListener('click', closeWhatIfLab);
+  $('whatIfModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeWhatIfLab(); });
+  $('scenarioSimulatorCloseBtn')?.addEventListener('click', closeScenarioSimulator);
+  $('scenarioSimulatorModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closeScenarioSimulator(); });
+  $('planAnalyzerCloseBtn')?.addEventListener('click', closePlanAnalyzer);
+  $('planAnalyzerModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closePlanAnalyzer(); });
   $('aboutCloseBtn')?.addEventListener('click', hideAbout);
   $('aboutOkBtn')?.addEventListener('click', hideAbout);
   $('aboutModal')?.addEventListener('click', event => {
@@ -1690,7 +1999,7 @@ function bindUI(){
   $('mainTargetValue')?.addEventListener('input', onSetupChange);
   document.querySelectorAll('input[name="mainTargetType"]').forEach(input => input.addEventListener('change', onSetupChange));
   $('initialCapital')?.addEventListener('blur', formatCapitalInput);
-  ['payout','accountGain','stopLossPct','targetProfit','manualN','manualK'].forEach(id => $(id)?.addEventListener('input', onSetupChange));
+  ['payout','stopLossPct','manualN','manualK'].forEach(id => $(id)?.addEventListener('input', onSetupChange));
   $('manualToggle')?.addEventListener('change', onManualToggle);
   document.querySelectorAll('.risklevels button').forEach(button => button.addEventListener('click', () => setRisk(button.dataset.risk)));
 
@@ -1745,29 +2054,57 @@ render();
 renderHistory();
 updateSessionCounter();
 
-/* Session pill: tap = new session, long-press = reset session counter (shortcut for the Settings option) */
+/* Session pill: normal click = new session, long-press = reset counter.
+   Use a native click for the normal action because Android WebView can deliver
+   pointer timing differently from desktop browsers. The long-press path marks
+   the following click as consumed so it cannot start a second session. */
 (function(){
   const pill = document.getElementById('sessionPill');
   if(!pill) return;
   const LONG_MS = 3000;
-  const TAP_MS = 250;
-  let timer = null, longFired = false, downAt = 0;
+  let timer = null;
+  let longFired = false;
+  let suppressClick = false;
+
+  pill.addEventListener('click', () => {
+    if(suppressClick){
+      suppressClick = false;
+      return;
+    }
+    newSession();
+  });
+
   function down(){
     longFired = false;
-    downAt = Date.now();
-    timer = setTimeout(() => { longFired = true; timer = null; resetSessionCounter(); }, LONG_MS);
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      longFired = true;
+      suppressClick = true;
+      resetSessionCounter();
+    }, LONG_MS);
   }
-  function up(){
-    if(timer){ clearTimeout(timer); timer = null; }
-    if(!longFired && (Date.now() - downAt) <= TAP_MS) newSession();
-  }
+
   function cancel(){
     if(timer){ clearTimeout(timer); timer = null; }
+    if(!longFired) suppressClick = false;
   }
+
   pill.addEventListener('pointerdown', down);
-  pill.addEventListener('pointerup', up);
+  pill.addEventListener('pointerup', cancel);
   pill.addEventListener('pointerleave', cancel);
   pill.addEventListener('pointercancel', cancel);
+})();
+
+// Close the manual options menu when tapping anywhere outside it.
+// Native <details> still handles its own open/close state.
+(() => {
+  const menu = document.getElementById('optionsMenu');
+  if(!menu) return;
+  document.addEventListener('pointerdown', event => {
+    if(!menu.open || menu.contains(event.target)) return;
+    menu.open = false;
+  }, {passive:true});
 })();
 
 /* Android hardware/gesture back button: don't exit on a single press —
