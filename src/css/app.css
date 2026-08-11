@@ -792,22 +792,40 @@ input,select,textarea{color:var(--text);}
   font-size:16px;
   color:var(--teal);
 }
-.subactions{
+/* Keep planner action buttons identical in width, height and alignment. */
+#tradingPlanPanel > .subactions{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px;
   align-items:stretch;
 }
-.subactions button{
+#tradingPlanPanel > .subactions button{
   width:100%;
-  min-height:40px;
+  min-width:0;
+  min-height:42px;
   margin:0;
+  padding:10px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
 }
 .right-column{
   min-width:0;
 }
+.trade-column,.calc-column,.right-column{
+  min-width:0;
+}
+/* In landscape the app always has three explicit columns: trades, planner, dashboard/history. */
 @media (orientation:landscape){
   .grid{
     grid-template-columns:minmax(0,1.25fr) minmax(0,1.05fr) minmax(0,.9fr);
+    align-items:start;
+  }
+  .trade-column,.calc-column,.right-column{
+    width:100%;
+    min-width:0;
   }
   .right-column{
     display:flex;
@@ -825,7 +843,7 @@ input,select,textarea{color:var(--text);}
   .right-column #historyDetails{max-height:none;}
 }
 @media (orientation:landscape) and (max-height:500px){
-  .subactions button{min-height:34px;padding:7px 5px;font-size:10.5px;}
+  #tradingPlanPanel > .subactions button{min-height:34px;padding:7px 5px;font-size:10.5px;}
   .target-master{padding:7px;}
   .target-final-row strong{font-size:13px;}
   .right-column{overflow-y:auto;}
