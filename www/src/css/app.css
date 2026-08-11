@@ -1702,3 +1702,234 @@ input[aria-invalid="true"]{
 @media (orientation:landscape){
   .grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
 }
+
+
+/* =====================================================
+   FINAL UI CONTROL PASS — PORTRAIT RESTORE / LANDSCAPE POLISH
+   Layout and presentation only. No business logic.
+===================================================== */
+
+/* Compact numeric controls: consistent size and left-aligned values. */
+.compact-value-row{
+  display:grid;
+  grid-template-columns:18px 96px;
+  justify-content:start;
+  align-items:center;
+  column-gap:7px;
+}
+.compact-value-row .value-symbol{
+  color:var(--muted);
+  font:800 12px var(--mono);
+  text-align:center;
+}
+.compact-value-row input{
+  width:96px !important;
+  min-width:96px;
+  height:32px;
+  min-height:32px;
+  text-align:left !important;
+  padding-inline:8px;
+}
+
+/* All editable numeric fields share one visual alignment. */
+.row input,
+.row select,
+.rowSub input,
+.tp-editor-grid input,
+.planner-edit-grid input,
+.stress-inputs input,
+.stress-probabilities input,
+.target-goal-input{
+  text-align:left;
+}
+.stress-inputs input,
+.stress-probabilities input{
+  color:var(--text)!important;
+  -webkit-text-fill-color:var(--text)!important;
+}
+
+/* Tools is a text disclosure, not a giant icon. */
+.menu-section summary{
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between !important;
+}
+.menu-tools-arrow{
+  font-size:15px;
+  opacity:.75;
+  line-height:1;
+}
+
+/* Floating tools/menu panels: smaller than the main screen. */
+.optionsmenu .optionpanel{
+  position:fixed;
+  top:calc(env(safe-area-inset-top) + 52px);
+  right:12px;
+  left:auto;
+  width:min(300px, calc(100vw - 24px));
+  height:auto;
+  max-height:min(72vh, 500px);
+  overflow-y:auto;
+  border-radius:12px;
+  padding:10px;
+  box-shadow:0 18px 50px rgba(0,0,0,.58);
+}
+.optionsmenu[open] .optionpanel{
+  animation:none;
+  transform:none;
+  opacity:1;
+}
+.optionsmenu[open]::after{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  background:rgba(0,0,0,.38);
+}
+
+/* -----------------------------------------------------
+   Portrait: restore the previous compact 3-part header.
+   These rules intentionally do NOT apply to landscape.
+----------------------------------------------------- */
+@media (max-width:900px) and (orientation:portrait){
+  .titlebar{
+    direction:rtl;
+    display:grid;
+    grid-template-columns:1fr minmax(0,auto) 1fr;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    padding-top:calc(8px + env(safe-area-inset-top));
+    min-height:46px;
+  }
+  .titlebar > .sessionpill{
+    grid-column:1;
+    justify-self:start;
+    position:static;
+    transform:none;
+  }
+  .titlebar > .titlebar-center{
+    grid-column:2;
+    justify-self:center;
+    min-width:0;
+  }
+  .titlebar > .optionsmenu{
+    grid-column:3;
+    justify-self:end;
+    position:relative;
+  }
+  .optionsmenu .optionpanel{
+    top:calc(100% + 7px);
+    right:0;
+    max-height:min(72vh,500px);
+  }
+}
+
+/* -----------------------------------------------------
+   Landscape: center all app controls in one compact row.
+   System clock/notifications remain untouched by the app.
+----------------------------------------------------- */
+@media (orientation:landscape) and (max-height:600px){
+  .titlebar{
+    direction:ltr;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    padding:5px 10px;
+    padding-top:calc(5px + env(safe-area-inset-top));
+  }
+  .titlebar > .sessionpill,
+  .titlebar > .titlebar-center,
+  .titlebar > .optionsmenu{
+    position:static;
+    flex:0 0 auto;
+  }
+  .titlebar > .sessionpill{
+    justify-self:auto;
+    direction:rtl;
+  }
+  .titlebar-center{
+    justify-content:center;
+    direction:rtl;
+    gap:6px;
+  }
+  .titlebar-balance{font-size:10.5px;}
+  .sessionpill{font-size:10px;padding:5px 7px;}
+  .modetabs button{font-size:9.5px;padding:4px 7px;}
+  .optionsmenu{justify-self:auto;}
+  .optionsmenu summary{
+    width:32px;
+    height:28px;
+    font-size:16px;
+  }
+  /* Drawer still opens from the right even though its trigger is centered. */
+  .optionsmenu .optionpanel{
+    position:fixed;
+    top:calc(env(safe-area-inset-top) + 44px);
+    right:10px;
+    left:auto;
+    width:min(300px, calc(100vw - 20px));
+    max-height:min(78vh, 430px);
+    height:auto;
+    border-radius:12px;
+  }
+
+  /* Independent middle-column scroll: the entire middle column is the scroller. */
+  .grid{
+    min-height:0 !important;
+    height:auto !important;
+    overflow:hidden !important;
+  }
+  .grid > .calc-column{
+    min-height:0 !important;
+    height:100% !important;
+    max-height:none !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;
+  }
+  .grid > .calc-column > .panel{
+    flex:0 0 auto;
+  }
+
+  /* Restore readable strategy typography and spacing. */
+  .risklevels button{
+    font-size:10.5px;
+    line-height:1.25;
+    letter-spacing:0;
+    white-space:nowrap;
+    padding:7px 5px;
+  }
+  .risklevels button .mono,
+  .risklevels button b{
+    margin-inline-start:3px;
+  }
+
+  /* Compact target values in one aligned row. */
+  .compact-value-row{
+    grid-template-columns:18px 88px;
+    column-gap:6px;
+  }
+  .compact-value-row input{
+    width:88px !important;
+    min-width:88px;
+  }
+}
+
+/* Dialog: exact English actions, evenly sized and centered. */
+.appdialog-actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+}
+.appdialog-actions button{
+  width:100%;
+  min-width:0;
+  white-space:nowrap;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
