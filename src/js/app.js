@@ -2187,14 +2187,6 @@ function bindUI(){
   $('t-lowTrade')?.addEventListener('click', () => toggleBtn('t-lowTrade'));
   $('t-autoCopy')?.addEventListener('click', () => toggleBtn('t-autoCopy'));
   $('resetSessionCounterBtn')?.addEventListener('click', resetSessionCounter);
-  $('menuSessionBtn')?.addEventListener('click', () => {
-    $('optionsMenu').open = false;
-    $('tradePanelDetails')?.scrollIntoView({behavior:'smooth', block:'start'});
-  });
-  $('menuPlannerBtn')?.addEventListener('click', () => {
-    $('optionsMenu').open = false;
-    $('targetPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
-  });
   $('aboutBtn')?.addEventListener('click', showAbout);
   $('analyzePlanBtn')?.addEventListener('click', openPlanAnalyzer);
   $('scenarioSimulatorBtn')?.addEventListener('click', openScenarioSimulator);
@@ -2340,10 +2332,11 @@ updateSessionCounter();
 (() => {
   const menu = document.getElementById('optionsMenu');
   if(!menu) return;
-  document.addEventListener('pointerdown', event => {
-    if(!menu.open || menu.contains(event.target)) return;
-    menu.open = false;
-  }, {passive:true});
+  const closeFromOutside = event => {
+    if(menu.open && !menu.contains(event.target)) menu.open = false;
+  };
+  document.addEventListener('pointerdown', closeFromOutside, {passive:true});
+  document.getElementById('menuBackdrop')?.addEventListener('click', () => { menu.open = false; });
 })();
 
 /* Android hardware/gesture back button: don't exit on a single press —
