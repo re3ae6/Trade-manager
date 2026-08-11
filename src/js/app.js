@@ -1954,133 +1954,71 @@ function saveSelectedPlan(){
   saveState(); render();
 }
 
-
-/* =====================================================
-   V2.9 UI PREFERENCES — presentation state only.
-   These preferences never affect trading calculations.
-===================================================== */
-const UI_PREFS_KEY = 'trade_manager_ui_prefs_v1';
-
-function readUiPrefs(){
-  try{
-    const raw = localStorage.getItem(UI_PREFS_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  }catch(_){ return {}; }
-}
-
-function writeUiPrefs(prefs){
-  try{ localStorage.setItem(UI_PREFS_KEY, JSON.stringify(prefs)); }catch(_){}
-}
-
-function restoreUiPanels(){
-  const prefs = readUiPrefs();
-  document.querySelectorAll('details[data-ui-key]').forEach(detail => {
-    const key = detail.dataset.uiKey;
-    if(Object.prototype.hasOwnProperty.call(prefs, key)){
-      detail.open = !!prefs[key];
-    }
-  });
-}
-
-function bindUiPanelPersistence(){
-  document.querySelectorAll('details[data-ui-key]').forEach(detail => {
-    detail.addEventListener('toggle', () => {
-      const prefs = readUiPrefs();
-      prefs[detail.dataset.uiKey] = detail.open;
-      writeUiPrefs(prefs);
-    });
-  });
-}
-
-/* =====================================================
-   V2.9 COCKPIT NAVIGATION
-===================================================== */
-function closeCockpitDrawer(){
-  const drawer = document.getElementById('cockpitDrawer');
-  const backdrop = document.getElementById('cockpitDrawerBackdrop');
-  const button = document.getElementById('cockpitMenuBtn');
-  drawer?.classList.remove('open');
-  backdrop?.classList.add('hidden');
-  document.body.classList.remove('cockpit-drawer-lock');
-  button?.setAttribute('aria-expanded','false');
-  drawer?.setAttribute('aria-hidden','true');
-}
-
-function openCockpitDrawer(){
-  const drawer = document.getElementById('cockpitDrawer');
-  const backdrop = document.getElementById('cockpitDrawerBackdrop');
-  const button = document.getElementById('cockpitMenuBtn');
-  drawer?.classList.add('open');
-  backdrop?.classList.remove('hidden');
-  document.body.classList.add('cockpit-drawer-lock');
-  button?.setAttribute('aria-expanded','true');
-  drawer?.setAttribute('aria-hidden','false');
-}
-
-function openHistoryExternal(){
-  closeCockpitDrawer();
-  const panel = document.getElementById('historyPanel');
-  const details = document.getElementById('historyDetails');
-  if(!panel) return;
-  panel.classList.add('history-external-open');
-  details?.setAttribute('open','');
-  document.body.classList.add('cockpit-drawer-lock');
-}
-
-function closeHistoryExternal(){
-  document.getElementById('historyPanel')?.classList.remove('history-external-open');
-  document.body.classList.remove('cockpit-drawer-lock');
-}
-
-function bindCockpitNavigation(){
-  document.getElementById('cockpitMenuBtn')?.addEventListener('click', openCockpitDrawer);
-  document.getElementById('cockpitDrawerClose')?.addEventListener('click', closeCockpitDrawer);
-  document.getElementById('cockpitDrawerBackdrop')?.addEventListener('click', closeCockpitDrawer);
-
-  document.querySelectorAll('[data-nav-target]').forEach(button => {
-    button.addEventListener('click', () => {
-      const target = document.getElementById(button.dataset.navTarget);
-      closeCockpitDrawer();
-      if(!target) return;
-      if(target.matches('details[data-ui-key]')){
-        target.open = true;
-      }
-      target.scrollIntoView({behavior:'smooth', block:'start'});
-    });
-  });
-
-  document.querySelectorAll('[data-nav-action]').forEach(button => {
-    button.addEventListener('click', () => {
-      const action = button.dataset.navAction;
-      closeCockpitDrawer();
-      if(action === 'analyze') document.getElementById('analyzePlanBtn')?.click();
-      else if(action === 'scenario') document.getElementById('scenarioSimulatorBtn')?.click();
-      else if(action === 'whatif') document.getElementById('whatIfBtn')?.click();
-      else if(action === 'history') openHistoryExternal();
-      else if(action === 'settings'){
-        const menu = document.getElementById('optionsMenu');
-        if(menu){ menu.open = true; menu.scrollIntoView({behavior:'smooth',block:'start'}); }
-      }
-      else if(action === 'about') document.getElementById('aboutBtn')?.click();
-    });
-  });
-
-  document.getElementById('historyCloseBtn')?.addEventListener('click', event => {
-    event.preventDefault();
-    event.stopPropagation();
-    closeHistoryExternal();
-  });
-
-  document.addEventListener('keydown', event => {
-    if(event.key !== 'Escape') return;
-    closeCockpitDrawer();
-    closeHistoryExternal();
-  });
-}
-
 function bindUI(){
   const $ = id => document.getElementById(id);
+
+  // V2.9 Clean Cockpit: navigation is UI-only and does not touch trading state.
+  const menuBtn = $('mainMenuBtn');
+  const menuDrawer = $('mainMenuDrawer');
+  const menuBackdrop = $('mainMenuBackdrop');
+  const closeMenuBtn = $('mainMenuCloseBtn');
+  const closeMenu = () => {
+    menuDrawer?.classList.remove('open');
+    menuBackdrop?.classList.remove('open');
+    menuDrawer?.setAttribute('aria-hidden','true');
+    menuBackdrop?.setAttribute('aria-hidden','true');
+    menuBtn?.setAttribute('aria-expanded','false');
+  };
+  const openMenu = () => {
+    menuDrawer?.classList.add('open');
+    menuBackdrop?.classList.add('open');
+    menuDrawer?.setAttribute('aria-hidden','false');
+    menuBackdrop?.setAttribute('aria-hidden','false');
+    menuBtn?.setAttribute('aria-expanded','true');
+  };
+  menuBtn?.addEventListener('click', () => {
+    if(menuDrawer?.classList.contains('open')) closeMenu(); else openMenu();
+  });
+  closeMenuBtn?.addEventListener('click', closeMenu);
+  menuBackdrop?.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', event => { if(event.key === 'Escape') closeMenu(); });
+
+  $('drawerSettingsBtn')?.addEventListener('click', () => {
+    closeMenu();
+    const details = $('optionsMenu');
+    if(details) details.open = true;
+  });
+  $('drawerSessionBtn')?.addEventListener('click', () => {
+    closeMenu();
+    $('winBtn')?.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+  $('drawerPlannerBtn')?.addEventListener('click', () => {
+    closeMenu();
+    $('targetPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  const historyPanel = $('historyPanel');
+  const historyOpenBtn = $('historyOpenBtn');
+  const closeHistoryBtn = $('closeHistoryBtn');
+  const historyBackdrop = $('mainMenuBackdrop');
+  const closeHistory = () => historyPanel?.classList.remove('open');
+  const openHistory = () => {
+    closeMenu();
+    historyPanel?.classList.add('open');
+  };
+  historyOpenBtn?.addEventListener('click', openHistory);
+  closeHistoryBtn?.addEventListener('click', closeHistory);
+
+  // Persist only visual open/closed state; never store trading state here.
+  document.querySelectorAll('details[data-collapsible-key]').forEach(details => {
+    const key = 'tm_v29_ui_' + details.dataset.collapsibleKey;
+    const saved = localStorage.getItem(key);
+    if(saved === 'open') details.open = true;
+    if(saved === 'closed') details.open = false;
+    details.addEventListener('toggle', () => {
+      try { localStorage.setItem(key, details.open ? 'open' : 'closed'); } catch {}
+    });
+  });
   $('modeBtnSimple')?.addEventListener('click', () => setMode('simple'));
   $('modeBtnMasaniello')?.addEventListener('click', () => setMode('masaniello'));
   $('stopLossAlertPct')?.addEventListener('input', render);
@@ -2164,8 +2102,6 @@ function applyNativeTheme(){
 ===================================================== */
 
 bindUI();
-bindCockpitNavigation();
-bindUiPanelPersistence();
 applyNativeTheme();
 
 const restored = loadState();
@@ -2175,7 +2111,6 @@ if(!restored){
   formatCapitalInput();
   applySetup();
 }
-restoreUiPanels();
 syncUnifiedTarget();
 if(!selectedPlannerRisk) selectedPlannerRisk='medium';
 render();
