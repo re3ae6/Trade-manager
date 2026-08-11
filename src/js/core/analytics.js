@@ -9,6 +9,19 @@ export function computePerformanceStats(sessionHistory = [], currentSession = nu
   const closedLosses = history.reduce((sum, s) => sum + safeNumber(s.losses), 0);
   const closedBE = history.reduce((sum, s) => sum + safeNumber(s.breakevens), 0);
   const closedProfit = history.reduce((sum, s) => sum + safeNumber(s.profit), 0);
+  const closedWinProfit = history.reduce((sum, s) => sum + safeNumber(s.winProfit), 0);
+  const closedLossAmount = history.reduce((sum, s) => sum + Math.max(0, safeNumber(s.lossAmount)), 0);
+  const closedWinCount = history.reduce((sum, s) => sum + safeNumber(s.wins), 0);
+  const closedLossCount = history.reduce((sum, s) => sum + safeNumber(s.losses), 0);
+  const hasStakeData = history.some(s => Number.isFinite(Number(s.averageStake)) || Number.isFinite(Number(s.maxStake)));
+  const averageStake = hasStakeData
+    ? (() => { const weighted = history.reduce((sum,s) => sum + safeNumber(s.averageStake) * safeNumber(s.trades), 0); const count = history.reduce((sum,s) => sum + safeNumber(s.trades), 0); return count ? weighted / count : 0; })()
+    : null;
+  const maxStake = hasStakeData ? Math.max(...history.map(s => safeNumber(s.maxStake)), 0) : null;
+  const maxLossStreak = history.some(s => Number.isFinite(Number(s.maxLossStreak)))
+    ? Math.max(...history.map(s => safeNumber(s.maxLossStreak)), 0) : null;
+  const maxWinStreak = history.some(s => Number.isFinite(Number(s.maxWinStreak)))
+    ? Math.max(...history.map(s => safeNumber(s.maxWinStreak)), 0) : null;
 
   const live = currentSession && safeNumber(currentSession.trades) > 0 ? currentSession : null;
   const trades = closedTrades + (live ? safeNumber(live.trades) : 0);
@@ -59,6 +72,13 @@ export function computePerformanceStats(sessionHistory = [], currentSession = nu
   const currentBalance = live && Number.isFinite(Number(live.finalBalance))
     ? Number(live.finalBalance)
     : (history.length ? safeNumber(history[history.length - 1].finalBalance) : null);
+  const grossWin = closedWinProfit > 0 ? closedWinProfit : Math.max(0, closedProfit + closedLossAmount);
+  const grossLoss = closedLossAmount > 0 ? closedLossAmount : Math.max(0, grossWin - closedProfit);
+  const averageWin = closedWinCount > 0 ? grossWin / closedWinCount : 0;
+  const averageLoss = closedLossCount > 0 ? grossLoss / closedLossCount : 0;
+  const beRate = trades > 0 ? breakevens / trades * 100 : 0;
+  const lossRate = trades > 0 ? losses / trades * 100 : 0;
+  const profitFactor = averageLoss > 0 ? (averageWin * wins) / (averageLoss * losses || 1) : (averageWin > 0 ? Infinity : 0);
 
   return {
     sessions: completedSessions + (live ? 1 : 0),
@@ -68,11 +88,20 @@ export function computePerformanceStats(sessionHistory = [], currentSession = nu
     losses,
     breakevens,
     winRate,
+    beRate,
+    lossRate,
+    averageWin,
+    averageLoss,
+    profitFactor,
     netProfit,
     averageSessionProfit,
     bestSession,
     worstSession,
     currentBalance,
+    averageStake,
+    maxStake,
+    maxLossStreak,
+    maxWinStreak,
     maxDrawdownDollar,
     maxDrawdownPercent,
     drawdownBasis: 'session-end'
