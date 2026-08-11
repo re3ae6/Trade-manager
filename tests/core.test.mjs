@@ -6,7 +6,7 @@ import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/co
 import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions } from '../src/js/core/trading-plan.js';
 import { computePerformanceStats } from '../src/js/core/analytics.js';
 import { csvEscape } from '../src/js/core/format.js';
-import { applyTradeOutcome, sessionEndAction } from '../src/js/core/session.js';
+import { applyTradeOutcome, replayTradeResults, sessionEndAction } from '../src/js/core/session.js';
 
 test('Masaniello stake respects forced-win state', () => {
   assert.deepEqual(masanielloStake(100, 2, 2, 1.85, 1, 5, 5), { stake: 100, reason: 'ok' });
@@ -200,21 +200,62 @@ test('Masaniello Win and Loss update N/K correctly', () => {
   assert.equal(loss.kRemaining, 5);
 });
 
-test('Undo replay restores the state after Win → Loss → BE → Loss', () => {
+test('Undo replay uses the real replay primitive for Win → Loss → BE → Loss → Undo', () => {
   const initial = { balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0, wins: 0, losses: 0, breakevens: 0, trades: 0 };
   const results = ['W','L','BE','L'];
-  let state = initial;
-  for (const result of results) state = applyTradeOutcome(state, result, 10, 0.85);
-  assert.equal(state.balance, 88.5); assert.equal(state.nRemaining, 6); assert.equal(state.kRemaining, 4);
-  state = initial;
-  for (const result of results.slice(0,-1)) state = applyTradeOutcome(state, result, 10, 0.85);
-  assert.equal(state.balance, 98.5); assert.equal(state.nRemaining, 7); assert.equal(state.kRemaining, 4); assert.equal(state.trades, 3); assert.equal(state.breakevens, 1);
+  const stakeResolver = () => 10;
+
+  const afterFour = replayTradeResults(initial, results, stakeResolver, 0.85);
+  assert.equal(afterFour.balance, 88.5);
+  assert.equal(afterFour.nRemaining, 6);
+  assert.equal(afterFour.kRemaining, 4);
+  assert.equal(afterFour.trades, 4);
+  assert.equal(afterFour.breakevens, 1);
+
+  // This is the same replay contract used by Undo: remove only the last
+  // result, then deterministically replay every remaining real outcome.
+  const afterUndo = replayTradeResults(initial, results.slice(0, -1), stakeResolver, 0.85);
+  assert.equal(afterUndo.balance, 98.5);
+  assert.equal(afterUndo.nRemaining, 7);
+  assert.equal(afterUndo.kRemaining, 4);
+  assert.equal(afterUndo.trades, 3);
+  assert.equal(afterUndo.wins, 1);
+  assert.equal(afterUndo.losses, 1);
+  assert.equal(afterUndo.breakevens, 1);
 });
 
-test('Session end has save, delete and cancel actions', () => {
-  assert.equal(sessionEndAction('primary'), 'save-and-delete');
-  assert.equal(sessionEndAction('secondary'), 'delete-without-save');
-  assert.equal(sessionEndAction('cancel'), 'continue');
+test('Undo replay keeps BE neutral while consuming exactly one Masaniello trade', () => {
+  const initial = { balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0, wins: 0, losses: 0, breakevens: 0, trades: 0 };
+  const stakeResolver = () => 10;
+  const before = replayTradeResults(initial, ['W','BE'], stakeResolver, 0.85);
+  const afterUndo = replayTradeResults(initial, ['W'], stakeResolver, 0.85);
+
+  assert.equal(before.balance, 108.5);
+  assert.equal(before.nRemaining, 8);
+  assert.equal(before.kRemaining, 4);
+  assert.equal(afterUndo.balance, 108.5);
+  assert.equal(afterUndo.nRemaining, 9);
+  assert.equal(afterUndo.kRemaining, 4);
+  assert.equal(afterUndo.trades, 1);
+  assert.equal(afterUndo.breakevens, 0);
+});
+
+test('Session end exposes all three UI decisions without mutating session state', () => {
+  const choices = {
+    primary: sessionEndAction('primary'),
+    secondary: sessionEndAction('secondary'),
+    cancel: sessionEndAction('cancel')
+  };
+  assert.deepEqual(choices, {
+    primary: 'save-and-delete',
+    secondary: 'delete-without-save',
+    cancel: 'continue'
+  });
+});
+
+test('Session end decision mapping is stable for unexpected dialog values', () => {
+  assert.equal(sessionEndAction(undefined), 'continue');
+  assert.equal(sessionEndAction('unexpected'), 'continue');
 });
 
 test('Simple planner uses the configured stop-loss balance', () => {
@@ -241,4 +282,45 @@ test('Three consecutive BE outcomes keep balance fixed and consume three trades'
   assert.equal(state.breakevens, 3);
   assert.equal(state.nRemaining, 7);
   assert.equal(state.kRemaining, 5);
+});
+
+import { analyzePlan } from '../src/js/core/plan-analyzer.js';
+
+test('Plan analyzer uses the existing Simple engine without mutating the plan', () => {
+  const plan = buildSimplePlans(1000, 85, 100, 1, 500).find(p => p.risk === 'high' && p.valid);
+  const before = JSON.stringify(plan);
+  const result = analyzePlan({
+    mode: 'simple', capital: 1000, payoutPct: 85,
+    targetBalance: 1100, stopLossBalance: 500, plan, minStake: 1
+  });
+  assert.equal(result.valid, true);
+  assert.equal(result.mode, 'simple');
+  assert.ok(result.initialStake > 0);
+  assert.ok(result.maxStake >= result.initialStake);
+  assert.equal(result.maxLossStreak, plan.n - plan.k);
+  assert.equal(JSON.stringify(plan), before);
+});
+
+test('Plan analyzer reports Masaniello worst case and loss stress path', () => {
+  const plan = buildMasanielloPlans(1000, 85, 100, 1).find(p => p.risk === 'medium' && p.valid);
+  const result = analyzePlan({
+    mode: 'masaniello', capital: 1000, payoutPct: 85,
+    targetBalance: 1100, stopLossBalance: 800, plan, minStake: 1
+  });
+  assert.equal(result.valid, true);
+  assert.equal(result.maxLossStreak, plan.n - plan.k);
+  assert.equal(result.worstCaseFinal, plan.worstCaseFinal);
+  assert.ok(result.losses.length > 0);
+  assert.ok(result.losses[0].stake > 0);
+});
+
+test('Plan analyzer flags a plan when the configured stop-loss is breached', () => {
+  const plan = buildSimplePlans(1000, 85, 100, 1, 500).find(p => p.risk === 'high' && p.valid);
+  const result = analyzePlan({
+    mode: 'simple', capital: 1000, payoutPct: 85,
+    targetBalance: 1100, stopLossBalance: 900, plan, minStake: 1
+  });
+  assert.equal(result.valid, true);
+  assert.equal(result.stopLossSafe, false);
+  assert.equal(result.status, 'warning');
 });
