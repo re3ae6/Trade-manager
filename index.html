@@ -48,7 +48,7 @@
   <div class="grid">
 
     <!-- LEFT: TRADE LOG (shared) -->
-    <div class="panel">
+    <div class="trade-column panel">
 
       <div class="actions">
         <button id="winBtn" class="btnW">Win</button>
@@ -114,9 +114,9 @@
 
 
     <!-- MIDDLE: CALCULATIONS -->
-    <div>
+    <div class="calc-column">
 
-      <div class="panel target-master">
+      <div class="panel target-master" id="targetPanel">
         <div class="panel-title panel-title-accent">تنظیمات هدف و هدف نهایی</div>
 
         <!-- ===================== SHARED TARGET / SINGLE SOURCE ===================== -->
@@ -132,7 +132,7 @@
             <div id="payoutHint" class="small input-adjustment" aria-live="polite"></div>
           </div>
 
-          <div class="goal-divider">هدف اصلی</div>
+          <div class="goal-divider">هدف مشترک برنامه و سشن</div>
           <div class="row">
             <label>نوع هدف</label>
             <span class="inline-field type-toggle">
