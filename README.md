@@ -1,4 +1,4 @@
-# Trade Manager V2.9.0
+# Trade Manager V2.9.0 — Clean Cockpit UI
 
 Offline-first Simple + Masaniello trade manager, structured for GitHub Actions and Capacitor Android builds.
 
@@ -93,3 +93,16 @@ Visual/UI improvements are allowed, but business calculations and trading behavi
 - محاسبه Win Rate، سود/زیان، بهترین/بدترین سشن و Drawdown بر اساس پایان سشن‌ها
 - پشتیبان JSON و بازیابی آفلاین
 - مقایسه سود واقعی با هدف Trading Plan
+
+
+## V2.9 Clean Cockpit UI
+
+- One unified menu (`☰`) for Session, Planner, Tools, Settings and About.
+- The separate gear/settings control is removed.
+- All primary information panels are collapsible without removing any existing data.
+- The trading/session panel and Target & Plan remain open by default; the third landscape column remains visually open by default.
+- Disclosure state is remembered locally as a UI preference only.
+- History is available inside About and is no longer part of the main cockpit.
+- A compact Risk & Plan Advisor reuses the existing Plan Analyzer and never changes trading calculations.
+- Invalid setup input now produces a short, actionable explanation instead of allowing a silent calculation failure.
+- Existing Simple, Masaniello, BE, Planner, Target, Undo, CSV and Session behavior remains protected.
