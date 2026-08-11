@@ -61,15 +61,13 @@ function getPersistableState(){
     inputs: {
       initialCapital: document.getElementById('initialCapital')?.value ?? '',
       payout: document.getElementById('payout')?.value ?? '',
-      targetProfit: document.getElementById('targetProfit')?.value ?? '',
-      accountGain: document.getElementById('accountGain')?.value ?? '',
+      mainTargetType: document.querySelector('input[name="mainTargetType"]:checked')?.value ?? 'percent',
+      mainTargetValue: document.getElementById('mainTargetValue')?.value ?? '',
       stopLossPct: document.getElementById('stopLossPct')?.value ?? '',
       stopLossAlertPct: document.getElementById('stopLossAlertPct')?.value ?? '',
       manualToggle: document.getElementById('manualToggle')?.checked ?? false,
       manualN: document.getElementById('manualN')?.value ?? '',
-      manualK: document.getElementById('manualK')?.value ?? '',
-      mainTargetType: document.querySelector('input[name="mainTargetType"]:checked')?.value ?? 'percent',
-      mainTargetValue: document.getElementById('mainTargetValue')?.value ?? ''
+      manualK: document.getElementById('manualK')?.value ?? ''
     }
   };
 }
@@ -118,8 +116,6 @@ function loadState(){
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
     if(inp.payout) document.getElementById('payout').value = inp.payout;
-    if(inp.targetProfit) document.getElementById('targetProfit').value = inp.targetProfit;
-    if(inp.accountGain) document.getElementById('accountGain').value = inp.accountGain;
     if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
     if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
@@ -155,7 +151,9 @@ function loadState(){
    BASIC HELPERS
 ===================================================== */
 function num(id){
-  const raw = String(document.getElementById(id).value ?? '').replace(/[$,\s]/g,'');
+  const el = document.getElementById(id);
+  if(!el) return 0;
+  const raw = String(el.value ?? '').replace(/[$,\s]/g,'');
   const value = parseFloat(raw);
   return Number.isFinite(value) ? value : 0;
 }
@@ -374,13 +372,6 @@ function syncUnifiedTarget(){
   document.getElementById('mainTargetAmountLabel')?.classList.toggle('active',type==='amount');
   const label=document.getElementById('mainTargetValueLabel');
   if(label) label.textContent=type==='percent'?'هدف %':'هدف ($)';
-  if(type==='percent'){
-    document.getElementById('accountGain').value=safeValue;
-    document.getElementById('targetProfit').value=(capital*safeValue/100).toFixed(2);
-  }else{
-    document.getElementById('targetProfit').value=safeValue;
-    document.getElementById('accountGain').value=(capital>0 ? safeValue/capital*100 : 0).toFixed(4);
-  }
 }
 
 function onSetupChange(){
@@ -477,9 +468,7 @@ function applySetup(){
    SIMPLE ENGINE (fixed target % + stop loss)
 ===================================================== */
 function getWinProfitAmount(){
-  const initialCapital = num('initialCapital');
-  const gain = num('accountGain') / 100;
-  return initialCapital * gain;
+  return getUnifiedTarget().targetProfit;
 }
 function getValidStopLossPct(){
   const raw = num('stopLossPct');
@@ -1105,7 +1094,7 @@ function renderTradingPlan(){
 }
 
 function renderMasanielloPlanner(summary){
-  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE);
+  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE);
   const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
   const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
   if(current?.valid){
@@ -1206,7 +1195,7 @@ function completeTradingPlan(){
 }
 
 function selectPlannerRisk(risk){
-  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),num('targetProfit'),MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
   const option = options.find(o => o.risk === risk);
   if(!option || option.valid === false) return;
   selectedPlannerRisk = risk;
@@ -1217,7 +1206,7 @@ function selectPlannerRisk(risk){
     document.getElementById('manualK').value = option.k;
     applySetup();
   } else {
-    document.getElementById('accountGain').value = ((option.profitPerWin / num('initialCapital')) * 100).toFixed(4);
+    // Target is already the shared targetBalance/targetProfit source; do not mirror it into legacy fields.
     document.getElementById('stopLossPct').value = ((option.stopLossAmount / num('initialCapital')) * 100).toFixed(2);
     applySetup();
   }
@@ -1231,7 +1220,7 @@ function previewPlannerEdit(){
   if(!hint) return;
   if(!Number.isInteger(n)||!Number.isInteger(losses)||n<1||losses<0||losses>=n){hint.textContent='تعداد معاملات باید بیشتر از باخت مجاز باشد.';hint.className='small warn';return;}
   if(mode==='masaniello'){
-    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),num('targetProfit'),n,losses,MIN_STAKE);
+    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,n,losses,MIN_STAKE);
     if(!checked.valid){hint.textContent='⚠ این ترکیب با Target فعلی قابل تضمین نیست.';hint.className='small warn';return;}
     hint.textContent=`Custom معتبر: ${n} معامله، ${n-losses} برد، ${losses} باخت مجاز، حداکثر Stake ${money(checked.maxStake)}.`;
   }else{
@@ -1252,7 +1241,7 @@ async function applyPlannerEdit(){
   if(mode !== 'masaniello') return;
   const capital = num('initialCapital');
   const payout = num('payout');
-  const target = num('targetProfit');
+  const target = getUnifiedTarget().targetProfit;
   const checked = validateMasanielloCustom(capital,payout,target,n,losses,MIN_STAKE);
   if(!checked.valid){
     await showAppMessage(checked.reason === 'target' ? 'این ترکیب N/K با سرمایه، Payout و Target فعلی نمی‌تواند هدف را طبق قواعد Masaniello تضمین کند.' : 'ترکیب تعداد معاملات و باخت مجاز معتبر یا قابل محاسبه نیست.', 'برنامه نامعتبر');
@@ -1416,7 +1405,7 @@ function computeSessionMetricsGeneric(){
 
   return Object.assign(base, {
     payout_percent: num('payout'),
-    account_gain_target_percent: num('accountGain'),
+    account_gain_target_percent: getUnifiedTarget().type === 'percent' ? getUnifiedTarget().value : (getUnifiedTarget().capital > 0 ? getUnifiedTarget().targetProfit / getUnifiedTarget().capital * 100 : 0),
     stop_loss_percent: num('stopLossPct'),
     stop_loss_balance_floor: Math.round(getStopLossBalance()*100)/100
   });
@@ -1577,13 +1566,12 @@ function render(){
 ===================================================== */
 function recalc(){
   const initialCapital = num('initialCapital');
-  const gainPct = num('accountGain') / 100;
-  const capitalFinal = initialCapital * (1 + gainPct);
-  const winProfit = getWinProfitAmount();
+  const target = getUnifiedTarget();
+  const capitalFinal = target.targetBalance;
+  const winProfit = target.targetProfit;
   const stopLossAmount = getStopLossAmount();
   const stopLossBalance = getStopLossBalance();
 
-  document.getElementById('capitalFinal').textContent = money(capitalFinal);
   document.getElementById('winProfit').textContent = money(winProfit);
   document.getElementById('stopLossAmt').textContent = money(stopLossBalance);
 
@@ -1621,7 +1609,6 @@ async function startSelectedPlan(){
     document.getElementById('manualK').value=p.k;
     riskLevel=p.risk==='custom'?'medium':p.risk;
   }else{
-    document.getElementById('accountGain').value=((selectedPlannerPlan.profitPerWin/num('initialCapital'))*100).toFixed(4);
     document.getElementById('stopLossPct').value=((selectedPlannerPlan.stopLossAmount/num('initialCapital'))*100).toFixed(2);
   }
   applySetup();
@@ -1690,7 +1677,7 @@ function bindUI(){
   $('mainTargetValue')?.addEventListener('input', onSetupChange);
   document.querySelectorAll('input[name="mainTargetType"]').forEach(input => input.addEventListener('change', onSetupChange));
   $('initialCapital')?.addEventListener('blur', formatCapitalInput);
-  ['payout','accountGain','stopLossPct','targetProfit','manualN','manualK'].forEach(id => $(id)?.addEventListener('input', onSetupChange));
+  ['payout','stopLossPct','manualN','manualK'].forEach(id => $(id)?.addEventListener('input', onSetupChange));
   $('manualToggle')?.addEventListener('change', onManualToggle);
   document.querySelectorAll('.risklevels button').forEach(button => button.addEventListener('click', () => setRisk(button.dataset.risk)));
 
