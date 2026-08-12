@@ -135,7 +135,7 @@ function loadState(){
     simplePlanK = saved.simplePlanK || 0;
     riskLevel = saved.riskLevel || 'medium';
     capital0 = saved.capital0 || 0;
-    payout0 = normalizePayoutPercent(saved.payout0 || 0);
+    payout0 = saved.payout0 || 0;
     target0 = saved.target0 || 0;
     planned0 = saved.planned0 || 0;
     kRequired0 = saved.kRequired0 || 0;
@@ -143,7 +143,7 @@ function loadState(){
     kRemaining = saved.kRemaining || 0;
     tradingPlan = saved.tradingPlan || null;
     if(tradingPlan && tradingPlan.status === 'running' && !Array.isArray(tradingPlan.riskOptions)){
-      tradingPlan.payoutPercent = normalizePayoutPercent(tradingPlan.payoutPercent);
+      tradingPlan.payoutPercent = Number.isFinite(tradingPlan.payoutPercent) ? (tradingPlan.payoutPercent > 1 ? tradingPlan.payoutPercent : tradingPlan.payoutPercent * 100) : getPayoutPercent();
       tradingPlan.riskOptions = computeTradingPlanRiskOptions(
         tradingPlan.planStartBalance,
         tradingPlan.targetBalance,
@@ -153,7 +153,7 @@ function loadState(){
 
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
-    if(inp.payout) document.getElementById('payout').value = normalizePayoutPercent(inp.payout);
+    if(inp.payout) { document.getElementById('payout').value = inp.payout; normalizePayoutField(); }
     if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
     if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
@@ -195,6 +195,21 @@ function num(id){
   const value = parseFloat(raw);
   return Number.isFinite(value) ? value : 0;
 }
+function normalizePayoutInput(value){
+  const n=Number(value);
+  if(!Number.isFinite(n) || n<=0) return 0;
+  // User-facing contract: 0.85 means 85%. Legacy values such as 85 are accepted and normalized.
+  return n>1 ? n/100 : n;
+}
+function getPayoutFraction(){ return normalizePayoutInput(num('payout')); }
+function getPayoutPercent(){ return getPayoutFraction()*100; }
+function normalizePayoutField(){
+  const el=document.getElementById('payout');
+  if(!el) return;
+  const n=parseFloat(String(el.value ?? '').trim());
+  if(Number.isFinite(n) && n>1 && n<=500) el.value=(n/100).toFixed(2);
+}
+
 function intNum(id){
   const v = parseInt(document.getElementById(id).value, 10);
   return Number.isFinite(v) ? v : 0;
@@ -204,18 +219,10 @@ function intNum(id){
    calculation path to look frozen or fail silently. */
 const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
 
-function normalizePayoutPercent(value){
-  const n = Number(value);
-  if(!Number.isFinite(n)) return 0;
-  // Legacy versions stored payout as 85 for 85%. New contract stores 0.85.
-  if(n > 1 && n <= 500) return n / 100;
-  return n;
-}
-
 function validateSetupInputs({showMessage=false} = {}){
   const checks = [
     ['initialCapital', value => Number.isFinite(value) && value > 0, 'موجودی اولیه باید یک عدد بزرگ‌تر از صفر باشد.'],
-    ['payout', value => Number.isFinite(value) && value >= 0.01 && value <= 1, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 یعنی 85٪).'],
+    ['payout', value => { const p=normalizePayoutInput(value); return Number.isFinite(p) && p >= 0.01 && p <= 1; }, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 = 85٪).'],
     ['mainTargetValue', value => Number.isFinite(value) && value > 0, 'Target باید یک عدد بزرگ‌تر از صفر باشد.']
   ];
   if(mode === 'simple'){
@@ -290,7 +297,7 @@ function renderRiskAdvisor(){
   const result = analyzePlan({
     mode,
     capital: num('initialCapital'),
-    payoutPct: num('payout'),
+    payoutPct: getPayoutPercent(),
     targetBalance: target.targetBalance,
     stopLossBalance: getStopLossBalance(),
     plan,
@@ -459,21 +466,19 @@ function showInputAdjustment(id, message){
 }
 
 function getValidPayout(){
-  const raw = normalizePayoutPercent(num('payout'));
-  let payout = raw;
-  let message = '';
-  if(!Number.isFinite(payout) || payout < 0.01){
-    payout = 0.01;
-    message = 'Payout نامعتبر بود؛ مقدار 0.01 به‌عنوان حداقل انتخاب شد.';
-  } else if(payout > 1){
-    payout = 1;
-    message = 'Payout نمی‌تواند بیشتر از 1.00 باشد.';
-  }
-  showInputAdjustment('payout', message);
+  const raw=num('payout');
+  let payout=normalizePayoutInput(raw);
+  let message='';
+  if(payout<=0){ payout=0.01; message='Payout نامعتبر بود و به 0.01 اصلاح شد.'; }
+  else if(payout>1){ payout=1; message='Payout نباید بیشتر از 1.00 باشد.'; }
+  const el=document.getElementById('payout');
+  if(el && Number.isFinite(raw) && raw>1 && raw<=500) el.value=payout.toFixed(2);
+  showInputAdjustment('payout',message);
   return payout;
 }
+
 function getQuota(){
-  return 1 + getValidPayout();
+  return 1 + getValidPayout() * 100 / 100; // 1 + payout%/100, kept explicit for readability
 }
 
 /* =====================================================
@@ -586,7 +591,7 @@ function applySetup(){
     balance = initialCapital;
     streakLoss = 0;
     currentStreakCount = 0;
-    const plans=buildSimplePlans(initialCapital,num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+    const plans=buildSimplePlans(initialCapital,getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
     const p=selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(x=>x.risk==='medium');
     simplePlanN=p?.n || 0;
     simplePlanK=p?.k || 0;
@@ -595,7 +600,7 @@ function applySetup(){
 
   // masaniello
   capital0 = initialCapital;
-  payout0 = num('payout');
+  payout0 = getPayoutPercent();
   target0 = getUnifiedTarget().targetProfit;
   const floor = MIN_STAKE;
 
@@ -915,8 +920,8 @@ async function promptSessionEnd(){
   const reason = getLockReasonText();
   const choice = await showAppChoice(
     `سشن به پایان رسیده است.\n\n${reason}\n\nذخیره و ورود به تاریخچه، یا حذف بدون ذخیره؟`,
-    'Exit and Save',
-    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
+    'پایان سشن',
+    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
   );
   sessionEndDialogOpen = false;
   if(choice === 'cancel') return;
@@ -933,8 +938,8 @@ async function clearTrades(){
   const reason = lockReason ? `\n\nوضعیت پایان: ${getLockReasonText()}` : '\n\nپایان دستی سشن.';
   const choice = await showAppChoice(
     `سشن خاتمه داده شود؟${reason}`,
-    'Exit and Save',
-    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
+    'پایان سشن',
+    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
   );
   if(choice === 'cancel') return;
   if(choice === 'primary') saveSession();
@@ -1262,7 +1267,7 @@ function renderUnifiedTarget(){
 
 function renderSimplePlanner(){
   const wrap=document.getElementById('simplePlannerOptions'); if(!wrap) return;
-  const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+  const plans=buildSimplePlans(num('initialCapital'),getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
   const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
   wrap.innerHTML=plans.map(o=>{
     const selected=selectedPlannerRisk===o.risk;
@@ -1286,10 +1291,10 @@ function renderSimplePlanner(){
 
 function getAnalyzerPlan(){
   if(mode === 'masaniello'){
-    const plans = buildMasanielloPlans(num('initialCapital'), num('payout'), getUnifiedTarget().targetProfit, MIN_STAKE);
+    const plans = buildMasanielloPlans(num('initialCapital'), getPayoutPercent(), getUnifiedTarget().targetProfit, MIN_STAKE);
     return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
   }
-  const plans = buildSimplePlans(num('initialCapital'), num('payout'), getWinProfitAmount(), MIN_STAKE, getStopLossBalance());
+  const plans = buildSimplePlans(num('initialCapital'),getPayoutPercent(), getWinProfitAmount(), MIN_STAKE, getStopLossBalance());
   return selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(p => p.risk === selectedPlannerRisk && p.valid) || plans.find(p => p.risk === 'medium' && p.valid);
 }
 
@@ -1302,7 +1307,7 @@ function openPlanAnalyzer(){
   const target = getUnifiedTarget();
   const capital = num('initialCapital');
   const stopLossBalance = getStopLossBalance();
-  const result = analyzePlan({ mode, capital, payoutPct:num('payout'), targetBalance:target.targetBalance, stopLossBalance, plan, minStake:MIN_STAKE });
+  const result = analyzePlan({ mode, capital, payoutPct:getPayoutPercent(), targetBalance:target.targetBalance, stopLossBalance, plan, minStake:MIN_STAKE });
   const modal=document.getElementById('planAnalyzerModal'), body=document.getElementById('planAnalyzerBody');
   if(!modal||!body||!result.valid) return;
   const risk=scoreRisk({
@@ -1318,7 +1323,7 @@ function openPlanAnalyzer(){
   const signed=v=>(v>0?'+':'')+money(v);
   const levelClass={safe:'analyzer-good',moderate:'analyzer-good',high:'analyzer-warn',extreme:'analyzer-bad'}[risk.level]||'analyzer-warn';
   const lossRows=result.losses.length?result.losses.map(row=>`<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason==='loss'?money(row.stake):'—'}</b><strong>${money(row.balance)}</strong></div>`).join(''):'<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
-  const recovery=calculateRecoveryStake({balance:capital,payout:normalizePayoutPercent(num('payout')),targetProfit:target.targetProfit,accumulatedLoss:0,stopLossBalance,maxStake:result.maxStake,maxDrawdown:Math.max(0,capital-stopLossBalance),maxAttempts:3,minStake:MIN_STAKE});
+  const recovery=calculateRecoveryStake({balance:capital,payout:getPayoutFraction(),targetProfit:target.targetProfit,accumulatedLoss:0,stopLossBalance,maxStake:result.maxStake,maxDrawdown:Math.max(0,capital-stopLossBalance),maxAttempts:3,minStake:MIN_STAKE});
   body.innerHTML=`
     <div class="analyzer-status ${levelClass}">● ${risk.label} · امتیاز ساختاری ${risk.score}/100</div>
     <div class="analyzer-grid">
@@ -1346,7 +1351,7 @@ function openPlanAnalyzer(){
 
 function openStrategyComparison(){
   const target=getUnifiedTarget();
-  const comparison=compareStrategies({capital:num('initialCapital'),payoutPct:num('payout'),targetBalance:target.targetBalance,stopLossBalance:getStopLossBalance(),minStake:MIN_STAKE});
+  const comparison=compareStrategies({capital:num('initialCapital'),payoutPct:getPayoutPercent(),targetBalance:target.targetBalance,stopLossBalance:getStopLossBalance(),minStake:MIN_STAKE});
   if(!comparison.valid){ showAppMessage('برای مقایسه، Capital، Payout و Target معتبر لازم است.','مقایسه استراتژی'); return; }
   const modal=document.getElementById('strategyComparisonModal'), body=document.getElementById('strategyComparisonBody');
   if(!modal||!body) return;
@@ -1644,7 +1649,7 @@ function renderTradingPlan(){
 }
 
 function renderMasanielloPlanner(summary){
-  const plans=buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE);
+  const plans=buildMasanielloPlans(num('initialCapital'),getPayoutPercent(),getUnifiedTarget().targetProfit,MIN_STAKE);
   const labels={low:'کم‌ریسک',medium:'ریسک متوسط',high:'پرریسک'};
   const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
   if(current?.valid){
@@ -1657,7 +1662,7 @@ function renderMasanielloPlanner(summary){
 }
 
 function renderSimplePlannerSummary(summary){
-  const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+  const plans=buildSimplePlans(num('initialCapital'),getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
   const current=selectedPlannerPlan || plans.find(p=>p.risk===selectedPlannerRisk) || plans.find(p=>p.risk==='medium');
   if(current?.valid){
     selectedPlannerPlan=current;
@@ -1717,7 +1722,7 @@ function createTradingPlan(planName, planStartBalance, targetPercent, targetBala
     targetPercent: resolved.targetPercent,
     targetBalance: resolved.targetBalance,
     payoutPercent: num('payout'),
-    riskOptions: computeTradingPlanRiskOptions(planStartBalance, resolved.targetBalance, num('payout')),
+    riskOptions: computeTradingPlanRiskOptions(planStartBalance, resolved.targetBalance, getPayoutPercent()),
     planCreatedAt: new Date().toISOString(),
     status: 'running'
   };
@@ -1731,7 +1736,7 @@ function updateTradingPlan(planName, targetPercent, targetBalance){
   tradingPlan.planName = planName || '';
   tradingPlan.targetPercent = resolved.targetPercent;
   tradingPlan.targetBalance = resolved.targetBalance;
-  tradingPlan.payoutPercent = num('payout');
+  tradingPlan.payoutPercent = getPayoutPercent();
   tradingPlan.riskOptions = computeTradingPlanRiskOptions(tradingPlan.planStartBalance, resolved.targetBalance, tradingPlan.payoutPercent);
   return tradingPlan;
 }
@@ -1745,7 +1750,7 @@ function completeTradingPlan(){
 }
 
 function selectPlannerRisk(risk){
-  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,MIN_STAKE) : buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+  const options = mode === 'masaniello' ? buildMasanielloPlans(num('initialCapital'),getPayoutPercent(),getUnifiedTarget().targetProfit,MIN_STAKE) : buildSimplePlans(num('initialCapital'),getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
   const option = options.find(o => o.risk === risk);
   if(!option || option.valid === false) return;
   selectedPlannerRisk = risk;
@@ -1770,11 +1775,11 @@ function previewPlannerEdit(){
   if(!hint) return;
   if(!Number.isInteger(n)||!Number.isInteger(losses)||n<1||losses<0||losses>=n){hint.textContent='تعداد معاملات باید بیشتر از باخت مجاز باشد.';hint.className='small warn';return;}
   if(mode==='masaniello'){
-    const checked=validateMasanielloCustom(num('initialCapital'),num('payout'),getUnifiedTarget().targetProfit,n,losses,MIN_STAKE);
+    const checked=validateMasanielloCustom(num('initialCapital'),getPayoutPercent(),getUnifiedTarget().targetProfit,n,losses,MIN_STAKE);
     if(!checked.valid){hint.textContent='⚠ این ترکیب با Target فعلی قابل تضمین نیست.';hint.className='small warn';return;}
     hint.textContent=`Custom معتبر: ${n} معامله، ${n-losses} برد، ${losses} باخت مجاز، حداکثر Stake ${money(checked.maxStake)}.`;
   }else{
-    const plans=buildSimplePlans(num('initialCapital'),num('payout'),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
+    const plans=buildSimplePlans(num('initialCapital'),getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
     const base=plans.find(p=>p.n===n&&p.n-p.k===losses);
     hint.textContent=base?.valid ? `برنامه Simple: ${n} معامله، ${n-losses} برد هدف، ${losses} باخت مجاز.` : 'این ترکیب در پروفایل‌های پیشنهادی Simple نیست؛ با اعمال، یک برنامه Custom با منطق بازیابی Simple ساخته می‌شود.';
   }
@@ -1954,7 +1959,7 @@ function computeSessionMetricsGeneric(){
   }
 
   return Object.assign(base, {
-    payout_percent: num('payout'),
+    payout_percent: getPayoutPercent(),
     account_gain_target_percent: getUnifiedTarget().type === 'percent' ? getUnifiedTarget().value : (getUnifiedTarget().capital > 0 ? getUnifiedTarget().targetProfit / getUnifiedTarget().capital * 100 : 0),
     stop_loss_percent: num('stopLossPct'),
     stop_loss_balance_floor: Math.round(getStopLossBalance()*100)/100
@@ -2187,7 +2192,7 @@ function saveSelectedPlan(){
   const capital=num('initialCapital');
   const targetBalance=getUnifiedTarget().targetBalance;
   const percent=capital>0 ? (targetBalance/capital-1)*100 : 0;
-  tradingPlan={id:generatePlanId(),enabled:true,planName:`${mode==='masaniello'?'Masaniello':'Simple'} ${selectedPlannerPlan.risk==='custom'?'Custom':(selectedPlannerPlan.label||selectedPlannerPlan.risk)}`,planStartBalance:capital,targetPercent:percent,targetBalance,payoutPercent:num('payout'),selectedPlan:selectedPlannerPlan,mode,planCreatedAt:new Date().toISOString(),status:'running'};
+  tradingPlan={id:generatePlanId(),enabled:true,planName:`${mode==='masaniello'?'Masaniello':'Simple'} ${selectedPlannerPlan.risk==='custom'?'Custom':(selectedPlannerPlan.label||selectedPlannerPlan.risk)}`,planStartBalance:capital,targetPercent:percent,targetBalance,payoutPercent:getPayoutPercent(),selectedPlan:selectedPlannerPlan,mode,planCreatedAt:new Date().toISOString(),status:'running'};
   saveState(); render();
 }
 
@@ -2341,7 +2346,6 @@ updateSessionCounter();
 })();
 
 // Close the manual options menu when tapping anywhere outside it.
-
 // Native <details> still handles its own open/close state.
 (() => {
   const menu = document.getElementById('optionsMenu');
@@ -2371,3 +2375,5 @@ if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isN
   });
 }
 
+
+document.getElementById('payout')?.addEventListener('blur',()=>{ normalizePayoutField(); validateSetupInputs({showMessage:false}); });
