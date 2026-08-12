@@ -135,7 +135,7 @@ function loadState(){
     simplePlanK = saved.simplePlanK || 0;
     riskLevel = saved.riskLevel || 'medium';
     capital0 = saved.capital0 || 0;
-    payout0 = saved.payout0 || 0;
+    payout0 = normalizePayoutPercent(saved.payout0 || 0);
     target0 = saved.target0 || 0;
     planned0 = saved.planned0 || 0;
     kRequired0 = saved.kRequired0 || 0;
@@ -143,7 +143,7 @@ function loadState(){
     kRemaining = saved.kRemaining || 0;
     tradingPlan = saved.tradingPlan || null;
     if(tradingPlan && tradingPlan.status === 'running' && !Array.isArray(tradingPlan.riskOptions)){
-      tradingPlan.payoutPercent = Number.isFinite(tradingPlan.payoutPercent) ? tradingPlan.payoutPercent : num('payout');
+      tradingPlan.payoutPercent = normalizePayoutPercent(tradingPlan.payoutPercent);
       tradingPlan.riskOptions = computeTradingPlanRiskOptions(
         tradingPlan.planStartBalance,
         tradingPlan.targetBalance,
@@ -153,7 +153,7 @@ function loadState(){
 
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
-    if(inp.payout) document.getElementById('payout').value = inp.payout;
+    if(inp.payout) document.getElementById('payout').value = normalizePayoutPercent(inp.payout);
     if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
     if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
@@ -204,10 +204,18 @@ function intNum(id){
    calculation path to look frozen or fail silently. */
 const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
 
+function normalizePayoutPercent(value){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return 0;
+  // Legacy versions stored payout as 85 for 85%. New contract stores 0.85.
+  if(n > 1 && n <= 500) return n / 100;
+  return n;
+}
+
 function validateSetupInputs({showMessage=false} = {}){
   const checks = [
     ['initialCapital', value => Number.isFinite(value) && value > 0, 'موجودی اولیه باید یک عدد بزرگ‌تر از صفر باشد.'],
-    ['payout', value => Number.isFinite(value) && value > 0 && value <= 500, 'Payout باید بین 0.01٪ و 500٪ باشد.'],
+    ['payout', value => Number.isFinite(value) && value >= 0.01 && value <= 1, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 یعنی 85٪).'],
     ['mainTargetValue', value => Number.isFinite(value) && value > 0, 'Target باید یک عدد بزرگ‌تر از صفر باشد.']
   ];
   if(mode === 'simple'){
@@ -451,16 +459,21 @@ function showInputAdjustment(id, message){
 }
 
 function getValidPayout(){
-  const raw = num('payout');
+  const raw = normalizePayoutPercent(num('payout'));
   let payout = raw;
   let message = '';
-  if(payout <= 0){ payout = 0.01; message = 'Payout نامعتبر بود و به 0.01٪ اصلاح شد.'; }
-  else if(payout > 500){ payout = 500; message = 'Payout از سقف 500٪ بیشتر بود و به 500٪ اصلاح شد.'; }
+  if(!Number.isFinite(payout) || payout < 0.01){
+    payout = 0.01;
+    message = 'Payout نامعتبر بود؛ مقدار 0.01 به‌عنوان حداقل انتخاب شد.';
+  } else if(payout > 1){
+    payout = 1;
+    message = 'Payout نمی‌تواند بیشتر از 1.00 باشد.';
+  }
   showInputAdjustment('payout', message);
-  return payout / 100;
+  return payout;
 }
 function getQuota(){
-  return 1 + getValidPayout() * 100 / 100; // 1 + payout%/100, kept explicit for readability
+  return 1 + getValidPayout();
 }
 
 /* =====================================================
@@ -1305,7 +1318,7 @@ function openPlanAnalyzer(){
   const signed=v=>(v>0?'+':'')+money(v);
   const levelClass={safe:'analyzer-good',moderate:'analyzer-good',high:'analyzer-warn',extreme:'analyzer-bad'}[risk.level]||'analyzer-warn';
   const lossRows=result.losses.length?result.losses.map(row=>`<div class="analyzer-loss-row"><span>باخت ${row.index}</span><b>${row.reason==='loss'?money(row.stake):'—'}</b><strong>${money(row.balance)}</strong></div>`).join(''):'<div class="small">هیچ باخت پیاپی قابل شبیه‌سازی نیست.</div>';
-  const recovery=calculateRecoveryStake({balance:capital,payout:num('payout')/100,targetProfit:target.targetProfit,accumulatedLoss:0,stopLossBalance,maxStake:result.maxStake,maxDrawdown:Math.max(0,capital-stopLossBalance),maxAttempts:3,minStake:MIN_STAKE});
+  const recovery=calculateRecoveryStake({balance:capital,payout:normalizePayoutPercent(num('payout')),targetProfit:target.targetProfit,accumulatedLoss:0,stopLossBalance,maxStake:result.maxStake,maxDrawdown:Math.max(0,capital-stopLossBalance),maxAttempts:3,minStake:MIN_STAKE});
   body.innerHTML=`
     <div class="analyzer-status ${levelClass}">● ${risk.label} · امتیاز ساختاری ${risk.score}/100</div>
     <div class="analyzer-grid">
@@ -2328,6 +2341,7 @@ updateSessionCounter();
 })();
 
 // Close the manual options menu when tapping anywhere outside it.
+
 // Native <details> still handles its own open/close state.
 (() => {
   const menu = document.getElementById('optionsMenu');
