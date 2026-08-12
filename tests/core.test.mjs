@@ -185,10 +185,10 @@ test('Simple planner returns risk profiles with executable stake information', (
 });
 
 
-test('BE is a consumed Masaniello trade without changing balance or kRemaining', () => {
+test('BE is a real Masaniello trade but neutral to plan progress', () => {
   const state = applyTradeOutcome({ balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0 }, 'BE', 10, 0.85);
   assert.equal(state.balance, 100);
-  assert.equal(state.nRemaining, 9);
+  assert.equal(state.nRemaining, 10);
   assert.equal(state.kRemaining, 5);
   assert.equal(state.trades, 1);
   assert.equal(state.breakevens, 1);
@@ -214,7 +214,7 @@ test('Undo replay uses the real replay primitive for Win → Loss → BE → Los
 
   const afterFour = replayTradeResults(initial, results, stakeResolver, 0.85);
   assert.equal(afterFour.balance, 88.5);
-  assert.equal(afterFour.nRemaining, 6);
+  assert.equal(afterFour.nRemaining, 7);
   assert.equal(afterFour.kRemaining, 4);
   assert.equal(afterFour.trades, 4);
   assert.equal(afterFour.breakevens, 1);
@@ -223,7 +223,7 @@ test('Undo replay uses the real replay primitive for Win → Loss → BE → Los
   // result, then deterministically replay every remaining real outcome.
   const afterUndo = replayTradeResults(initial, results.slice(0, -1), stakeResolver, 0.85);
   assert.equal(afterUndo.balance, 98.5);
-  assert.equal(afterUndo.nRemaining, 7);
+  assert.equal(afterUndo.nRemaining, 8);
   assert.equal(afterUndo.kRemaining, 4);
   assert.equal(afterUndo.trades, 3);
   assert.equal(afterUndo.wins, 1);
@@ -231,14 +231,14 @@ test('Undo replay uses the real replay primitive for Win → Loss → BE → Los
   assert.equal(afterUndo.breakevens, 1);
 });
 
-test('Undo replay keeps BE neutral while consuming exactly one Masaniello trade', () => {
+test('Undo replay keeps BE neutral without consuming Masaniello opportunity', () => {
   const initial = { balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0, wins: 0, losses: 0, breakevens: 0, trades: 0 };
   const stakeResolver = () => 10;
   const before = replayTradeResults(initial, ['W','BE'], stakeResolver, 0.85);
   const afterUndo = replayTradeResults(initial, ['W'], stakeResolver, 0.85);
 
   assert.equal(before.balance, 108.5);
-  assert.equal(before.nRemaining, 8);
+  assert.equal(before.nRemaining, 9);
   assert.equal(before.kRemaining, 4);
   assert.equal(afterUndo.balance, 108.5);
   assert.equal(afterUndo.nRemaining, 9);
@@ -287,7 +287,7 @@ test('Three consecutive BE outcomes keep balance fixed and consume three trades'
   assert.equal(state.balance, 100);
   assert.equal(state.trades, 3);
   assert.equal(state.breakevens, 3);
-  assert.equal(state.nRemaining, 7);
+  assert.equal(state.nRemaining, 10);
   assert.equal(state.kRemaining, 5);
 });
 
@@ -373,7 +373,7 @@ test('Simple scenario uses the real stake engine and keeps BE balance-neutral', 
   assert.ok(result.rows[0].stake > 0);
 });
 
-test('Masaniello scenario BE consumes nRemaining without changing kRemaining', () => {
+test('Masaniello scenario BE is neutral to nRemaining and kRemaining', () => {
   const result = simulateScenario({
     mode:'masaniello',
     capital:100,
@@ -385,7 +385,7 @@ test('Masaniello scenario BE consumes nRemaining without changing kRemaining', (
   });
   assert.equal(result.valid, true);
   assert.equal(result.rows[0].balance, 100);
-  assert.equal(result.nRemaining, 9);
+  assert.equal(result.nRemaining, 10);
   assert.equal(result.kRemaining, 5);
 });
 
