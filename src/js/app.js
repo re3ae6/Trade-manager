@@ -15,6 +15,7 @@ import { scoreRisk } from './core/risk-engine.js';
 import { calculateRecoveryStake, simulateRecoverySequence } from './core/recovery.js';
 import { compareStrategies } from './core/strategy-comparison.js';
 import { stressTestPlan, stressTestRecovery } from './core/stress-testing.js';
+import { PAYOUT_MIN, PAYOUT_MAX, normalizePayout, isValidPayout, payoutPercent } from './core/payout.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
@@ -195,19 +196,17 @@ function num(id){
   const value = parseFloat(raw);
   return Number.isFinite(value) ? value : 0;
 }
-function normalizePayoutInput(value){
-  const n=Number(value);
-  if(!Number.isFinite(n) || n<=0) return 0;
-  // User-facing contract: 0.85 means 85%. Legacy values such as 85 are accepted and normalized.
-  return n>1 ? n/100 : n;
-}
+function normalizePayoutInput(value){ return normalizePayout(value); }
 function getPayoutFraction(){ return normalizePayoutInput(num('payout')); }
-function getPayoutPercent(){ return getPayoutFraction()*100; }
+function getPayoutPercent(){ return payoutPercent(num('payout')); }
 function normalizePayoutField(){
   const el=document.getElementById('payout');
   if(!el) return;
-  const n=parseFloat(String(el.value ?? '').trim());
-  if(Number.isFinite(n) && n>1 && n<=500) el.value=(n/100).toFixed(2);
+  const raw=String(el.value ?? '').trim();
+  const n=Number(raw);
+  if(!Number.isFinite(n) || n<=0) return;
+  // Keep the canonical UI contract visible after legacy percentage input.
+  if(n > 1 && n <= PAYOUT_MAX * 100) el.value=normalizePayout(n).toFixed(2);
 }
 
 function intNum(id){
@@ -222,11 +221,7 @@ const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
 function validateSetupInputs({showMessage=false} = {}){
   const checks = [
     ['initialCapital', value => Number.isFinite(value) && value > 0, 'موجودی اولیه باید یک عدد بزرگ‌تر از صفر باشد.'],
-    ['payout', value => {
-      const rawPayout = Number(value);
-      const p = normalizePayoutInput(rawPayout);
-      return Number.isFinite(rawPayout) && Number.isFinite(p) && p >= 0.01 && p <= 1;
-    }, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 = 85٪).'],
+    ['payout', value => isValidPayout(value), `Payout باید بین ${PAYOUT_MIN.toFixed(2)} و ${PAYOUT_MAX.toFixed(2)} باشد (مثلاً 0.85 = 85٪).`],
     ['mainTargetValue', value => Number.isFinite(value) && value > 0, 'Target باید یک عدد بزرگ‌تر از صفر باشد.']
   ];
   if(mode === 'simple'){
@@ -473,10 +468,14 @@ function getValidPayout(){
   const raw=num('payout');
   let payout=normalizePayoutInput(raw);
   let message='';
-  if(payout<=0){ payout=0.01; message='Payout نامعتبر بود و به 0.01 اصلاح شد.'; }
-  else if(payout>1){ payout=1; message='Payout نباید بیشتر از 1.00 باشد.'; }
+  if(!isValidPayout(raw)){
+    payout = payout > PAYOUT_MAX ? PAYOUT_MAX : PAYOUT_MIN;
+    message = payout === PAYOUT_MAX
+      ? `Payout نباید بیشتر از ${PAYOUT_MAX.toFixed(2)} باشد.`
+      : `Payout باید بین ${PAYOUT_MIN.toFixed(2)} و ${PAYOUT_MAX.toFixed(2)} باشد.`;
+  }
   const el=document.getElementById('payout');
-  if(el && Number.isFinite(raw) && raw>1 && raw<=500) el.value=payout.toFixed(2);
+  if(el && isValidPayout(raw) && Number.isFinite(raw) && raw>1 && raw<=PAYOUT_MAX*100) el.value=payout.toFixed(2);
   showInputAdjustment('payout',message);
   return payout;
 }
@@ -928,7 +927,7 @@ async function promptSessionEnd(){
   const choice = await showAppChoice(
     `سشن به پایان رسیده است.\n\n${reason}\n\nذخیره و ورود به تاریخچه، یا حذف بدون ذخیره؟`,
     'پایان سشن',
-    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
+    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
   );
   sessionEndDialogOpen = false;
   if(choice === 'cancel') return;
@@ -946,7 +945,7 @@ async function clearTrades(){
   const choice = await showAppChoice(
     `سشن خاتمه داده شود؟${reason}`,
     'پایان سشن',
-    {primary:'ذخیره / تأیید', secondary:'ذخیره نشود / حذف شود', cancel:'انصراف'}
+    {primary:'Save & Exit', secondary:'Discard & Exit', cancel:'Cancel'}
   );
   if(choice === 'cancel') return;
   if(choice === 'primary') saveSession();
@@ -2362,6 +2361,12 @@ updateSessionCounter();
   };
   document.addEventListener('pointerdown', closeFromOutside, {passive:true});
   document.getElementById('menuBackdrop')?.addEventListener('click', () => { menu.open = false; });
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape' && menu.open){
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+  });
 })();
 
 /* Android hardware/gesture back button: don't exit on a single press —
