@@ -2219,3 +2219,14 @@ Final visual confirmation should be performed on the target Android device in bo
 - Hidden navigation drawer is prevented from intercepting touch events.
 - BE remains a real session trade for statistics, but does not consume Masaniello plan opportunities or alter balance/win/loss state.
 - Scenario simulation follows the same BE-neutral contract.
+
+
+## V2.9.0 — Payout Contract + Final UI Polish
+- Payout input is now represented as the actual payout multiplier: `0.85` means 85% and `0.92` means 92%.
+- Accepted payout range is 0.01–1.00.
+- Legacy stored values such as `85` are migrated to `0.85` automatically.
+- Recovery calculations now use the same payout multiplier contract.
+- Masaniello/Planner continue to receive the payout percentage value consistently without changing their core formulas.
+- Landscape menu is explicitly layered above the navigation/header.
+- Header menu hit-area is aligned to the visible button.
+- Target & Plan controls use a compact two-column layout.
