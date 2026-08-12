@@ -25,8 +25,8 @@ export function applyTradeOutcome(state, result, stake, payout){
     next.wins += 1;
   }else if(result === 'BE'){
     next.breakevens += 1;
-    // BE consumes one real trade, but is neither a win nor a loss.
-    next.nRemaining = Number.isFinite(next.nRemaining) ? next.nRemaining - 1 : next.nRemaining;
+    // BE is a real session trade, but is neutral to Masaniello planning:
+    // do not change nRemaining, kRemaining, or balance.
   }else{
     next.balance -= stake;
     next.streakLoss += stake;
