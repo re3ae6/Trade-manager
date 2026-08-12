@@ -21,7 +21,7 @@ import { stressTestPlan, stressTestRecovery } from './core/stress-testing.js';
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 
 // Runtime error guard: unexpected JavaScript failures must never look like a
 // silent freeze to the user. Keep the technical details in the console while
@@ -202,7 +202,7 @@ function intNum(id){
 
 /* UI-only protection: explain invalid input instead of allowing a
    calculation path to look frozen or fail silently. */
-const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
+const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v2';
 
 function normalizePayoutPercent(value){
   const n = Number(value);
@@ -443,6 +443,23 @@ function showAbout(){
 
 function hideAbout(){
   const modal = document.getElementById('aboutModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function showHistory(){
+  document.getElementById('optionsMenu')?.removeAttribute('open');
+  const modal = document.getElementById('historyModal');
+  if(!modal) return;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  renderHistory();
+  document.getElementById('historyCloseBtn')?.focus();
+}
+
+function hideHistory(){
+  const modal = document.getElementById('historyModal');
   if(!modal) return;
   modal.classList.remove('show');
   modal.setAttribute('aria-hidden', 'true');
@@ -2218,12 +2235,18 @@ function bindUI(){
   $('planAnalyzerModal')?.addEventListener('click', event => { if(event.target === event.currentTarget) closePlanAnalyzer(); });
   $('aboutCloseBtn')?.addEventListener('click', hideAbout);
   $('aboutOkBtn')?.addEventListener('click', hideAbout);
+  $('historyBtn')?.addEventListener('click', showHistory);
+  $('historyCloseBtn')?.addEventListener('click', hideHistory);
+  $('historyOkBtn')?.addEventListener('click', hideHistory);
+  $('historyModal')?.addEventListener('click', event => {
+    if(event.target === event.currentTarget) hideHistory();
+  });
   $('aboutModal')?.addEventListener('click', event => {
     if(event.target === event.currentTarget) hideAbout();
   });
   $('appDialog')?.addEventListener('keydown', event => { if(event.key === 'Escape') event.preventDefault(); });
   document.addEventListener('keydown', event => {
-    if(event.key === 'Escape') hideAbout();
+    if(event.key === 'Escape'){ hideAbout(); hideHistory(); }
   });
 
   $('winBtn')?.addEventListener('click', () => logTrade('W'));
