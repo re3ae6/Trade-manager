@@ -2328,6 +2328,7 @@ updateSessionCounter();
 })();
 
 // Close the manual options menu when tapping anywhere outside it.
+
 // Native <details> still handles its own open/close state.
 (() => {
   const menu = document.getElementById('optionsMenu');
