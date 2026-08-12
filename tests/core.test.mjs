@@ -702,3 +702,26 @@ test('Release audit keeps a user-facing runtime error guard in app source', asyn
   assert.match(appSource, /یک خطای غیرمنتظره رخ داد/);
   assert.match(appSource, /یک عملیات غیرمنتظره کامل نشد/);
 });
+
+import { PAYOUT_MIN, PAYOUT_MAX, normalizePayout, isValidPayout, payoutPercent } from '../src/js/core/payout.js';
+
+test('Payout contract uses a normalized fraction from 0 to 1', () => {
+  assert.equal(normalizePayout(0.85), 0.85);
+  assert.equal(normalizePayout(0.92), 0.92);
+  assert.equal(normalizePayout(1), 1);
+  assert.equal(normalizePayout(85), 0.85);
+  assert.equal(normalizePayout(92), 0.92);
+  assert.equal(payoutPercent(0.85), 85);
+});
+
+test('Payout contract rejects zero, negatives and values above 100%', () => {
+  assert.equal(PAYOUT_MIN, 0.01);
+  assert.equal(PAYOUT_MAX, 1);
+  assert.equal(isValidPayout(0.85), true);
+  assert.equal(isValidPayout(0.92), true);
+  assert.equal(isValidPayout(1), true);
+  assert.equal(isValidPayout(0), false);
+  assert.equal(isValidPayout(-0.5), false);
+  assert.equal(isValidPayout(1.01), false);
+  assert.equal(isValidPayout(500), false);
+});
