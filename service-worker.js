@@ -1,5 +1,5 @@
 /* Trade Manager V2 service worker. */
-const CACHE_VERSION = 'v2.9.0';
+const CACHE_VERSION = 'v2.9.1';
 const CACHE_NAME = `trade-manager-${CACHE_VERSION}`;
 
 const APP_SHELL = [
