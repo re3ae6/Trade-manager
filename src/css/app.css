@@ -1737,3 +1737,387 @@ input[aria-invalid="true"]{
   .optionsmenu .optionpanel{top:0;right:0;height:min(100dvh,100vh);max-height:none;}
   .titlebar > *{align-self:center;}
 }
+
+
+/* =====================================================
+   V2.9.1 UI CORRECTION — restore compact cockpit geometry
+   No calculation/state changes.
+===================================================== */
+
+/* Keep the header in its existing position; only make the controls' hit
+   areas coincide with their visible shapes. */
+.titlebar > *{position:relative;}
+.optionsmenu{isolation:isolate;}
+.optionsmenu summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  min-width:34px;
+  min-height:34px;
+  padding:0 9px;
+  margin:0;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.optionsmenu summary::before,
+.optionsmenu summary::after{pointer-events:none;}
+
+/* The drawer is a compact panel, never a full-screen sheet. */
+.optionsmenu .optionpanel{
+  width:min(300px, calc(100vw - 24px));
+  max-height:min(78vh, 560px);
+  height:auto;
+  overflow-y:auto;
+  overflow-x:hidden;
+  box-sizing:border-box;
+}
+@media (orientation:landscape){
+  .optionsmenu .optionpanel{
+    top:calc(100% + 7px);
+    right:0;
+    left:auto;
+    bottom:auto;
+    height:auto;
+    max-height:min(82vh, 560px);
+    border-radius:0 0 0 14px;
+  }
+}
+
+/* Tools label: simple text + arrow, no bubble/emoji treatment. */
+.optionsmenu .menu-section > summary{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:7px;
+  min-height:34px;
+  padding:6px 8px;
+  font-size:13px;
+  border-radius:7px;
+  background:#2c3444;
+  border:1px solid var(--border);
+}
+.menu-section-arrow{
+  font-size:14px;
+  opacity:.7;
+  transition:transform .18s ease;
+}
+.menu-section[open] .menu-section-arrow{transform:rotate(180deg);}
+
+/* Target: compact two-column inputs and two-column Simple details. */
+.target-master-fields > .row{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+}
+#panelSimple{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:10px;
+  align-items:center;
+}
+#panelSimple > .row:first-child,
+#panelSimple > .row:nth-child(2),
+#panelSimple > .row:nth-child(3){
+  min-width:0;
+}
+#panelSimple > .row:nth-child(3){grid-column:1 / -1;}
+#panelSimple > .simple-planner-block{grid-column:1 / -1;}
+#panelSimple > .row input{
+  width:100%;
+  min-width:0;
+}
+#panelSimple > .row label{white-space:nowrap;}
+
+/* Risk cards: restore readable spacing and keep numbers visually separated. */
+.tp-risk-card{
+  font-family:inherit;
+  line-height:1.55;
+}
+.tp-risk-card b{
+  font-family:var(--mono);
+  display:inline-block;
+  margin-inline-start:4px;
+  letter-spacing:.2px;
+}
+.tp-risk-card span{font-family:inherit;}
+.tp-risk-title{font-family:inherit;}
+
+/* Inputs remain readable in Android WebView. */
+input, select, textarea, button{
+  -webkit-font-smoothing:antialiased;
+}
+input[type="number"],
+input[type="text"]{
+  color:var(--text);
+  -webkit-text-fill-color:var(--text);
+}
+
+/* Landscape scrolling: middle column owns its own vertical scroll area. */
+@media (orientation:landscape) and (max-height:600px){
+  .grid{
+    height:calc(100dvh - 54px);
+    min-height:0;
+    overflow:hidden;
+  }
+  .grid > .calc-column{
+    min-height:0;
+    max-height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+  .grid > .trade-column,
+  .grid > .right-column{
+    min-height:0;
+    max-height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+/* Portrait keeps the previous compact header geometry; do not relocate it. */
+@media (orientation:portrait){
+  .titlebar{
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+}
+
+/* Remove the accidental full-height landscape drawer rule from V2.9.0. */
+@media (orientation:landscape) and (max-height:600px){
+  .optionsmenu .optionpanel{
+    position:absolute;
+    top:calc(100% + 7px);
+    right:0;
+    left:auto;
+    height:auto;
+    max-height:min(82vh,560px);
+  }
+}
+
+
+/* V2.9.1 FINAL TOUCH — keep the proven header geometry, fix hit testing. */
+.titlebar{
+  z-index:5000;
+  isolation:isolate;
+}
+.titlebar > *,
+.titlebar button,
+.titlebar summary{
+  pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+.optionsmenu{
+  z-index:5100;
+}
+.optionsmenu .optionpanel{
+  z-index:5200;
+}
+@media (orientation:portrait){
+  .optionsmenu .optionpanel{
+    position:fixed;
+    top:calc(52px + env(safe-area-inset-top));
+    left:10px;
+    right:auto;
+    width:min(300px,calc(100vw - 20px));
+    max-height:calc(100vh - 70px);
+    height:auto;
+    border-radius:0 0 14px 14px;
+  }
+}
+@media (orientation:landscape){
+  .optionsmenu .optionpanel{
+    position:fixed;
+    top:calc(48px + env(safe-area-inset-top));
+    right:10px;
+    left:auto;
+    width:min(300px,calc(100vw - 20px));
+    max-height:calc(100vh - 60px);
+    height:auto;
+    border-radius:0 0 0 14px;
+  }
+}
+
+/* =====================================================
+   V2.9.1 CORRECTIVE PATCH — authoritative final layout rules
+   Keep this block last so older V2.8/V2.9 patches cannot override it.
+   No business-logic changes.
+===================================================== */
+
+/* Mobile safe-area + header: reserve the status-bar area instead of letting
+   the application controls occupy it.  The visual control and its hit area
+   are the same box. */
+@media (max-width:900px){
+  .titlebar{
+    grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"menu center session";
+    min-height:calc(46px + env(safe-area-inset-top));
+    height:auto;
+    padding-top:calc(8px + env(safe-area-inset-top));
+    padding-bottom:8px;
+    padding-left:max(9px, env(safe-area-inset-left));
+    padding-right:max(9px, env(safe-area-inset-right));
+    align-items:center;
+    overflow:visible;
+  }
+  .titlebar > .optionsmenu{grid-area:menu;justify-self:start;}
+  .titlebar > .titlebar-center{grid-area:center;justify-self:center;min-width:0;width:100%;}
+  .titlebar > .sessionpill{grid-area:session;justify-self:end;}
+  .titlebar-center{direction:rtl;min-width:0;overflow:hidden;}
+  .titlebar-balance,.modetabs{min-width:0;}
+  .titlebar-balance{overflow:hidden;text-overflow:ellipsis;}
+  .sessionpill,.optionsmenu summary{position:relative;transform:none;}
+  .sessionpill{min-height:34px;}
+  .optionsmenu summary{min-width:34px;min-height:34px;width:34px;height:34px;padding:0;}
+}
+
+/* Portrait drawer follows the left-side Menu trigger and begins below the
+   application header.  It never changes the grid's layout. */
+@media (orientation:portrait), (max-width:900px) and (orientation:portrait){
+  .optionsmenu .optionpanel{
+    position:fixed;
+    top:calc(46px + env(safe-area-inset-top));
+    bottom:auto;
+    left:0;
+    right:auto;
+    width:min(300px,calc(100vw - 20px));
+    height:auto;
+    max-height:calc(100dvh - 58px - env(safe-area-inset-top));
+    overflow-y:auto;
+    overflow-x:hidden;
+    border-radius:0 0 14px 0;
+    box-shadow:18px 0 45px rgba(0,0,0,.5);
+  }
+}
+
+/* Landscape: Menu / Strategy / Balance / Session remain on one real row.
+   Clock/notification icons belong to the OS status bar; the safe-area inset
+   keeps them visually separate from the application header. */
+@media (orientation:landscape) and (max-height:600px){
+  .titlebar{
+    grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"menu center session";
+    min-height:calc(40px + env(safe-area-inset-top));
+    height:auto;
+    padding-top:calc(4px + env(safe-area-inset-top));
+    padding-bottom:4px;
+    padding-left:max(8px, env(safe-area-inset-left));
+    padding-right:max(8px, env(safe-area-inset-right));
+    align-items:center;
+    overflow:visible;
+  }
+  .titlebar > .optionsmenu{grid-area:menu;justify-self:start;}
+  .titlebar > .titlebar-center{grid-area:center;justify-self:center;min-width:0;width:auto;direction:rtl;}
+  .titlebar > .sessionpill{grid-area:session;justify-self:end;}
+  .titlebar-center{gap:5px;}
+  .titlebar-balance{font-size:10.5px;}
+  .modetabs button{padding:4px 7px;font-size:9.5px;}
+  .optionsmenu summary{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;}
+
+  .app{
+    height:100dvh;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border-radius:0;
+  }
+  .grid{
+    flex:1 1 auto;
+    min-height:0;
+    height:auto;
+    overflow:hidden;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    grid-template-rows:minmax(0,1fr);
+    align-items:stretch;
+  }
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    min-width:0;
+    min-height:0;
+    height:100%;
+    max-height:none;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;
+  }
+  .grid > .calc-column{display:block;}
+
+  .optionsmenu .optionpanel{
+    position:fixed;
+    top:calc(40px + env(safe-area-inset-top));
+    bottom:auto;
+    right:0;
+    left:auto;
+    width:min(300px,calc(100vw - 16px));
+    height:auto;
+    max-height:calc(100dvh - 48px - env(safe-area-inset-top));
+    overflow-y:auto;
+    overflow-x:hidden;
+    border-radius:0 0 0 14px;
+  }
+}
+
+/* Main-menu stacking: drawer and backdrop are above every header control,
+   while the menu summary itself stays clickable when closed. */
+.titlebar{z-index:5000;isolation:isolate;}
+.optionsmenu{z-index:5100;isolation:isolate;}
+.optionsmenu summary{position:relative;z-index:5102;pointer-events:auto;touch-action:manipulation;}
+.optionsmenu .optionpanel{z-index:5200;}
+.optionsmenu .menu-backdrop{z-index:5190;}
+
+/* Compact Tools header: text + one arrow, without decorative bubbles. */
+.optionsmenu .menu-section > summary{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:7px;
+  min-height:34px;
+  padding:6px 8px;
+  background:#2c3444;
+  border:1px solid var(--border);
+  border-radius:7px;
+}
+
+/* Payout: canonical fraction contract is visible and valid by default. */
+#payout{
+  min-width:0;
+  width:100%;
+  max-width:130px;
+  text-align:center;
+  font-family:var(--mono);
+}
+#payout:invalid{border-color:var(--border);box-shadow:none;}
+#payout[aria-invalid="true"]{border-color:var(--orange)!important;}
+
+/* Target & Plan: equal-width inputs and compact two-column geometry. */
+.target-master-fields > .row{min-width:0;}
+.target-master-fields > .row input{width:100%;min-width:0;}
+.target-master-fields > .row label{white-space:nowrap;}
+
+/* Exit & Save: compact, equal, centered touch targets. */
+.appdialog{width:min(340px,calc(100vw - 34px));}
+.appdialog-head h2{font-size:14px;line-height:1.3;}
+.appdialog-body{font-size:11px;line-height:1.5;}
+.appdialog-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.dialog-ok,.dialog-cancel,.dialog-alt{
+  width:100%;
+  min-width:0;
+  min-height:36px;
+  padding:6px 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
+  line-height:1.2;
+  font-size:10.5px;
+}
