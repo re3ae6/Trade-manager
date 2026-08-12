@@ -22,7 +22,7 @@ import { PAYOUT_MIN, PAYOUT_MAX, normalizePayout, isValidPayout, payoutPercent }
    engine runs at a time, so trades/balance/locked are shared)
 ===================================================== */
 const MIN_STAKE = 1; // Pocket Option rule: minimum $1 per trade — not user-editable
-const APP_VERSION = '2.9.0';
+const APP_VERSION = '2.9.1';
 
 // Runtime error guard: unexpected JavaScript failures must never look like a
 // silent freeze to the user. Keep the technical details in the console while
