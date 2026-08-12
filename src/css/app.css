@@ -2211,3 +2211,290 @@ input[aria-invalid="true"]{
   filter:none !important;
   box-shadow:none !important;
 }
+
+
+/* =====================================================
+   V2.9.1 — TOUCH + LAYOUT REFINEMENT
+   UI-only: no trading logic changes.
+===================================================== */
+
+/* Every interactive control in the primary header gets a real touch target.
+   The visual glyph can stay compact while the hit area stays comfortable. */
+.titlebar .sessionpill{
+  min-width:48px;
+  min-height:44px;
+  padding:8px 12px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  touch-action:manipulation;
+}
+.titlebar .modetabs{
+  min-height:44px;
+  align-items:center;
+}
+.titlebar .modetabs button{
+  min-height:40px;
+  padding:8px 13px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:manipulation;
+}
+.titlebar .optionsmenu > summary{
+  width:44px !important;
+  min-width:44px !important;
+  height:44px !important;
+  min-height:44px !important;
+  font-size:20px !important;
+  border-radius:10px;
+  touch-action:manipulation;
+}
+
+/* Accordion headers are also controls: make the whole header easy to tap. */
+.collapsible-summary{
+  min-height:44px;
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 12px !important;
+  margin-bottom:0 !important;
+  touch-action:manipulation;
+  user-select:none;
+}
+.collapsible-summary .summary-hint{
+  font-size:11px;
+  font-weight:600;
+  opacity:.8;
+}
+details.collapsible-panel[open] > .collapsible-summary{
+  margin-bottom:10px !important;
+}
+
+/* Target fields: explicit labels + one shared input geometry.
+   This replaces the ambiguous "symbol + number floating in a row" look. */
+.target-master-fields{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:10px !important;
+  align-items:start;
+}
+.target-field{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.target-field > label{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+  text-align:right;
+}
+.target-input-shell{
+  min-height:42px;
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  align-items:center;
+  gap:5px;
+  background:#252c3a;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:3px 7px;
+}
+.target-input-shell:focus-within{
+  border-color:var(--teal);
+  box-shadow:0 0 0 2px rgba(43,191,164,.12);
+}
+.target-input-shell .value-symbol{
+  color:var(--muted);
+  font:800 13px var(--mono);
+  text-align:center;
+}
+.target-input-shell input{
+  width:100% !important;
+  min-width:0 !important;
+  height:34px !important;
+  min-height:34px !important;
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:14px;
+  text-align:center !important;
+  direction:ltr;
+}
+.target-field-wide{
+  grid-column:1 / -1;
+}
+.target-field-wide .target-goal-row{
+  width:100%;
+  min-height:42px;
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+}
+.target-field-wide .compact-type-toggle{
+  height:42px;
+}
+.target-field-wide .compact-type-toggle label{
+  min-width:46px;
+  height:42px;
+}
+.target-field-wide .target-goal-input{
+  width:100% !important;
+  height:42px !important;
+  min-height:42px !important;
+  font-size:14px;
+  text-align:center !important;
+  border-radius:8px;
+}
+.target-final-row{
+  grid-column:1 / -1 !important;
+  margin-top:0 !important;
+}
+
+/* Make the secondary plan and dashboard genuinely secondary on first load. */
+#tradingPlanPanel:not([open]),
+#performanceDetails:not([open]){
+  margin-bottom:8px;
+}
+#tradingPlanPanel:not([open]) > .collapsible-summary,
+#performanceDetails:not([open]) > .collapsible-summary{
+  margin-bottom:0 !important;
+}
+
+/* Settings is a first-class menu destination rather than an unlabeled block. */
+.menu-settings-section > summary{
+  min-height:40px;
+  display:flex !important;
+  align-items:center;
+  justify-content:space-between !important;
+  padding:8px 10px !important;
+  border-radius:8px;
+  background:#2c3444;
+  color:var(--text);
+  font-weight:800;
+  touch-action:manipulation;
+}
+.menu-settings-body{
+  padding-top:5px;
+}
+.menu-nav-grid{
+  display:grid !important;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:8px;
+}
+.menu-nav-btn{
+  min-height:40px;
+  padding:8px 7px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#252c3a;
+  color:var(--text);
+  font-weight:700;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+/* History is now its own destination, not part of About. */
+.historymodal{
+  width:min(620px,calc(100vw - 28px));
+}
+.historymodal-body{
+  max-height:min(65vh,520px);
+  overflow:auto;
+}
+.historymodal .histwrap{
+  max-height:none;
+  overflow:visible;
+}
+.historymodal .histbtns button{
+  min-height:42px;
+}
+
+/* Portrait safe-area: leave a real breathing zone above Android navigation. */
+@media (max-width:900px) and (orientation:portrait){
+  body{
+    padding-bottom:max(28px, env(safe-area-inset-bottom) + 28px) !important;
+  }
+  .grid{
+    padding-bottom:max(28px, env(safe-area-inset-bottom) + 28px) !important;
+  }
+  .titlebar{
+    min-height:58px !important;
+    padding-block:7px !important;
+  }
+  .titlebar .sessionpill{
+    min-height:44px !important;
+  }
+  .titlebar .optionsmenu > summary{
+    width:44px !important;
+    height:44px !important;
+  }
+  .titlebar .modetabs{
+    min-height:44px;
+  }
+  .target-master-fields{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  }
+}
+
+/* Landscape: don't shrink the header controls to tiny 28–32px targets. */
+@media (orientation:landscape){
+  .titlebar{
+    min-height:52px !important;
+    height:52px !important;
+    padding:4px 12px !important;
+  }
+  .titlebar .sessionpill{
+    min-height:44px !important;
+    padding:7px 12px !important;
+  }
+  .titlebar .modetabs{
+    min-height:44px !important;
+  }
+  .titlebar .modetabs button{
+    min-height:40px !important;
+    padding:7px 12px !important;
+  }
+  .titlebar .optionsmenu > summary{
+    width:44px !important;
+    height:44px !important;
+  }
+  .grid{
+    padding:10px !important;
+    gap:10px !important;
+  }
+}
+
+/* Small screens: preserve two-column target fields, but never let inputs
+   become narrower than a comfortable numeric editing box. */
+@media (max-width:420px){
+  .target-master-fields{
+    gap:8px !important;
+  }
+  .target-input-shell{
+    min-height:40px;
+    grid-template-columns:22px minmax(0,1fr);
+    padding-inline:5px;
+  }
+  .target-input-shell input{
+    font-size:13px;
+  }
+  .target-field-wide .target-goal-row,
+  .target-field-wide .compact-type-toggle,
+  .target-field-wide .compact-type-toggle label{
+    min-height:40px;
+    height:40px;
+  }
+  .target-field > label{
+    font-size:10.5px;
+  }
+}
