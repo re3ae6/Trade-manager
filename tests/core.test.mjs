@@ -535,7 +535,7 @@ test('Service Worker app shell caches all runtime core modules and uses current 
   ]) {
     assert.ok(sw.includes(path), `missing offline app-shell asset: ${path}`);
   }
-  assert.match(sw, /CACHE_VERSION = 'v2\.9\.0'/);
+  assert.match(sw, /CACHE_VERSION = 'v2\.9\.1'/);
 });
 
 
@@ -701,4 +701,29 @@ test('Release audit keeps a user-facing runtime error guard in app source', asyn
   assert.match(appSource, /window\.addEventListener\('unhandledrejection'/);
   assert.match(appSource, /یک خطای غیرمنتظره رخ داد/);
   assert.match(appSource, /یک عملیات غیرمنتظره کامل نشد/);
+});
+
+
+test('V2.9.1 UI keeps primary controls touchable and secondary panels collapsed by default', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="tradePanelDetails"[^>]*open/);
+  assert.match(html, /id="targetPanel"[^>]*open/);
+  assert.match(html, /id="tradingPlanPanel"[^>]*>/);
+  assert.doesNotMatch(html, /id="tradingPlanPanel"[^>]*\bopen\b/);
+  assert.doesNotMatch(html, /id="performanceDetails"[^>]*\bopen\b/);
+  assert.match(html, /id="historyBtn"/);
+  assert.match(html, /id="historyModal"/);
+  assert.match(html, /id="historyWrap"/);
+  assert.match(html, /id="historyExportBtn"/);
+  assert.match(html, /id="historyClearBtn"/);
+  assert.match(html, /⚙ تنظیمات/);
+});
+
+test('V2.9.1 UI gives Target fields explicit labels and aligned shells', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /class="target-field"[\s\S]*Balance اولیه/);
+  assert.match(html, /class="target-field"[\s\S]*Payout/);
+  assert.match(html, /class="target-field target-field-wide"[\s\S]*هدف/);
 });
