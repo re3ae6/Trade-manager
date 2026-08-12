@@ -97,9 +97,7 @@ export function simulateScenario({
       lossStreak += 1;
       maxLossStreak = Math.max(maxLossStreak, lossStreak);
     }else{
-      // BE is a real trade for session statistics, but neutral to Masaniello:
-      // do not change nRemaining/kRemaining/balance.
-      if(mode === 'simple') streakLoss = streakLoss;
+      // BE is neutral: it is counted as a trade but does not consume a Masaniello opportunity.
       lossStreak = 0;
     }
 

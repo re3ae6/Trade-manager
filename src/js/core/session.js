@@ -25,8 +25,8 @@ export function applyTradeOutcome(state, result, stake, payout){
     next.wins += 1;
   }else if(result === 'BE'){
     next.breakevens += 1;
-    // BE is a real session trade, but is neutral to Masaniello planning:
-    // do not change nRemaining, kRemaining, or balance.
+    // BE is a real session trade for statistics, but consumes no Masaniello opportunity.
+    // Balance, nRemaining and kRemaining remain unchanged.
   }else{
     next.balance -= stake;
     next.streakLoss += stake;
