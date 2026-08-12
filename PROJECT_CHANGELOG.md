@@ -1,3 +1,23 @@
+# V2.9.1 — UI / Payout Correction
+
+## Video-audit corrections
+- Inspected the supplied runtime recording.
+- Confirmed that `0.85` is visibly entered in Payout while the old validation warning remains visible.
+- Payout validation now normalizes the field value before validation, including legacy percentage-style values.
+- A stale validation warning is cleared immediately when the current setup becomes valid.
+- Header z-index and hit-testing were reinforced without changing its established geometry.
+- Navigation drawer was moved to a fixed overlay position so it cannot render underneath the navigation/header.
+- Portrait drawer remains on the left; Landscape drawer remains on the right.
+- Tools section uses text + arrow instead of the previous bubble/emoji header.
+- Landscape middle column keeps an independent vertical scroll region.
+- Target/Simple detail inputs retain the compact two-column layout.
+- Strategy-card typography spacing was tightened without changing calculations.
+
+## Verification
+- `npm test`: 61/61 PASS
+- `npm run check`: PASS
+- `npm run build`: PASS
+
 # Trade Manager — Project Change Log
 
 > **Official project change ledger**
