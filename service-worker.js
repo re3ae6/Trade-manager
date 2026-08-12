@@ -24,6 +24,7 @@ const APP_SHELL = [
   './src/js/core/recovery.js',
   './src/js/core/strategy-comparison.js',
   './src/js/core/stress-testing.js',
+  './src/js/core/payout.js',
   './src/js/storage/state.js',
   './icons/icon-192.png',
   './icons/icon-512.png',

@@ -1,3 +1,14 @@
+# V2.9.1 Corrective Patch — 2026-08-12
+
+## UI / Payout stabilization
+
+- **Files changed:** `index.html`, `src/css/app.css`, `src/js/app.js`, `src/js/core/payout.js`, `tests/core.test.mjs`
+- **Problems:** Portrait/Landscape header hit-area and safe-area regressions; Drawer positioning/stacking conflicts; Landscape middle-column scrolling depended on conflicting CSS patches; Payout validation was split between UI normalization and percentage/fraction consumers; Exit dialog labels/geometry were inconsistent.
+- **Cause:** Multiple late CSS override generations were still active simultaneously, while Payout normalization had no dedicated source-of-truth module.
+- **Fix:** Added one Payout contract (`0.01 <= fraction <= 1` with legacy percentage normalization), kept existing core engines on their established percentage/fraction adapters, added Escape support for the main Drawer, made header/grid geometry authoritative in one final CSS block, restored Portrait left Drawer and Landscape independent column scrolling, and compacted the Exit dialog.
+- **Tests:** `npm run check` PASS; `npm test` PASS (63/63); `node scripts/build-web.mjs` PASS. Runtime Android/WebView screenshot verification is still required after upload.
+- **Regression risk:** Runtime Android/WebView screenshot verification remains required after upload. Core BE/Masaniello/session files were not modified.
+
 # V2.9.1 — UI / Payout Correction
 
 ## Video-audit corrections
