@@ -2121,112 +2121,23 @@ Refine the already-stabilized cockpit UI without changing trading logic, calcula
 - `www/` regenerated from `src/`
 
 
-## 2026-08-12 — UI Control Pass: Portrait Restore / Landscape Alignment
+## V2.9.x — Payout Contract & BE Neutrality Correction — 2026-08-12
 
-### Scope
-Presentation and responsive-layout corrections only. No changes to trading-engine formulas or business logic.
+### Payout
+- Corrected the user-facing payout contract: `0.85` represents 85% payout and `0.92` represents 92% payout.
+- Valid user-facing range is `0.01`–`1.00`.
+- Legacy values such as `85` are normalized to `0.85` for backward compatibility.
+- Percent-based internal Planner/Analyzer/Comparison APIs receive the normalized percent value (85/92), while trade engines receive the decimal payout (0.85/0.92).
+- Removed the old 0.01–500 validation contract that could incorrectly reject valid instrument payout inputs.
 
-### Changes
-- Restored the previously approved compact Portrait header layout; Landscape-specific positioning no longer leaks into Portrait.
-- Centered Session, Balance, mode toggle, and the single menu trigger in one compact Landscape row.
-- Kept the system clock/notifications untouched and visible.
-- Kept the Landscape menu drawer anchored to the right while its trigger remains centered.
-- Restored independent vertical scrolling for the Landscape middle calculation column so content below the Medium Risk / Trades summary remains reachable.
-- Replaced the oversized Tools icon disclosure with a compact `ابزارها` text label and arrow.
-- Changed the Tools panel to a smaller floating overlay card with margin and shadow instead of a full-screen drawer.
-- Kept a single navigation menu; no Gear/Settings button was added to the main page.
-- Compressed Initial Balance and Payout presentation into aligned symbol + numeric controls; labels remain accessible but are visually hidden.
-- Standardized editable numeric-field alignment to the left.
-- Preserved numeric input types and numeric keyboard behavior.
-- Restored compact Strategy/Risk button typography and spacing.
-- Session-end confirmation now uses the compact `Exit and Save` title with English actions: `Cancel`, `Discard & Exit`, `Save & Exit`; the Persian explanatory message remains.
-- Kept menu outside-tap closing behavior.
-- Kept all trading calculations, Simple, Masaniello, BE, Recovery, Planner, Target and persistence logic unchanged.
-
-### Validation
-- Source and `www` copies synchronized for `index.html`, `src/css/app.css`, and `src/js/app.js`.
-
-
-## V2.9.0 UI Polish — Final Pass (2026-08-12)
-
-### Scope
-Presentation-only refinement based on the agreed UI review. Trading engines, calculations, persistence and business rules were not changed.
-
-### Changes
-- Compact Target & Plan inputs into a two-column layout while keeping the final target/advisor information full-width.
-- Standardized editable numeric inputs to a shared left-aligned visual rhythm.
-- Fixed the portrait main-menu drawer positioning so the overlay opens as an actual floating panel instead of leaving only the backdrop visible.
-- Kept the Landscape header controls on one compact vertical baseline.
-- Applied a consistent lightweight title-bar treatment to dialogs, tools and floating panels.
-- Reduced tool/analysis modal footprint so it behaves like a floating window rather than a full-screen page.
-- Removed the duplicate decorative Tools arrows and kept a single clean disclosure arrow.
-- Preserved the existing Exit and Save action labels: Cancel / Discard & Exit / Save & Exit.
+### BE
+- BE remains a real session trade for statistics (`Trades` and `BE` increase).
+- BE does not change balance, `nRemaining`, or `kRemaining` in Masaniello.
+- Scenario simulation follows the same neutral BE rule.
+- Updated the affected tests to enforce the neutral two-layer BE model.
 
 ### Verification
 - `npm test` — 61/61 PASS
 - `npm run check` — PASS
 - `npm run build` — PASS
-- Build regenerated `www/` from the source tree.
-
-### Explicitly unchanged
-- Simple engine
-- Masaniello formula/engine
-- BE semantics
-- Recovery engine
-- Planner calculations
-- Risk engine
-- Session state logic
-- History/storage logic
-
-### Remaining visual verification
-Final visual confirmation should be performed on the target Android device in both Portrait and Landscape orientations, because device-specific WebView viewport and safe-area behavior cannot be fully reproduced by static source checks alone.
-
-
-# 2026-08-12 — BE Policy Consistency + Navigation Hit-Area Fix
-
-## Scope
-- Confirmed the two-layer BE contract.
-- Corrected BE behavior in the live session engine and scenario simulator.
-- Corrected the navigation drawer direction in portrait mode.
-- Corrected the menu hit-area stacking so the visible button itself receives touches.
-
-## BE Contract
-- Session statistics: `Trades = Wins + BE + Losses`.
-- BE leaves Balance unchanged.
-- BE leaves `nRemaining` unchanged in Masaniello.
-- BE leaves `kRemaining` unchanged in Masaniello.
-- Scenario Simulator follows the same rule.
-
-## Files Changed
-- `src/js/core/session.js`
-- `src/js/core/scenario-simulator.js`
-- `tests/core.test.mjs`
-- `src/css/app.css`
-
-## Tests
-- `npm test` → 61/61 PASS
-- `npm run check` → PASS
-- `npm run build` → PASS
 - `www/` regenerated from `src/`
-
-## Important
-- `Simple`, `Masaniello`, `Recovery`, `Risk Engine`, `Planner`, and Storage architecture were not rewritten.
-
-
-## V2.9.0 — Menu Interaction / BE Neutrality Fix
-- Portrait navigation drawer explicitly opens from the left, matching the left-side menu trigger.
-- Menu trigger hit-area is aligned with its visual position and protected from overlay interception.
-- Hidden navigation drawer is prevented from intercepting touch events.
-- BE remains a real session trade for statistics, but does not consume Masaniello plan opportunities or alter balance/win/loss state.
-- Scenario simulation follows the same BE-neutral contract.
-
-
-## V2.9.0 — Payout Contract + Final UI Polish
-- Payout input is now represented as the actual payout multiplier: `0.85` means 85% and `0.92` means 92%.
-- Accepted payout range is 0.01–1.00.
-- Legacy stored values such as `85` are migrated to `0.85` automatically.
-- Recovery calculations now use the same payout multiplier contract.
-- Masaniello/Planner continue to receive the payout percentage value consistently without changing their core formulas.
-- Landscape menu is explicitly layered above the navigation/header.
-- Header menu hit-area is aligned to the visible button.
-- Target & Plan controls use a compact two-column layout.
