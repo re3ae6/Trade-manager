@@ -2097,3 +2097,117 @@ input[aria-invalid="true"]{
     box-shadow:-18px 0 45px rgba(0,0,0,.5);
   }
 }
+
+
+/* === PORTRAIT DRAWER SIDE FIX === */
+@media (max-width: 899px) {
+  .optionsmenu .optionpanel {
+    left: 0 !important;
+    right: auto !important;
+  }
+}
+
+
+/* === MENU HIT AREA FIX === */
+#menuButton,
+#menuToggle,
+.menu-button,
+.menu-toggle {
+  position: relative;
+  z-index: 10002 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+/* Hidden drawer must never intercept touches. */
+.optionsmenu[aria-hidden="true"] { pointer-events: none; }
+
+/* =====================================================
+   V2.9.0 FINAL UI POLISH — MENU / TARGET / PAYOUT
+   No business-logic changes.
+===================================================== */
+
+/* Menu must sit above the titlebar/navigation in landscape. */
+.titlebar .optionsmenu { position:relative; z-index:10050 !important; }
+.titlebar .optionsmenu > summary {
+  position:relative !important;
+  z-index:10052 !important;
+  width:36px !important;
+  min-width:36px !important;
+  height:32px !important;
+  min-height:32px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:0 !important;
+  margin:0 !important;
+  pointer-events:auto !important;
+  touch-action:manipulation !important;
+}
+.titlebar .optionsmenu .optionpanel {
+  z-index:10054 !important;
+  pointer-events:auto !important;
+}
+.titlebar .optionsmenu[open]::after,
+.titlebar .optionsmenu .menu-backdrop {
+  z-index:10053 !important;
+  pointer-events:auto !important;
+}
+/* Drawer is always an overlay, never a layout participant. */
+@media (orientation:landscape){
+  .titlebar .optionsmenu .optionpanel{
+    top:calc(env(safe-area-inset-top) + 46px) !important;
+    right:8px !important;
+    left:auto !important;
+    width:min(300px, calc(100vw - 16px)) !important;
+    max-height:min(78vh, 520px) !important;
+    height:auto !important;
+    border-radius:12px !important;
+  }
+}
+/* Portrait follows the trigger on the left. */
+@media (orientation:portrait){
+  .titlebar .optionsmenu .optionpanel{
+    left:8px !important;
+    right:auto !important;
+    top:calc(env(safe-area-inset-top) + 46px) !important;
+    width:min(300px, calc(100vw - 16px)) !important;
+    max-height:min(78vh, 520px) !important;
+    height:auto !important;
+    border-radius:12px !important;
+  }
+}
+
+/* Compact Target & Plan: two columns without the old divider. */
+.target-master-fields{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:7px 10px !important;
+}
+.target-master-fields > .compact-value-row{
+  width:100% !important;
+  min-width:0 !important;
+}
+.target-master-fields > .target-goal-row{
+  grid-column:auto !important;
+  width:100% !important;
+  justify-content:flex-start !important;
+}
+.target-master-fields > .target-final-row,
+.target-master-fields > .advisor-strip{
+  grid-column:1 / -1 !important;
+}
+.target-master .goal-divider{display:none !important;}
+.target-goal-row{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+}
+.target-goal-input{width:96px !important; text-align:left !important;}
+
+/* Simple tools label: clean text + single chevron, no bubble treatment. */
+.menu-tools-arrow{
+  display:inline-block !important;
+  margin-inline-start:5px !important;
+  filter:none !important;
+  box-shadow:none !important;
+}
