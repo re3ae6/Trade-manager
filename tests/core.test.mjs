@@ -531,11 +531,12 @@ test('Service Worker app shell caches all runtime core modules and uses current 
     './src/js/core/risk-engine.js',
     './src/js/core/recovery.js',
     './src/js/core/strategy-comparison.js',
-    './src/js/core/stress-testing.js'
+    './src/js/core/stress-testing.js',
+    './src/js/core/payout.js'
   ]) {
     assert.ok(sw.includes(path), `missing offline app-shell asset: ${path}`);
   }
-  assert.match(sw, /CACHE_VERSION = 'v2\.9\.0'/);
+  assert.match(sw, /CACHE_VERSION = 'v2\.9\.1'/);
 });
 
 
