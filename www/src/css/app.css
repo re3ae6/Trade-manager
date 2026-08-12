@@ -2067,3 +2067,33 @@ input[aria-invalid="true"]{
     max-height:72vh;
   }
 }
+
+
+/* =====================================================
+   POST-AUDIT UI FIX — drawer direction + header hit area
+===================================================== */
+.optionsmenu{z-index:1002;}
+.optionsmenu summary{position:relative;z-index:1003;pointer-events:auto;}
+.optionsmenu[open] summary{z-index:1003;}
+.optionsmenu .optionpanel{z-index:1004;}
+.optionsmenu[open]::after{z-index:1000;}
+
+/* Portrait: the menu button is on the left, so the drawer opens from the left. */
+@media (max-width:900px){
+  .optionsmenu .optionpanel{
+    left:0;
+    right:auto;
+    border-radius:0 0 14px 0;
+    box-shadow:18px 0 45px rgba(0,0,0,.5);
+  }
+}
+
+/* Landscape: keep the drawer on the right, matching the existing landscape convention. */
+@media (orientation:landscape){
+  .optionsmenu .optionpanel{
+    left:auto;
+    right:0;
+    border-radius:0 0 0 14px;
+    box-shadow:-18px 0 45px rgba(0,0,0,.5);
+  }
+}
