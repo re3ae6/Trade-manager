@@ -2180,3 +2180,42 @@ Presentation-only refinement based on the agreed UI review. Trading engines, cal
 
 ### Remaining visual verification
 Final visual confirmation should be performed on the target Android device in both Portrait and Landscape orientations, because device-specific WebView viewport and safe-area behavior cannot be fully reproduced by static source checks alone.
+
+
+# 2026-08-12 — BE Policy Consistency + Navigation Hit-Area Fix
+
+## Scope
+- Confirmed the two-layer BE contract.
+- Corrected BE behavior in the live session engine and scenario simulator.
+- Corrected the navigation drawer direction in portrait mode.
+- Corrected the menu hit-area stacking so the visible button itself receives touches.
+
+## BE Contract
+- Session statistics: `Trades = Wins + BE + Losses`.
+- BE leaves Balance unchanged.
+- BE leaves `nRemaining` unchanged in Masaniello.
+- BE leaves `kRemaining` unchanged in Masaniello.
+- Scenario Simulator follows the same rule.
+
+## Files Changed
+- `src/js/core/session.js`
+- `src/js/core/scenario-simulator.js`
+- `tests/core.test.mjs`
+- `src/css/app.css`
+
+## Tests
+- `npm test` → 61/61 PASS
+- `npm run check` → PASS
+- `npm run build` → PASS
+- `www/` regenerated from `src/`
+
+## Important
+- `Simple`, `Masaniello`, `Recovery`, `Risk Engine`, `Planner`, and Storage architecture were not rewritten.
+
+
+## V2.9.0 — Menu Interaction / BE Neutrality Fix
+- Portrait navigation drawer explicitly opens from the left, matching the left-side menu trigger.
+- Menu trigger hit-area is aligned with its visual position and protected from overlay interception.
+- Hidden navigation drawer is prevented from intercepting touch events.
+- BE remains a real session trade for statistics, but does not consume Masaniello plan opportunities or alter balance/win/loss state.
+- Scenario simulation follows the same BE-neutral contract.
