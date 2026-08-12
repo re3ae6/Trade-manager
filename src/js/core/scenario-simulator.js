@@ -97,8 +97,9 @@ export function simulateScenario({
       lossStreak += 1;
       maxLossStreak = Math.max(maxLossStreak, lossStreak);
     }else{
+      // BE is a real trade for session statistics, but neutral to Masaniello:
+      // do not change nRemaining/kRemaining/balance.
       if(mode === 'simple') streakLoss = streakLoss;
-      else nRemaining -= 1;
       lossStreak = 0;
     }
 
