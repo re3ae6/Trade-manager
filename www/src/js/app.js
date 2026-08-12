@@ -222,7 +222,11 @@ const UI_DISCLOSURE_KEY = 'trade-manager-ui-disclosures-v1';
 function validateSetupInputs({showMessage=false} = {}){
   const checks = [
     ['initialCapital', value => Number.isFinite(value) && value > 0, 'موجودی اولیه باید یک عدد بزرگ‌تر از صفر باشد.'],
-    ['payout', value => { const p=normalizePayoutInput(value); return Number.isFinite(p) && p >= 0.01 && p <= 1; }, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 = 85٪).'],
+    ['payout', value => {
+      const rawPayout = Number(value);
+      const p = normalizePayoutInput(rawPayout);
+      return Number.isFinite(rawPayout) && Number.isFinite(p) && p >= 0.01 && p <= 1;
+    }, 'Payout باید بین 0.01 و 1.00 باشد (مثلاً 0.85 = 85٪).'],
     ['mainTargetValue', value => Number.isFinite(value) && value > 0, 'Target باید یک عدد بزرگ‌تر از صفر باشد.']
   ];
   if(mode === 'simple'){
@@ -232,7 +236,7 @@ function validateSetupInputs({showMessage=false} = {}){
     const el = document.getElementById(id);
     if(!el) continue;
     const raw = String(el.value ?? '').replace(/[$,\s]/g,'');
-    const value = parseFloat(raw);
+    const value = id === 'payout' ? normalizePayoutInput(raw) : parseFloat(raw);
     if(!raw || !rule(value)){
       el.setAttribute('aria-invalid','true');
       showInputAdjustment(id, message);
@@ -545,6 +549,9 @@ function onSetupChange(){
     renderRiskAdvisor();
     return;
   }
+  // A previously invalid value must not leave a stale warning visible once
+  // the current inputs are valid. Recalculation below will set the normal state.
+  clearAlert();
   if(trades.length === 0){
     if(mode === 'masaniello'){
       // computePlan searches many (n,k) combinations under extreme
