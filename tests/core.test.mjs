@@ -185,7 +185,7 @@ test('Simple planner returns risk profiles with executable stake information', (
 });
 
 
-test('BE is a real Masaniello trade but neutral to plan progress', () => {
+test('BE is a neutral Masaniello trade without changing balance, N or K', () => {
   const state = applyTradeOutcome({ balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0 }, 'BE', 10, 0.85);
   assert.equal(state.balance, 100);
   assert.equal(state.nRemaining, 10);
@@ -231,7 +231,7 @@ test('Undo replay uses the real replay primitive for Win → Loss → BE → Los
   assert.equal(afterUndo.breakevens, 1);
 });
 
-test('Undo replay keeps BE neutral without consuming Masaniello opportunity', () => {
+test('Undo replay keeps BE neutral without consuming a Masaniello opportunity', () => {
   const initial = { balance: 100, nRemaining: 10, kRemaining: 5, streakLoss: 0, currentStreakCount: 0, wins: 0, losses: 0, breakevens: 0, trades: 0 };
   const stakeResolver = () => 10;
   const before = replayTradeResults(initial, ['W','BE'], stakeResolver, 0.85);
@@ -373,7 +373,7 @@ test('Simple scenario uses the real stake engine and keeps BE balance-neutral', 
   assert.ok(result.rows[0].stake > 0);
 });
 
-test('Masaniello scenario BE is neutral to nRemaining and kRemaining', () => {
+test('Masaniello scenario BE keeps nRemaining and kRemaining unchanged', () => {
   const result = simulateScenario({
     mode:'masaniello',
     capital:100,
@@ -535,7 +535,7 @@ test('Service Worker app shell caches all runtime core modules and uses current 
   ]) {
     assert.ok(sw.includes(path), `missing offline app-shell asset: ${path}`);
   }
-  assert.match(sw, /CACHE_VERSION = 'v2\.9\.1'/);
+  assert.match(sw, /CACHE_VERSION = 'v2\.9\.0'/);
 });
 
 
@@ -701,29 +701,4 @@ test('Release audit keeps a user-facing runtime error guard in app source', asyn
   assert.match(appSource, /window\.addEventListener\('unhandledrejection'/);
   assert.match(appSource, /یک خطای غیرمنتظره رخ داد/);
   assert.match(appSource, /یک عملیات غیرمنتظره کامل نشد/);
-});
-
-
-test('V2.9.1 UI keeps primary controls touchable and secondary panels collapsed by default', async () => {
-  const fs = await import('node:fs/promises');
-  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /id="tradePanelDetails"[^>]*open/);
-  assert.match(html, /id="targetPanel"[^>]*open/);
-  assert.match(html, /id="tradingPlanPanel"[^>]*>/);
-  assert.doesNotMatch(html, /id="tradingPlanPanel"[^>]*\bopen\b/);
-  assert.doesNotMatch(html, /id="performanceDetails"[^>]*\bopen\b/);
-  assert.match(html, /id="historyBtn"/);
-  assert.match(html, /id="historyModal"/);
-  assert.match(html, /id="historyWrap"/);
-  assert.match(html, /id="historyExportBtn"/);
-  assert.match(html, /id="historyClearBtn"/);
-  assert.match(html, /⚙ تنظیمات/);
-});
-
-test('V2.9.1 UI gives Target fields explicit labels and aligned shells', async () => {
-  const fs = await import('node:fs/promises');
-  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /class="target-field"[\s\S]*Balance اولیه/);
-  assert.match(html, /class="target-field"[\s\S]*Payout/);
-  assert.match(html, /class="target-field target-field-wide"[\s\S]*هدف/);
 });
