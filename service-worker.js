@@ -1,5 +1,5 @@
 /* Trade Manager V2 service worker. */
-const CACHE_VERSION = 'v2.9.0';
+const CACHE_VERSION = 'v2.9.1';
 const CACHE_NAME = `trade-manager-${CACHE_VERSION}`;
 
 const APP_SHELL = [
@@ -49,7 +49,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -72,7 +76,10 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request).then(cached => cached || caches.match('./index.html')))
+        .catch(() =>
+          caches.match(request)
+            .then(cached => cached || caches.match('./index.html'))
+        )
     );
     return;
   }
@@ -81,6 +88,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then(cached => {
         if(cached) return cached;
+
         return fetch(request).then(response => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
