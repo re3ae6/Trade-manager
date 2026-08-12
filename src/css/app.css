@@ -2121,3 +2121,291 @@ input[type="text"]{
   line-height:1.2;
   font-size:10.5px;
 }
+
+
+/* =====================================================
+   V2.9.2 PHASE 1 — AUTHORITATIVE UI STABILITY PATCH
+   Header / Drawer / Landscape scroll only.
+   No business logic or core-engine changes.
+===================================================== */
+
+/* Mobile header: one deterministic three-cell grid.
+   Visual bounds and touch bounds are the same element. */
+@media (max-width:900px){
+  .titlebar{
+    position:relative !important;
+    top:auto !important;
+    display:grid !important;
+    grid-template-columns:34px minmax(0,1fr) auto !important;
+    grid-template-areas:"menu center session" !important;
+    align-items:center !important;
+    min-height:calc(48px + env(safe-area-inset-top)) !important;
+    height:auto !important;
+    margin:0 !important;
+    padding-top:calc(8px + env(safe-area-inset-top)) !important;
+    padding-bottom:8px !important;
+    padding-left:max(8px,env(safe-area-inset-left)) !important;
+    padding-right:max(8px,env(safe-area-inset-right)) !important;
+    gap:6px !important;
+    overflow:visible !important;
+  }
+
+  .titlebar > .optionsmenu{
+    grid-area:menu !important;
+    justify-self:start !important;
+    align-self:center !important;
+    width:34px !important;
+    min-width:34px !important;
+  }
+
+  .titlebar > .titlebar-center{
+    grid-area:center !important;
+    justify-self:stretch !important;
+    align-self:center !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:6px !important;
+    overflow:hidden !important;
+    direction:rtl !important;
+  }
+
+  .titlebar > .sessionpill{
+    grid-area:session !important;
+    justify-self:end !important;
+    align-self:center !important;
+    min-width:0 !important;
+    max-width:34vw !important;
+    min-height:34px !important;
+    height:34px !important;
+    padding:0 8px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+  }
+
+  .titlebar-balance{
+    min-width:0 !important;
+    max-width:34vw !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  .modetabs{
+    flex:0 0 auto !important;
+    min-width:0 !important;
+  }
+
+  .optionsmenu summary{
+    width:34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+    padding:0 !important;
+    margin:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    line-height:1 !important;
+  }
+}
+
+/* Portrait drawer: starts below the actual app header, not under the
+   system status area and not over the header controls. */
+@media (orientation:portrait){
+  .optionsmenu .optionpanel{
+    position:fixed !important;
+    top:calc(48px + env(safe-area-inset-top)) !important;
+    left:0 !important;
+    right:auto !important;
+    bottom:auto !important;
+    width:min(300px,calc(100vw - 16px)) !important;
+    max-width:calc(100vw - 16px) !important;
+    height:auto !important;
+    max-height:calc(100dvh - 48px - env(safe-area-inset-top)) !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    border-radius:0 0 14px 0 !important;
+    box-shadow:18px 0 45px rgba(0,0,0,.5) !important;
+  }
+}
+
+/* Landscape header: exactly one application row beneath the OS status area. */
+@media (orientation:landscape) and (max-height:600px){
+  .titlebar{
+    position:relative !important;
+    top:auto !important;
+    display:grid !important;
+    grid-template-columns:34px minmax(0,1fr) auto !important;
+    grid-template-areas:"menu center session" !important;
+    align-items:center !important;
+    min-height:calc(42px + env(safe-area-inset-top)) !important;
+    height:auto !important;
+    padding-top:calc(5px + env(safe-area-inset-top)) !important;
+    padding-bottom:5px !important;
+    padding-left:max(8px,env(safe-area-inset-left)) !important;
+    padding-right:max(8px,env(safe-area-inset-right)) !important;
+    gap:6px !important;
+    overflow:visible !important;
+  }
+
+  .titlebar > .optionsmenu{
+    grid-area:menu !important;
+    justify-self:start !important;
+  }
+
+  .titlebar > .titlebar-center{
+    grid-area:center !important;
+    justify-self:center !important;
+    min-width:0 !important;
+    width:auto !important;
+    max-width:100% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:5px !important;
+    direction:rtl !important;
+    overflow:hidden !important;
+  }
+
+  .titlebar > .sessionpill{
+    grid-area:session !important;
+    justify-self:end !important;
+    min-width:0 !important;
+    max-width:30vw !important;
+    height:30px !important;
+    min-height:30px !important;
+    padding:0 7px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+  }
+
+  .titlebar-balance{
+    max-width:24vw !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:10.5px !important;
+  }
+
+  .modetabs{
+    flex:0 0 auto !important;
+    min-width:0 !important;
+  }
+
+  .modetabs button{
+    padding:4px 7px !important;
+    font-size:9.5px !important;
+  }
+
+  .optionsmenu summary{
+    width:30px !important;
+    min-width:30px !important;
+    height:30px !important;
+    min-height:30px !important;
+    padding:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+
+  /* The grid occupies exactly the remaining viewport below the header.
+     Only the individual columns scroll; the page itself does not. */
+  body{
+    height:100% !important;
+    overflow:hidden !important;
+    padding:0 !important;
+  }
+
+  .app{
+    width:100% !important;
+    max-width:none !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+    border-radius:0 !important;
+  }
+
+  .grid{
+    flex:1 1 auto !important;
+    width:100% !important;
+    height:auto !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    grid-template-rows:minmax(0,1fr) !important;
+    align-items:stretch !important;
+    gap:6px !important;
+    padding:6px !important;
+  }
+
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    min-width:0 !important;
+    min-height:0 !important;
+    width:100% !important;
+    height:100% !important;
+    max-height:none !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-gutter:stable !important;
+  }
+
+  .grid > .calc-column{
+    display:block !important;
+  }
+
+  /* Keep the drawer completely outside the grid flow. */
+  .optionsmenu .optionpanel{
+    position:fixed !important;
+    top:calc(42px + env(safe-area-inset-top)) !important;
+    right:0 !important;
+    left:auto !important;
+    bottom:auto !important;
+    width:min(300px,calc(100vw - 16px)) !important;
+    max-width:calc(100vw - 16px) !important;
+    height:auto !important;
+    max-height:calc(100dvh - 50px - env(safe-area-inset-top)) !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    border-radius:0 0 0 14px !important;
+  }
+
+  .optionsmenu .menu-backdrop{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:5190 !important;
+  }
+}
+
+/* Touch contract: never create an invisible offset hit target. */
+.optionsmenu summary,
+.sessionpill,
+.modetabs button{
+  transform:none !important;
+}
+
+.optionsmenu summary::before,
+.optionsmenu summary::after{
+  pointer-events:none !important;
+}
+
+/* End V2.9.2 Phase 1 */
