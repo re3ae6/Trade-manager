@@ -20,9 +20,7 @@
 <div class="app">
 
   <div class="titlebar">
-    <button class="sessionpill" id="sessionPill" title="تپ = سشن جدید · نگه‌دارید ۳ ثانیه = ریست شمارنده" aria-label="New Session — tap for new session, hold 3 seconds to reset counter">
-      <span class="ic">⟳</span> Sess #<b id="sessionCounter">1</b>
-    </button>
+    <button id="pauseTopBtn" class="btn btn-secondary pause-top-btn hidden" type="button" aria-label="مکث سشن" title="مکث سشن">⏸</button>
 
     <div class="titlebar-center">
       <strong class="titlebar-balance" id="titlebarBalance" aria-live="polite">-</strong>
@@ -76,7 +74,7 @@
       <div class="subactions">
         <button id="clearBtn" class="btn btn-secondary">پاک کردن جدول</button>
         <button id="undoBtn" class="btn btn-secondary">↩ Undo آخرین معامله</button>
-        <button id="pauseTopBtn" class="btn btn-secondary hidden">⏸ مکث</button>
+        <button class="btn btn-secondary session-subaction" id="sessionPill" type="button" title="سشن جدید" aria-label="سشن جدید"><b id="sessionCounter">#1</b> ⟳</button>
       </div>
 
       <div id="alertBox"></div>

@@ -1495,3 +1495,134 @@ body{
     gap:4px !important;
   }
 }
+
+/* =========================================================
+   FINAL HEADER AUTHORITY — SESSION / PAUSE
+   One authority only. Portrait + Landscape.
+   ========================================================= */
+
+.titlebar{
+  position:relative !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  height:46px !important;
+  min-height:46px !important;
+  padding:0 !important;
+  gap:12px !important;
+  overflow:visible !important;
+}
+
+/* Pause: header, icon only */
+.titlebar > .pause-top-btn{
+  position:relative !important;
+  inset:auto !important;
+  order:1 !important;
+  flex:0 0 28px !important;
+  width:28px !important;
+  min-width:28px !important;
+  height:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+}
+
+/* Balance + mode */
+.titlebar > .titlebar-center{
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  order:2 !important;
+  flex:0 0 auto !important;
+  align-self:center !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  gap:5px !important;
+  overflow:visible !important;
+}
+
+/* Main menu */
+.titlebar > .optionsmenu{
+  position:relative !important;
+  inset:auto !important;
+  order:3 !important;
+  flex:0 0 28px !important;
+  align-self:center !important;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.titlebar > .optionsmenu > summary{
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+.titlebar-balance{
+  flex:0 0 auto !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+}
+
+/* Session: bottom action, same visual family as Undo */
+.subactions .session-subaction{
+  width:auto !important;
+  min-width:58px !important;
+  height:38px !important;
+  min-height:38px !important;
+  margin:0 !important;
+  padding:10px !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+}
+
+.subactions .session-subaction #sessionCounter{
+  font-weight:900 !important;
+}
+
+/* Portrait: approximately 1px lower than status-bar baseline */
+@media (orientation:portrait){
+  .titlebar{
+    transform:translateY(1px) !important;
+  }
+}
+
+/* Landscape: approximately 2px higher */
+@media (orientation:landscape){
+  .titlebar{
+    transform:translateY(-2px) !important;
+  }
+}
+
+/* Small phones */
+@media (max-width:420px){
+  .titlebar{
+    gap:10px !important;
+  }
+
+  .titlebar > .titlebar-center{
+    gap:4px !important;
+  }
+}
