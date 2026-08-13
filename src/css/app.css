@@ -37,15 +37,13 @@ button{ font-family:inherit; }
 
 .actions button:hover:not(:disabled){ filter:brightness(1.08); }
 .modetabs button, .risklevels button, .optionsmenu summary, .sessionpill,
-.histbtns button, .logbtn, .copybtn, #copyStakeBtn{
+.histbtns button, .logbtn, #copyStakeBtn{
   transition:filter .15s ease, transform .08s ease, background-color .15s ease;
 }
 .modetabs button:hover, .risklevels button:hover:not(.active), .optionsmenu summary:hover, .sessionpill:hover,
-.histbtns button:hover:not(:disabled), .logbtn:hover:not(:disabled), #copyStakeBtn:hover:not(:disabled),
-.copybtn:hover:not(:disabled):not(.copied){ filter:brightness(1.1); }
+.histbtns button:hover:not(:disabled), .logbtn:hover:not(:disabled), #copyStakeBtn:hover:not(:disabled){ filter:brightness(1.1); }
 .sessionpill:active:not(:disabled), .optionsmenu summary:active:not(:disabled),
-.histbtns button:active:not(:disabled), .logbtn:active:not(:disabled),
-.copybtn:active:not(:disabled), #copyStakeBtn:active:not(:disabled){ transform:scale(.97); }
+.histbtns button:active:not(:disabled), .logbtn:active:not(:disabled), #copyStakeBtn:active:not(:disabled){ transform:scale(.97); }
 
 body{
   margin:0;
@@ -150,7 +148,6 @@ tr.rowL td{background:rgba(227,87,106,.06);}
 #initialCapital{width:150px;}
 .inline-field{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
 .inline-field input{width:90px;}
-.inline-field .unit{color:var(--muted); font-size:12.5px;}
 .type-toggle{display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden;}
 .type-toggle label{margin:0; padding:5px 14px; cursor:pointer; color:var(--muted); font-size:13px; font-weight:700;}
 .type-toggle label input{display:none;}
@@ -163,8 +160,6 @@ tr.rowL td{background:rgba(227,87,106,.06);}
 .row.row-tight{padding:8px 4px;}
 .row.row-center{justify-content:center;}
 #wlSummary{font-family:var(--mono); font-weight:800; letter-spacing:.5px;}
-.subbox{border:1px solid var(--teal); border-radius:8px; margin-top:10px; overflow:hidden;}
-.subbox .panel-title{background:var(--teal-dark); color:#fff; margin:0; border-radius:0;}
 .panel-title-accent{background:var(--teal-dark); color:#fff;}
 .small{font-size:11px; color:var(--muted);}
 .lossexplain{color:var(--orange); line-height:1.6; padding:0 4px 8px;}
@@ -257,15 +252,7 @@ details summary{cursor:pointer; color:var(--muted); font-size:12px; padding:6px 
 .small-center{text-align:center; padding:10px;}
 
 .logbtn{width:100%; padding:9px; background:#2c3444; border:1px solid var(--border); border-radius:6px; color:#fff; font-weight:700; cursor:pointer; font-size:12px; margin-top:8px;}
-.copybtn{width:100%; padding:9px; background:var(--teal); border:none; border-radius:6px; color:#062820; font-weight:800; cursor:pointer; font-size:12px; margin-top:8px;}
-.copybtn.copied{background:#1c8f7a;}
 #logOutput{width:100%; min-height:200px; background:#0e1119; color:#9be8d9; border:1px solid var(--border); border-radius:8px; font-family:var(--mono); font-size:10px; padding:10px; white-space:pre; overflow:auto; direction:ltr; text-align:left;}
-.logwrap{display:none;}
-.logwrap.show{display:block;}
-.lognote{font-size:10.5px; color:var(--muted); line-height:1.5; margin:0 2px 8px;}
-
-.aboutbox{text-align:center; font-size:11px; color:var(--muted); line-height:1.6;}
-.aboutbox b{color:var(--text); display:block; font-size:13px; margin-bottom:4px;}
 
 footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 
@@ -412,8 +399,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
 
   .logbtn{font-size:10px; padding:7px; margin-top:6px;}
   #logOutput{min-height:100px; font-size:8.5px;}
-  .copybtn{font-size:10px; padding:7px; margin-top:6px;}
-  .lognote{font-size:9px;}
 
   footer{font-size:9px; padding:6px 8px;}
 }
@@ -453,11 +438,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 .dialog-ok{background:var(--teal);color:#062820;}
 .dialog-cancel{background:#333c4e;color:var(--text);border:1px solid var(--border);}
 .dialog-ok:hover,.dialog-cancel:hover{filter:brightness(1.08);}
-
-
-.tp-risk-section{margin:10px 0 12px;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;}
-.tp-risk-heading{font-weight:800;font-size:13px;margin-bottom:3px;}
-.tp-risk-payout{font-size:10px;color:var(--muted);margin-bottom:8px;}
 .tp-risk-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
 .tp-risk-card{min-width:0;padding:8px 5px;border:1px solid var(--border);border-radius:8px;text-align:center;background:#252c3a;font-size:10px;line-height:1.7;}
 .tp-risk-card b{font-family:var(--mono);font-size:13px;}
@@ -581,39 +561,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   .aboutmodal-body{padding:16px 14px 8px;}
   .aboutmodal-actions{padding:8px 14px 14px;}
 }
-
-
-/* ---------------- PERFORMANCE DASHBOARD / BACKUP ---------------- */
-.tp-actual{
-  margin:10px 0 12px;
-  padding:10px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:10px;
-}
-.tp-actual-head,.tp-actual-foot{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
-  font-size:11px;
-}
-.tp-actual-head b,.tp-actual-foot b{font-family:var(--mono); color:var(--teal);}
-.tp-progress{
-  height:8px;
-  margin:9px 0 7px;
-  border-radius:99px;
-  background:#303847;
-  overflow:hidden;
-}
-.tp-progress span{
-  display:block;
-  width:0;
-  height:100%;
-  border-radius:99px;
-  background:var(--teal);
-  transition:width .25s ease;
-}
 .backupbox{
   margin-top:10px;
   padding:10px;
@@ -684,37 +631,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 .collapsible-panel[open] .collapsible-summary::after{transform:rotate(180deg);}
 .dashboard-body{padding:8px;}
 .about-backup{margin-top:14px;text-align:right;}
-.tp-plan-editor{
-  margin-top:9px;
-  padding:9px;
-  border:1px dashed var(--border);
-  border-radius:9px;
-  background:rgba(255,255,255,.02);
-}
-.tp-editor-title{font-weight:800;font-size:11px;margin-bottom:7px;}
-.tp-editor-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:7px;
-}
-.tp-editor-grid label{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:6px;
-  font-size:10.5px;
-  color:var(--muted);
-}
-.tp-editor-grid input{
-  width:72px;
-  background:#252c3a;
-  border:1px solid var(--border);
-  color:var(--text);
-  border-radius:6px;
-  padding:5px;
-  text-align:center;
-  font-family:var(--mono);
-}
 #tpApplyBtn{width:100%;margin-top:8px;}
 .tp-risk-card.selectable{cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease;}
 .tp-risk-card.selectable:active{transform:scale(.99);}
@@ -737,8 +653,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
   #tradingPlanPanel{margin-top:0;}
 }
 @media(max-width:420px){
-  .tp-editor-grid{grid-template-columns:1fr;}
-  .tp-editor-grid input{width:90px;}
 }
 
 /* ---------------- V2.4 PLANNER / ACCESSIBILITY POLISH ---------------- */
@@ -748,7 +662,6 @@ body{color:var(--text);}
 label,.row label,.panel-title,.histsummary,details summary{color:var(--text);}
 input,select,textarea{color:var(--text);}
 ::placeholder{color:#9fa9ba;opacity:1;}
-.targetbox{margin-bottom:10px;padding:8px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;}
 .simple-planner-block{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
 .planner-heading{font-weight:800;font-size:13px;margin-bottom:7px;}
 .planner-info{padding:7px 2px;line-height:1.7;color:#c9d1df;}
@@ -768,18 +681,6 @@ input,select,textarea{color:var(--text);}
 }
 .target-master-fields{
   padding:4px 2px 8px;
-}
-.goal-divider{
-  margin:10px 0 2px;
-  padding:7px 8px;
-  border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-  background:rgba(255,255,255,.025);
-  border-radius:6px;
-  text-align:center;
-  font-size:12px;
-  font-weight:800;
-  color:var(--teal);
 }
 .target-final-row{
   margin-top:4px;
@@ -1441,9 +1342,6 @@ input,select,textarea{color:var(--text);}
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
   }
-  .grid > .trade-column{overflow-y:auto;}
-  .grid > .calc-column{overflow-y:auto;}
-  .grid > .right-column{overflow-y:auto;}
   .trade-body{max-height:none;overflow:visible;}
 }
 
@@ -1491,7 +1389,7 @@ input[aria-invalid="true"]{
 }
 
 @media (orientation:landscape) and (max-height:600px){
-  html,body,#root{
+  html,body{
     height:100%;
     min-height:0;
   }
@@ -1521,9 +1419,6 @@ input[aria-invalid="true"]{
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
     scrollbar-gutter:stable;
-  }
-  .grid > .trade-column{
-    overflow-y:auto;
   }
   .grid > .calc-column{
     display:block;
@@ -1603,7 +1498,6 @@ input[aria-invalid="true"]{
   font-family:var(--mono);
   font-size:12px;
 }
-.target-master .goal-divider{display:none;}
 .target-master .target-final-row{margin-top:2px;padding-top:7px;}
 .target-master .advisor-strip{margin-top:5px;}
 
@@ -1694,8 +1588,6 @@ input[aria-invalid="true"]{
   .optionsmenu summary{width:30px;height:27px;font-size:15px;}
   .grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   .grid > .calc-column{overflow-y:auto;overflow-x:hidden;min-height:0;}
-  .grid > .trade-column,
-  .grid > .right-column{overflow-y:auto;overflow-x:hidden;min-height:0;}
 }
 
 /* Preserve the third column's open-by-default behavior without changing widths. */
@@ -1888,18 +1780,6 @@ input[type="text"]{
   }
 }
 
-/* Remove the accidental full-height landscape drawer rule from V2.9.0. */
-@media (orientation:landscape) and (max-height:600px){
-  .optionsmenu .optionpanel{
-    position:absolute;
-    top:calc(100% + 7px);
-    right:0;
-    left:auto;
-    height:auto;
-    max-height:min(82vh,560px);
-  }
-}
-
 
 /* V2.9.1 FINAL TOUCH — keep the proven header geometry, fix hit testing. */
 .titlebar{
@@ -2014,9 +1894,6 @@ input[type="text"]{
   .titlebar > .optionsmenu{grid-area:menu;justify-self:start;}
   .titlebar > .titlebar-center{grid-area:center;justify-self:center;min-width:0;width:auto;direction:rtl;}
   .titlebar > .sessionpill{grid-area:session;justify-self:end;}
-  .titlebar-center{gap:5px;}
-  .titlebar-balance{font-size:10.5px;}
-  .modetabs button{padding:4px 7px;font-size:9.5px;}
   .optionsmenu summary{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;}
 
   .app{
@@ -2071,7 +1948,6 @@ input[type="text"]{
 .titlebar{z-index:5000;isolation:isolate;}
 .optionsmenu{z-index:5100;isolation:isolate;}
 .optionsmenu summary{position:relative;z-index:5102;pointer-events:auto;touch-action:manipulation;}
-.optionsmenu .optionpanel{z-index:5200;}
 .optionsmenu .menu-backdrop{z-index:5190;}
 
 /* Compact Tools header: text + one arrow, without decorative bubbles. */
@@ -2100,7 +1976,6 @@ input[type="text"]{
 
 /* Target & Plan: equal-width inputs and compact two-column geometry. */
 .target-master-fields > .row{min-width:0;}
-.target-master-fields > .row input{width:100%;min-width:0;}
 .target-master-fields > .row label{white-space:nowrap;}
 
 /* Exit & Save: compact, equal, centered touch targets. */
@@ -2190,6 +2065,24 @@ input[type="text"]{
     top:auto;
     padding-top:calc(8px + env(safe-area-inset-top));
     z-index:5100;
+    direction:ltr;
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+  .titlebar > .optionsmenu{
+    grid-column:1;
+    justify-self:start;
+    direction:rtl;
+  }
+  .titlebar > .titlebar-center{
+    grid-column:2;
+    justify-self:center;
+    direction:rtl;
+    min-width:0;
+  }
+  .titlebar > .sessionpill{
+    grid-column:3;
+    justify-self:end;
+    direction:rtl;
   }
 }
 
@@ -2207,11 +2100,6 @@ input[type="text"]{
     padding-top:6px;
     padding-bottom:6px;
     z-index:5100;
-  }
-
-  /* Preserve the existing three visual positions; Menu is on the left,
-     Session on the right in Landscape, with Strategy/Balance centered. */
-  .titlebar{
     direction:ltr;
     grid-template-columns:auto minmax(0,1fr) auto;
   }
@@ -2246,27 +2134,3 @@ input[type="text"]{
   }
 }
 
-/* Portrait keeps the Menu on the left, matching the confirmed mobile
-   reference. */
-@media (orientation:portrait){
-  .titlebar{
-    direction:ltr;
-    grid-template-columns:auto minmax(0,1fr) auto;
-  }
-  .titlebar > .optionsmenu{
-    grid-column:1;
-    justify-self:start;
-    direction:rtl;
-  }
-  .titlebar > .titlebar-center{
-    grid-column:2;
-    justify-self:center;
-    direction:rtl;
-    min-width:0;
-  }
-  .titlebar > .sessionpill{
-    grid-column:3;
-    justify-self:end;
-    direction:rtl;
-  }
-}
