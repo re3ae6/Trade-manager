@@ -1194,6 +1194,121 @@ body{
   }
 }
 
+
+/* =========================================================
+   V2.9.5 — HEADER VISUAL ALIGNMENT FIX
+   ---------------------------------------------------------
+   Portrait height preserved.
+   Landscape visual header stays on the status-bar baseline.
+   Compact mode switch keeps balance readable.
+   Menu/session remain inside the same header row.
+   ========================================================= */
+
+/* Compact center controls: balance gets priority. */
+.titlebar > .titlebar-center{
+  gap:5px;
+  flex-shrink:1;
+}
+
+.titlebar-balance{
+  flex:0 1 auto;
+  min-width:0;
+  max-width:none;
+  overflow:visible;
+  text-overflow:clip;
+  white-space:nowrap;
+  font-size:13px;
+}
+
+.modetabs{
+  flex:0 0 auto;
+  padding:2px;
+  gap:1px;
+  border-radius:16px;
+}
+
+.modetabs button{
+  padding:5px 9px;
+  min-height:25px;
+  border-radius:13px;
+  font-size:11px;
+  line-height:1;
+}
+
+/* Session must retain the accent color and stay visually compact. */
+.titlebar > .sessionpill{
+  color:var(--teal);
+  font-weight:800;
+  min-height:26px;
+  height:26px;
+  padding:0 8px;
+}
+
+/* Menu icon stays in the header row, never below navigation. */
+.titlebar > .optionsmenu{
+  align-self:center;
+  margin:0;
+}
+
+.titlebar > .optionsmenu > summary{
+  width:28px;
+  height:28px;
+  min-width:28px;
+  min-height:28px;
+}
+
+/* Portrait: keep the current V2.9.4 header height/inset contract. */
+@media (orientation:portrait){
+  .titlebar{
+    height:calc(46px + env(safe-area-inset-top, 0px));
+    min-height:calc(46px + env(safe-area-inset-top, 0px));
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
+  .titlebar > .sessionpill{
+    align-self:end;
+    margin-bottom:5px;
+  }
+
+  .titlebar > .titlebar-center{
+    max-width:calc(100% - 8px);
+  }
+}
+
+/* Landscape: don't add the safe-area inset to the visual header height.
+   The inset is absorbed by the top padding inside the fixed header box,
+   keeping the bottom edge aligned with the old header geometry. */
+@media (orientation:landscape){
+  .titlebar{
+    height:46px;
+    min-height:46px;
+    padding-top:env(safe-area-inset-top, 0px);
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
+  .titlebar > .sessionpill{
+    align-self:center;
+    margin-top:0;
+    margin-bottom:0;
+  }
+
+  .titlebar > .titlebar-center{
+    gap:5px;
+  }
+
+  .titlebar > .sessionpill{
+    height:26px;
+    min-height:26px;
+  }
+
+  .optionsmenu .optionpanel{
+    top:46px;
+    max-height:calc(100dvh - 46px);
+  }
+}
+
 /* =========================================================
    END V2.9.4 AUTHORITY
    ========================================================= */
