@@ -708,11 +708,9 @@ body{
   z-index:5000;
   isolation:isolate;
 
-  display:grid;
-  grid-template-columns:40px minmax(0,1fr) auto;
-  grid-template-areas:"menu center session";
-
+  display:flex;
   align-items:center;
+  justify-content:center;
 
   width:100%;
   min-width:0;
@@ -735,34 +733,31 @@ body{
 /* ---------- Header children ---------- */
 
 .titlebar > .optionsmenu{
-  grid-area:menu;
-
   position:relative;
   z-index:5100;
 
-  justify-self:center;
-  align-self:end;
+  flex:0 0 auto;
+  align-self:center;
 
   width:30px;
   height:28px;
-  margin:0 0 5px;
+  margin:0;
 
   transform:none;
 }
 
 .titlebar > .titlebar-center{
-  grid-area:center;
-
   display:flex;
   align-items:center;
   justify-content:center;
 
+  flex:0 1 auto;
   min-width:0;
-  width:max-content;
-  max-width:100%;
+  width:auto;
+  max-width:calc(100% - 76px);
 
   margin:0;
-  gap:4px;
+  gap:5px;
 
   overflow:hidden;
   direction:ltr;
@@ -772,20 +767,18 @@ body{
 }
 
 .titlebar > .sessionpill{
-  grid-area:session;
-
   position:relative;
   z-index:5102;
 
-  justify-self:end;
-  align-self:end;
+  flex:0 0 auto;
+  align-self:center;
 
   min-width:0;
   min-height:28px;
   height:28px;
 
-  margin:0 2px 5px 0;
-  padding:0 9px;
+  margin:0;
+  padding:0 8px;
 
   transform:none;
   direction:rtl;
@@ -983,7 +976,6 @@ body{
 
   .titlebar{
     grid-template-columns:40px minmax(0,1fr) auto;
-    grid-template-areas:"menu center session";
 
     width:100%;
     max-width:none;
@@ -1196,18 +1188,51 @@ body{
 
 
 /* =========================================================
-   V2.9.5 — HEADER VISUAL ALIGNMENT FIX
-   ---------------------------------------------------------
-   Portrait height preserved.
-   Landscape visual header stays on the status-bar baseline.
-   Compact mode switch keeps balance readable.
-   Menu/session remain inside the same header row.
+   END V2.9.4 AUTHORITY
    ========================================================= */
 
-/* Compact center controls: balance gets priority. */
+
+/* =========================================================
+   V2.9.6 — CENTERED HEADER GROUP
+   ---------------------------------------------------------
+   Menu + balance + mode + session form ONE centered group.
+   The visual header remains on the status-bar baseline.
+   Portrait height/safe-area contract is unchanged.
+   ========================================================= */
+
+.titlebar{
+  justify-content:center;
+}
+
+.titlebar > .optionsmenu{
+  flex:0 0 auto;
+  align-self:center;
+  width:30px;
+  height:28px;
+  margin:0;
+}
+
 .titlebar > .titlebar-center{
+  flex:0 1 auto;
+  min-width:0;
+  width:auto;
+  max-width:calc(100% - 76px);
+  margin:0;
   gap:5px;
-  flex-shrink:1;
+  overflow:visible;
+  align-self:center;
+}
+
+.titlebar > .sessionpill{
+  flex:0 0 auto;
+  align-self:center;
+  min-width:0;
+  height:28px;
+  min-height:28px;
+  margin:0;
+  padding:0 8px;
+  color:var(--teal);
+  font-weight:800;
 }
 
 .titlebar-balance{
@@ -1228,26 +1253,11 @@ body{
 }
 
 .modetabs button{
-  padding:5px 9px;
+  padding:5px 8px;
   min-height:25px;
   border-radius:13px;
   font-size:11px;
   line-height:1;
-}
-
-/* Session must retain the accent color and stay visually compact. */
-.titlebar > .sessionpill{
-  color:var(--teal);
-  font-weight:800;
-  min-height:26px;
-  height:26px;
-  padding:0 8px;
-}
-
-/* Menu icon stays in the header row, never below navigation. */
-.titlebar > .optionsmenu{
-  align-self:center;
-  margin:0;
 }
 
 .titlebar > .optionsmenu > summary{
@@ -1257,50 +1267,18 @@ body{
   min-height:28px;
 }
 
-/* Portrait: keep the current V2.9.4 header height/inset contract. */
-@media (orientation:portrait){
-  .titlebar{
-    height:calc(46px + env(safe-area-inset-top, 0px));
-    min-height:calc(46px + env(safe-area-inset-top, 0px));
-  }
-
-  .titlebar > .optionsmenu,
-  .titlebar > .titlebar-center,
-  .titlebar > .sessionpill{
-    align-self:end;
-    margin-bottom:5px;
-  }
-
-  .titlebar > .titlebar-center{
-    max-width:calc(100% - 8px);
-  }
-}
-
-/* Landscape: don't add the safe-area inset to the visual header height.
-   The inset is absorbed by the top padding inside the fixed header box,
-   keeping the bottom edge aligned with the old header geometry. */
 @media (orientation:landscape){
   .titlebar{
     height:46px;
     min-height:46px;
-    padding-top:env(safe-area-inset-top, 0px);
+    padding-top:env(safe-area-inset-top,0px);
   }
 
   .titlebar > .optionsmenu,
   .titlebar > .titlebar-center,
   .titlebar > .sessionpill{
     align-self:center;
-    margin-top:0;
-    margin-bottom:0;
-  }
-
-  .titlebar > .titlebar-center{
-    gap:5px;
-  }
-
-  .titlebar > .sessionpill{
-    height:26px;
-    min-height:26px;
+    margin:0;
   }
 
   .optionsmenu .optionpanel{
@@ -1308,7 +1286,3 @@ body{
     max-height:calc(100dvh - 46px);
   }
 }
-
-/* =========================================================
-   END V2.9.4 AUTHORITY
-   ========================================================= */
