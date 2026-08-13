@@ -62,18 +62,7 @@ body{
   border:1px solid #000;
 }
 
-.titlebar{
-  position:sticky; top:0; z-index:200;
-  display:grid; grid-template-columns:1fr minmax(0,auto) 1fr; align-items:center; gap:10px;
-  background:var(--header);
-  padding:14px 16px;
-  padding-top:calc(14px + env(safe-area-inset-top));
-  letter-spacing:1px;
-  font-weight:800;
-  font-size:20px;
-  border-bottom:2px solid #000;
-  border-radius:18px 18px 0 0;
-}
+
 
 /* ---------------- MODE TABS (merged into titlebar, segmented switch) ---------------- */
 .titlebar-center{display:flex; align-items:center; gap:12px;}
