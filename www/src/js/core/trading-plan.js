@@ -1,4 +1,46 @@
 import { computePlan } from './masaniello.js';
+import { normalizePayout, isValidPayout } from './payout.js';
+
+/**
+ * Restore a running Trading Plan from persisted state.
+ *
+ * Persisted payout values may be either the current fractional contract
+ * (e.g. 0.85) or legacy whole percentages (e.g. 85). riskOptions are
+ * derived data and are therefore always rebuilt when the plan is running.
+ */
+export function migrateTradingPlan(tradingPlan, fallbackPayoutPercent){
+  if(!tradingPlan || typeof tradingPlan !== 'object' || Array.isArray(tradingPlan)){
+    return tradingPlan ?? null;
+  }
+
+  if(tradingPlan.status !== 'running'){
+    return tradingPlan;
+  }
+
+  const rawPayout = Number(tradingPlan.payoutPercent);
+  const fallback = normalizePayout(fallbackPayoutPercent);
+
+  const normalized = isValidPayout(rawPayout)
+    ? normalizePayout(rawPayout)
+    : (isValidPayout(fallbackPayoutPercent) ? fallback : 0);
+
+  const payout = normalized > 0
+    ? normalized * 100
+    : null;
+
+  const migrated = {
+    ...tradingPlan,
+    payoutPercent: payout
+  };
+
+  migrated.riskOptions = computeTradingPlanRiskOptions(
+    migrated.planStartBalance,
+    migrated.targetBalance,
+    migrated.payoutPercent
+  );
+
+  return migrated;
+}
 
 export function generatePlanId(){
   if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();

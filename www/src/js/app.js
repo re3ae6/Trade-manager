@@ -1,7 +1,7 @@
 import { formatNumber, money, formatDateTime } from './core/format.js';
 import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from './core/masaniello.js';
 import { calculateSimpleNextStake } from './core/simple.js';
-import { generatePlanId, resolvePlanTarget, computeTradingPlanStats as computeTradingPlanStatsPure, computeTradingPlanRiskOptions } from './core/trading-plan.js';
+import { generatePlanId, resolvePlanTarget, computeTradingPlanStats as computeTradingPlanStatsPure, computeTradingPlanRiskOptions, migrateTradingPlan } from './core/trading-plan.js';
 import { computeHistoryWithCumulativeStats as computeHistoryWithCumulativeStatsPure, buildHistoryCSV } from './core/history.js';
 import { readStoredState, writeStoredState } from './storage/state.js';
 import { computePerformanceStats } from './core/analytics.js';
@@ -142,19 +142,14 @@ function loadState(){
     kRequired0 = saved.kRequired0 || 0;
     nRemaining = saved.nRemaining || 0;
     kRemaining = saved.kRemaining || 0;
-    tradingPlan = saved.tradingPlan || null;
-    if(tradingPlan && tradingPlan.status === 'running' && !Array.isArray(tradingPlan.riskOptions)){
-      tradingPlan.payoutPercent = Number.isFinite(tradingPlan.payoutPercent) ? (tradingPlan.payoutPercent > 1 ? tradingPlan.payoutPercent : tradingPlan.payoutPercent * 100) : getPayoutPercent();
-      tradingPlan.riskOptions = computeTradingPlanRiskOptions(
-        tradingPlan.planStartBalance,
-        tradingPlan.targetBalance,
-        tradingPlan.payoutPercent
-      );
-    }
-
     const inp = saved.inputs || {};
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
     if(inp.payout) { document.getElementById('payout').value = inp.payout; normalizePayoutField(); }
+
+    tradingPlan = migrateTradingPlan(
+      saved.tradingPlan || null,
+      getPayoutPercent()
+    );
     if(inp.stopLossPct) document.getElementById('stopLossPct').value = inp.stopLossPct;
     if(inp.stopLossAlertPct) document.getElementById('stopLossAlertPct').value = inp.stopLossAlertPct;
     document.getElementById('manualToggle').checked = !!inp.manualToggle;
@@ -1727,7 +1722,7 @@ function createTradingPlan(planName, planStartBalance, targetPercent, targetBala
     planStartBalance,
     targetPercent: resolved.targetPercent,
     targetBalance: resolved.targetBalance,
-    payoutPercent: num('payout'),
+    payoutPercent: getPayoutPercent(),
     riskOptions: computeTradingPlanRiskOptions(planStartBalance, resolved.targetBalance, getPayoutPercent()),
     planCreatedAt: new Date().toISOString(),
     status: 'running'
@@ -1801,7 +1796,7 @@ async function applyPlannerEdit(){
   const losses = parseInt(document.getElementById('tpEditLosses')?.value,10);
   if(mode !== 'masaniello') return;
   const capital = num('initialCapital');
-  const payout = num('payout');
+  const payout = getPayoutPercent();
   const target = getUnifiedTarget().targetProfit;
   const checked = validateMasanielloCustom(capital,payout,target,n,losses,MIN_STAKE);
   if(!checked.valid){
@@ -1846,6 +1841,7 @@ async function onTradingPlanFormSubmit(){
     createTradingPlan(planName, planStartBalance, targetPercent, targetBalance);
   }
 
+  saveState();
   render();
   clearTradingPlanForm();
 }
@@ -1877,6 +1873,7 @@ function onTradingPlanEdit(){
 async function onTradingPlanComplete(){
   if(!await showAppConfirm('برنامه به عنوان تکمیل‌شده علامت‌گذاری شود؟', 'تکمیل برنامه')) return;
   completeTradingPlan();
+  saveState();
   render();
   clearTradingPlanForm();
 }
@@ -1884,6 +1881,7 @@ async function onTradingPlanComplete(){
 async function onTradingPlanCancel(){
   if(!await showAppConfirm('این برنامه لغو شود؟', 'لغو برنامه')) return;
   cancelTradingPlan();
+  saveState();
   render();
   clearTradingPlanForm();
 }

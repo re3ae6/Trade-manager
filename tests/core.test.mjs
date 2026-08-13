@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from '../src/js/core/masaniello.js';
 import { calculateSimpleNextStake } from '../src/js/core/simple.js';
 import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/core/history.js';
-import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions } from '../src/js/core/trading-plan.js';
+import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions, migrateTradingPlan } from '../src/js/core/trading-plan.js';
 import { computePerformanceStats } from '../src/js/core/analytics.js';
 import { csvEscape } from '../src/js/core/format.js';
 import { applyTradeOutcome, replayTradeResults, sessionEndAction } from '../src/js/core/session.js';
@@ -47,6 +47,105 @@ test('History cumulative stats preserve trend threshold', () => {
   assert.equal(result[0].trend, 'flat');
   assert.equal(result[1].cumulativeWinRate, 75);
   assert.equal(result[1].trend, 'up');
+});
+
+
+test('Trading plan migration normalizes legacy and fractional payout values', () => {
+  const legacy = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 85,
+    riskOptions: [{ risk: 'old' }]
+  }, 92);
+
+  const fractional = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 0.85,
+    riskOptions: [{ risk: 'old' }]
+  }, 92);
+
+  assert.equal(legacy.payoutPercent, 85);
+  assert.equal(fractional.payoutPercent, 85);
+
+  assert.deepEqual(
+    legacy.riskOptions.map(o => o.risk),
+    ['low', 'medium', 'high']
+  );
+
+  assert.deepEqual(
+    fractional.riskOptions.map(o => o.risk),
+    ['low', 'medium', 'high']
+  );
+});
+
+test('Trading plan migration falls back for missing or invalid payout', () => {
+  const missing = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050
+  }, 92);
+
+  const invalid = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 101
+  }, 92);
+
+  const ambiguous = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 1.01
+  }, 92);
+
+  assert.equal(missing.payoutPercent, 92);
+  assert.equal(invalid.payoutPercent, 92);
+  assert.equal(ambiguous.payoutPercent, 92);
+});
+
+test('Trading plan migration rejects an invalid fallback instead of inventing payout', () => {
+  const plan = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 101
+  }, 101);
+
+  assert.equal(plan.payoutPercent, null);
+  assert.equal(plan.riskOptions, null);
+});
+
+test('Trading plan migration rebuilds stale derived risk options', () => {
+  const plan = migrateTradingPlan({
+    status: 'running',
+    planStartBalance: 1000,
+    targetBalance: 1050,
+    payoutPercent: 85,
+    riskOptions: [
+      { risk: 'corrupt', n: 999, k: 999 }
+    ]
+  }, 92);
+
+  assert.deepEqual(
+    plan.riskOptions.map(o => o.risk),
+    ['low', 'medium', 'high']
+  );
+
+  assert.notEqual(plan.riskOptions[0].n, 999);
+});
+
+test('Trading plan migration leaves non-running plans unchanged', () => {
+  const completed = {
+    status: 'completed',
+    payoutPercent: 0.85,
+    riskOptions: [{ risk: 'historical' }]
+  };
+
+  assert.deepEqual(migrateTradingPlan(completed, 92), completed);
 });
 
 test('Trading plan target resolution preserves percent/balance semantics', () => {
