@@ -1380,3 +1380,118 @@ body{
     max-width:34vw !important;
   }
 }
+
+/* =========================================================
+   FINAL HEADER AUTHORITY — APPROVED PORTRAIT + LANDSCAPE
+   Session + Balance/Mode + Menu = one centered group.
+   Menu/session intentionally pulled inward from screen edges.
+   ========================================================= */
+
+.titlebar{
+  position:relative !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  height:46px !important;
+  min-height:46px !important;
+  padding:0 !important;
+  gap:14px !important;
+  overflow:visible !important;
+}
+
+.titlebar > .sessionpill{
+  position:relative !important;
+  inset:auto !important;
+  order:1 !important;
+  flex:0 0 auto !important;
+  align-self:center !important;
+  width:auto !important;
+  height:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 8px !important;
+}
+
+.titlebar > .titlebar-center{
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  order:2 !important;
+  flex:0 0 auto !important;
+  align-self:center !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin:0 !important;
+  gap:5px !important;
+  overflow:visible !important;
+}
+
+.titlebar > .optionsmenu{
+  position:relative !important;
+  inset:auto !important;
+  order:3 !important;
+  flex:0 0 auto !important;
+  align-self:center !important;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.titlebar > .optionsmenu > summary{
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+.titlebar-balance{
+  flex:0 0 auto !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+}
+
+@media (orientation:portrait){
+  .titlebar{
+    height:46px !important;
+    min-height:46px !important;
+    padding-top:env(safe-area-inset-top,0px) !important;
+  }
+}
+
+@media (orientation:landscape){
+  .titlebar{
+    height:46px !important;
+    min-height:46px !important;
+    padding-top:env(safe-area-inset-top,0px) !important;
+  }
+}
+
+@media (max-width:420px){
+  .titlebar{
+    gap:10px !important;
+  }
+
+  .titlebar > .sessionpill{
+    padding-left:6px !important;
+    padding-right:6px !important;
+  }
+
+  .titlebar > .titlebar-center{
+    gap:4px !important;
+  }
+}
