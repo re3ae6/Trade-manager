@@ -915,7 +915,7 @@ input,select,textarea{color:var(--text);}
   height:46px;
   min-height:46px;
   margin:0;
-  padding:calc(4px + env(safe-area-inset-top)) 4px 4px;
+  padding:0 4px;
   gap:0;
   overflow:visible;
 }
@@ -943,7 +943,7 @@ input,select,textarea{color:var(--text);}
   max-width:100%;
   margin:0;
   overflow:hidden;
-  direction:rtl;
+  direction:ltr;
 }
 
 .titlebar > .sessionpill{
@@ -1108,7 +1108,7 @@ input,select,textarea{color:var(--text);}
     height:46px;
     min-height:46px;
     grid-template-columns:40px minmax(0,1fr) 40px;
-    padding:calc(4px + env(safe-area-inset-top)) 4px 4px;
+    padding:0 4px;
   }
 
   .titlebar > .optionsmenu{
