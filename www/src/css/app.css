@@ -194,59 +194,6 @@ details summary{cursor:pointer; color:var(--muted); font-size:12px; padding:6px 
 .statbox .n{font-size:15px; font-weight:800; font-family:var(--mono);}
 .statbox .l{font-size:9.5px; color:var(--muted); margin-top:2px;}
 
-/* ---------------- HEADER CONTROLS (gear + session pill, inside titlebar) ---------------- */
-.sessionpill{
-  display:flex; align-items:center; gap:6px;
-  background:#333c4e; color:#fff; border:none;
-  padding:9px 14px; border-radius:8px; font-size:13px; font-weight:700; line-height:1;
-  cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.35);
-  touch-action:manipulation;
-  -webkit-user-select:none; -moz-user-select:none; user-select:none;
-  -webkit-touch-callout:none;
-  justify-self:start;
-}
-.sessionpill .ic{font-size:15px;}
-.sessionpill b{font-family:var(--mono); font-size:14px; color:var(--orange);}
-.optionsmenu{position:relative; justify-self:end;}
-.optionsmenu summary{list-style:none; cursor:pointer; background:#333c4e; color:#fff; padding:9px 10px; border-radius:8px; font-size:18px; line-height:1; font-weight:700; box-shadow:0 6px 16px rgba(0,0,0,.35);}
-.optionsmenu summary::-webkit-details-marker{display:none;}
-.optionsmenu .optionpanel{position:absolute; z-index:20; top:calc(100% + 8px); left:0; width:280px; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:10px; box-shadow:0 12px 30px rgba(0,0,0,.45);}
-.optionsmenu .goalrow{padding:7px 2px;}
-
-.subactions{display:flex; gap:8px; margin-bottom:10px;}
-.subactions button{flex:1; white-space:nowrap;}
-
-.toggle{background:var(--teal); color:#062820; border:none; padding:4px 10px; border-radius:4px; font-weight:700; cursor:pointer; font-size:11px; min-width:48px;}
-.toggle.off{background:var(--red); color:#fff;}
-
-.goalrow{display:flex; justify-content:space-between; align-items:center; padding:5px 4px; font-size:12.5px; border-bottom:1px solid #2a3140; gap:6px;}
-.goalrow:last-child{border-bottom:none;}
-.goalrow input,.goalrow select{width:70px; background:#2c3444; border:1px solid var(--border); color:#fff; border-radius:5px; padding:4px; text-align:center; font-size:12px;}
-
-.alert{background:var(--red); color:#fff; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
-.warning{background:var(--orange); color:#241700; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
-.info{background:#2c3444; color:var(--teal); text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px; border:1px solid var(--teal);}
-
-.histwrap{max-height:220px; overflow-y:auto; margin-top:4px;}
-.histrow-wrap{border-bottom:1px solid #2a3140;}
-.histrow-wrap:last-child{border-bottom:none;}
-.histrow{display:flex; justify-content:space-between; font-size:11.5px; padding:6px 4px 2px;}
-.histrow-sub{display:flex; justify-content:flex-end; gap:6px; font-size:10px; color:var(--muted); padding:0 4px 6px;}
-.histrow-sub .trend-up{color:var(--teal);}
-.histrow-sub .trend-down{color:var(--red);}
-.histrow .hp{font-weight:700;}
-.histbtns{display:flex; gap:8px; margin-top:8px;}
-.histbtns button{flex:1; background:#3a4356; border:none; color:#fff; padding:7px; border-radius:6px; cursor:pointer; font-size:11.5px; font-weight:600;}
-.histsummary{cursor:pointer; color:var(--text); font-weight:700; padding:4px 2px;}
-.small-center{text-align:center; padding:10px;}
-
-.logbtn{width:100%; padding:9px; background:#2c3444; border:1px solid var(--border); border-radius:6px; color:#fff; font-weight:700; cursor:pointer; font-size:12px; margin-top:8px;}
-#logOutput{width:100%; min-height:200px; background:#0e1119; color:#9be8d9; border:1px solid var(--border); border-radius:8px; font-family:var(--mono); font-size:10px; padding:10px; white-space:pre; overflow:auto; direction:ltr; text-align:left;}
-
-footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
-
-.hidden{display:none !important;}
-
 /* ---------------- MOBILE ---------------- */
 @media(max-width:900px){
   body{padding:0; padding-bottom:env(safe-area-inset-bottom);}
@@ -274,98 +221,6 @@ footer{text-align:center; padding:10px; font-size:11px; color:var(--muted);}
   th{font-size:8px;}
   td{font-size:10.5px;}
 }
-
-/* ---------------- PHONE LANDSCAPE: keep the 3-column layout, ----------------
-   fitted to a short viewport. All three columns are forced to the same
-   height (the available viewport height below the header) and each
-   scrolls independently, so nothing overlaps and every button/row stays
-   in its normal position — you just scroll within a column if it has
-   more content than fits. */
-@media (orientation:landscape) and (max-height:500px){
-  html, body{height:100%;}
-  body{padding:0; overflow:hidden;}
-  .app{
-    display:flex; flex-direction:column;
-    height:100vh; height:100dvh;
-    border-radius:0; max-width:100%;
-    padding-left:env(safe-area-inset-left);
-    padding-right:env(safe-area-inset-right);
-    box-sizing:border-box;
-  }
-
-
-
-  .grid{
-    flex:1 1 auto;
-    min-height:0;
-    display:grid;
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-    grid-auto-columns:minmax(0, 1fr);
-    gap:6px;
-    padding:6px;
-  }
-  /* every direct column (whether a single .panel or a wrapper holding
-     several stacked .panel blocks) gets the exact same height and
-     scrolls its own content independently */
-  .grid > div{
-    min-width:0;
-    min-height:0;
-    height:100%;
-    overflow-y:auto;
-    overscroll-behavior:contain;
-  }
-
-  .panel{padding:6px;}
-  .panel-title{font-size:10px; padding:5px;}
-  .row,.goalrow{font-size:10.5px; padding:4px 2px; flex-wrap:wrap;}
-  .row .hint{font-size:8.5px;}
-  .row input,.row select{width:80px; font-size:11px; padding:4px 6px;}
-  #initialCapital{width:104px;}
-  .goalrow input,.goalrow select{width:54px; font-size:10.5px;}
-  .inline-field input{width:70px;}
-  .small{font-size:9.5px;}
-
-  .actions{gap:6px; margin-bottom:6px;}
-  .actions button{padding:9px 4px; font-size:12px;}
-  .subactions{gap:6px; margin-bottom:6px;}
-  .subactions button{padding:7px 4px; font-size:10.5px;}
-
-  table{font-size:10.5px;}
-  th{font-size:8px; padding:5px 2px; white-space:nowrap;}
-  td{padding:5px 2px; font-size:9.5px;}
-  .badge{width:20px; padding:2px 0; font-size:10px;}
-  .tablewrap{max-height:140px;}
-
-  .row.stakebox{padding:6px; margin:6px 0;}
-  #nextStakePreview{font-size:14px;}
-  #copyStakeBtn{padding:4px 6px; font-size:9.5px;}
-
-  .statsrow{gap:6px;}
-  .statbox{padding:5px 3px;}
-  .statbox .n{font-size:12px;}
-  .statbox .l{font-size:8px;}
-
-  .planbox{gap:6px; margin:3px 2px 6px;}
-  .planbox .p{padding:5px 3px;}
-  .planbox .p .n{font-size:13px;}
-  .planbox .p .l{font-size:8px;}
-  .guaranteeline{font-size:9.5px; padding:5px 6px; margin:0 2px 6px;}
-
-  .risklevels{gap:6px; padding:3px 2px 6px;}
-  .risklevels button{padding:7px 4px; font-size:10.5px;}
-
-  .histrow{font-size:9.5px; padding:4px 2px 1px;}
-  .histrow-sub{font-size:8.5px; padding:0 2px 4px;}
-  .histwrap{max-height:110px;}
-  .histbtns button{padding:5px; font-size:9.5px;}
-  .histsummary{font-size:11px; padding:3px 2px;}
-
-  .logbtn{font-size:10px; padding:7px; margin-top:6px;}
-  #logOutput{min-height:100px; font-size:8.5px;}
-
-  footer{font-size:9px; padding:6px 8px;}
-}
-
 
 /* ---------------- TABLE POLISH ---------------- */
 table{
@@ -497,26 +352,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 }
 .aboutok:hover{filter:brightness(1.08);}
 
-/* ---------------- LANDSCAPE COLUMN SYMMETRY ---------------- */
-@media (orientation:landscape) and (max-height:500px){
-  .grid{
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-    grid-template-rows:minmax(0, 1fr);
-    align-items:stretch;
-    gap:8px;
-  }
-  .grid > *{
-    min-width:0;
-    width:100%;
-  }
-  .grid > div{
-    width:100%;
-  }
-  table{
-    width:100%;
-  }
-}
-
 @media(max-width:900px){
   .modal-backdrop{padding:14px;}
   .aboutmodal{border-radius:14px;}
@@ -599,25 +434,6 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 .tp-risk-card.selectable:active{transform:scale(.99);}
 .tp-risk-card.selected{border-color:var(--teal);box-shadow:0 0 0 1px rgba(53,211,170,.25) inset;}
 .tp-risk-card.disabled{opacity:.55;}
-@media (orientation:landscape) and (max-height:500px){
-  .grid > div:nth-child(2){
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-start;
-    align-items:stretch;
-  }
-  .grid > div:nth-child(2) > .panel{
-    width:100%;
-  }
-  .grid > div:nth-child(3){
-    display:flex;
-    flex-direction:column;
-  }
-  #tradingPlanPanel{margin-top:0;}
-}
-@media(max-width:420px){
-}
-
 /* ---------------- V2.4 PLANNER / ACCESSIBILITY POLISH ---------------- */
 :root{--text:#f4f7fb;--muted:#b7c0d1;}
 body{color:var(--text);}
@@ -680,38 +496,6 @@ input,select,textarea{color:var(--text);}
 .trade-column,.calc-column,.right-column{
   min-width:0;
 }
-/* In landscape the app always has three explicit columns: trades, planner, dashboard/history. */
-@media (orientation:landscape){
-  .grid{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    align-items:start;
-  }
-  .trade-column,.calc-column,.right-column{
-    width:100%;
-    min-width:0;
-  }
-  .right-column{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    overflow-y:auto;
-  }
-  .right-column > .panel,
-  .right-column > .collapsible-panel{
-    width:100%;
-    box-sizing:border-box;
-    margin-bottom:0;
-  }
-  #performanceDetails{flex:0 0 auto;}
-  .right-column #historyDetails{max-height:none;}
-}
-@media (orientation:landscape) and (max-height:500px){
-  #tradingPlanPanel > .subactions button{min-height:34px;padding:7px 5px;font-size:10.5px;}
-  .target-master{padding:7px;}
-  .target-final-row strong{font-size:13px;}
-  .right-column{overflow-y:auto;}
-}
-
 /* ---------------- V2.5 PLAN RISK ANALYZER ---------------- */
 #analyzePlanBtn{
   width:100%;
@@ -883,85 +667,150 @@ input,select,textarea{color:var(--text);}
 .whatif-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.7;}
 @media(max-width:600px){.whatif-controls{grid-template-columns:1fr 1fr}.whatif-controls .btn{grid-column:1/-1}.whatif-status{grid-template-columns:1fr}.whatif-legend,.whatif-summary>div{grid-template-columns:1.1fr 1fr 1fr;font-size:11px}}
 
-/* =====================================================
-   V2.9.3 HEADER AUTHORITY
-   Single source of truth for Header geometry.
-   No safe-area inset is added to visual Header height.
-   No business logic changes.
-   ===================================================== */
+/* =========================================================
+   V2.9.4 — HEADER + MOBILE VIEWPORT AUTHORITY
+   ---------------------------------------------------------
+   One geometry authority.
+   No legacy header positioning.
+   No duplicate orientation header rules.
+   Business logic untouched.
+   ========================================================= */
 
+/* ---------- Native viewport / safe-area contract ---------- */
+
+html,
+body{
+  width:100%;
+  min-width:0;
+  min-height:100%;
+}
+
+body{
+  padding:0;
+  overflow-x:hidden;
+}
+
+.app{
+  width:100%;
+  max-width:1400px;
+  min-width:0;
+  margin:0 auto;
+}
+
+/*
+ * Android/WebView may draw edge-to-edge because viewport-fit=cover
+ * is enabled. Keep the visual header height fixed, but reserve the
+ * system top inset ABOVE it.
+ */
 .titlebar{
   box-sizing:border-box;
   position:relative;
   z-index:5000;
   isolation:isolate;
+
   display:grid;
-  grid-template-columns:40px minmax(0,1fr) 40px;
+  grid-template-columns:40px minmax(0,1fr) auto;
   grid-template-areas:"menu center session";
+
   align-items:center;
+
   width:100%;
   min-width:0;
-  height:46px;
-  min-height:46px;
+  height:calc(46px + env(safe-area-inset-top, 0px));
+  min-height:calc(46px + env(safe-area-inset-top, 0px));
+
   margin:0;
-  padding:0 4px;
+  padding:
+    env(safe-area-inset-top, 0px)
+    4px
+    0;
+
   gap:0;
   overflow:visible;
+
+  background:var(--header);
+  border-bottom:2px solid #000;
 }
+
+/* ---------- Header children ---------- */
 
 .titlebar > .optionsmenu{
   grid-area:menu;
-  justify-self:center;
-  align-self:center;
+
   position:relative;
   z-index:5100;
-  margin:0;
+
+  justify-self:center;
+  align-self:end;
+
+  width:30px;
+  height:28px;
+  margin:0 0 5px;
+
   transform:none;
 }
 
 .titlebar > .titlebar-center{
   grid-area:center;
-  justify-self:center;
-  align-self:center;
+
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:4px;
+
   min-width:0;
   width:max-content;
   max-width:100%;
+
   margin:0;
+  gap:4px;
+
   overflow:hidden;
   direction:ltr;
+
+  align-self:end;
+  margin-bottom:5px;
 }
 
 .titlebar > .sessionpill{
   grid-area:session;
-  justify-self:center;
-  align-self:center;
+
   position:relative;
   z-index:5102;
-  margin:0;
+
+  justify-self:end;
+  align-self:end;
+
+  min-width:0;
   min-height:28px;
   height:28px;
+
+  margin:0 2px 5px 0;
   padding:0 9px;
+
   transform:none;
   direction:rtl;
 }
 
+/* ---------- Header controls ---------- */
+
 .titlebar > .optionsmenu > summary{
   box-sizing:border-box;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
   width:30px;
   height:28px;
   min-width:30px;
   min-height:28px;
+
   margin:0;
   padding:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+
   position:relative;
   z-index:5102;
+
   pointer-events:auto;
   touch-action:manipulation;
 }
@@ -973,15 +822,10 @@ input,select,textarea{color:var(--text);}
   -webkit-tap-highlight-color:transparent;
 }
 
-.titlebar-balance{
-  min-width:0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
+/* ---------- Header menu ---------- */
 
-/* Menu stacking */
 .optionsmenu{
+  position:relative;
   z-index:5100;
   isolation:isolate;
 }
@@ -994,38 +838,61 @@ input,select,textarea{color:var(--text);}
 }
 
 .optionsmenu .menu-backdrop{
+  position:fixed;
+  inset:0;
   z-index:5190;
 }
 
 .optionsmenu .optionpanel{
-  z-index:5200;
   position:fixed;
-  top:46px;
+  z-index:5200;
+
+  top:calc(46px + env(safe-area-inset-top, 0px));
   left:0;
   right:auto;
   bottom:auto;
+
   width:min(300px,calc(100vw - 20px));
-  max-height:calc(100dvh - 46px);
+  max-width:calc(100vw - 20px);
+  max-height:calc(
+    100dvh - 46px - env(safe-area-inset-top, 0px)
+  );
+
   height:auto;
+
   overflow-y:auto;
   overflow-x:hidden;
+
   border-radius:0 0 14px 0;
 }
 
-/* Compact Tools section */
 .optionsmenu .menu-section > summary{
   display:flex;
   align-items:center;
   justify-content:flex-start;
+
   gap:7px;
   min-height:34px;
   padding:6px 8px;
+
   background:#2c3444;
   border:1px solid var(--border);
   border-radius:7px;
 }
 
-/* Payout — preserve existing contract */
+/* ---------- Header content ---------- */
+
+.titlebar-balance{
+  min-width:0;
+  max-width:100%;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ---------- Preserve existing contracts ---------- */
+
 #payout{
   min-width:0;
   width:100%;
@@ -1043,7 +910,6 @@ input,select,textarea{color:var(--text);}
   border-color:var(--orange)!important;
 }
 
-/* Target / Plan — preserve geometry */
 .target-master-fields > .row{
   min-width:0;
 }
@@ -1052,7 +918,6 @@ input,select,textarea{color:var(--text);}
   white-space:nowrap;
 }
 
-/* Dialog — preserve geometry */
 .appdialog{
   width:min(340px,calc(100vw - 34px));
 }
@@ -1079,109 +944,223 @@ input,select,textarea{color:var(--text);}
   min-width:0;
   min-height:36px;
   padding:6px 4px;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   text-align:center;
   white-space:nowrap;
   line-height:1.2;
   font-size:10.5px;
 }
 
-/* =====================================================
-   Portrait
-   ===================================================== */
+/* =========================================================
+   PORTRAIT
+   ========================================================= */
 
 @media (orientation:portrait){
+
+  html,
+  body{
+    width:100%;
+    min-width:0;
+    overflow-x:hidden;
+  }
+
+  body{
+    padding:0;
+  }
+
+  .app{
+    width:100%;
+    max-width:none;
+    min-width:0;
+
+    margin:0;
+    border-radius:0;
+  }
+
   .titlebar{
-    height:46px;
-    min-height:46px;
-    grid-template-columns:40px minmax(0,1fr) 40px;
-    padding:0 4px;
+    grid-template-columns:40px minmax(0,1fr) auto;
+    grid-template-areas:"menu center session";
+
+    width:100%;
+    max-width:none;
+
+    height:calc(46px + env(safe-area-inset-top, 0px));
+    min-height:calc(46px + env(safe-area-inset-top, 0px));
+
+    padding:
+      env(safe-area-inset-top, 0px)
+      4px
+      0;
   }
 
   .titlebar > .optionsmenu{
     justify-self:center;
+    align-self:end;
+    margin-bottom:5px;
   }
 
   .titlebar > .titlebar-center{
     justify-self:center;
-    max-width:calc(100% - 4px);
+    max-width:calc(100% - 8px);
+    margin-bottom:5px;
   }
 
   .titlebar > .sessionpill{
-    justify-self:center;
+    justify-self:end;
+    margin-right:2px;
+    margin-bottom:5px;
+  }
+
+  .grid{
+    width:100%;
+    min-width:0;
+
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:14px;
+
+    padding:12px;
+    overflow:visible;
+  }
+
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    width:100%;
+    min-width:0;
+    min-height:0;
+
+    height:auto;
+    max-height:none;
+
+    overflow:visible;
   }
 
   .optionsmenu .optionpanel{
-    top:46px;
+    top:calc(46px + env(safe-area-inset-top, 0px));
     left:0;
     right:auto;
+
     width:min(300px,calc(100vw - 20px));
-    max-height:calc(100dvh - 46px);
+    max-height:calc(
+      100dvh - 46px - env(safe-area-inset-top, 0px)
+    );
+
     border-radius:0 0 14px 0;
   }
 }
 
-/* =====================================================
-   Landscape
-   ===================================================== */
+/* =========================================================
+   LANDSCAPE — one scroll contract
+   ========================================================= */
 
-@media (orientation:landscape) and (max-height:600px){
-  .titlebar{
-    height:40px;
-    min-height:40px;
-    grid-template-columns:40px minmax(0,1fr) 40px;
-    padding:0 4px;
+@media (orientation:landscape){
+
+  html,
+  body{
+    width:100%;
+    height:100%;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
   }
 
-  .titlebar > .optionsmenu{
-    justify-self:center;
-  }
-
-  .titlebar > .titlebar-center{
-    justify-self:center;
-    max-width:calc(100% - 4px);
-    gap:5px;
-  }
-
-  .titlebar > .sessionpill{
-    justify-self:center;
-    min-height:28px;
-  }
-
-  .titlebar > .optionsmenu > summary{
-    width:30px;
-    height:27px;
-    min-width:30px;
-    min-height:27px;
-  }
-
-  .optionsmenu .optionpanel{
-    top:40px;
-    right:0;
-    left:auto;
-    width:min(300px,calc(100vw - 16px));
-    max-height:calc(100dvh - 40px);
-    border-radius:0 0 0 14px;
+  body{
+    padding:0;
   }
 
   .app{
+    width:100%;
+    max-width:none;
+
     height:100dvh;
     min-height:0;
+    min-width:0;
+
+    margin:0;
+
     display:flex;
     flex-direction:column;
+
     overflow:hidden;
     border-radius:0;
   }
 
+  .titlebar{
+    flex:0 0 auto;
+
+    grid-template-columns:40px minmax(0,1fr) auto;
+
+    height:calc(46px + env(safe-area-inset-top, 0px));
+    min-height:calc(46px + env(safe-area-inset-top, 0px));
+
+    padding:
+      env(safe-area-inset-top, 0px)
+      4px
+      0;
+  }
+
+  .titlebar > .optionsmenu{
+    justify-self:center;
+    margin-bottom:5px;
+  }
+
+  .titlebar > .titlebar-center{
+    justify-self:center;
+    max-width:calc(100% - 8px);
+    gap:5px;
+    margin-bottom:5px;
+  }
+
+  .titlebar > .sessionpill{
+    justify-self:end;
+    min-height:28px;
+    height:28px;
+    margin-right:2px;
+    margin-bottom:5px;
+  }
+
+  .titlebar > .optionsmenu > summary{
+    width:30px;
+    height:28px;
+    min-width:30px;
+    min-height:28px;
+  }
+
+  .optionsmenu .optionpanel{
+    top:calc(46px + env(safe-area-inset-top, 0px));
+    left:auto;
+    right:0;
+
+    width:min(300px,calc(100vw - 16px));
+    max-height:calc(
+      100dvh - 46px - env(safe-area-inset-top, 0px)
+    );
+
+    border-radius:0 0 0 14px;
+  }
+
   .grid{
     flex:1 1 auto;
+
+    width:100%;
+    min-width:0;
     min-height:0;
+
     height:auto;
-    overflow:hidden;
-    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
     grid-template-rows:minmax(0,1fr);
+
+    gap:12px;
+    padding:12px;
+
+    overflow:hidden;
     align-items:stretch;
   }
 
@@ -1190,13 +1169,31 @@ input,select,textarea{color:var(--text);}
   .grid > .right-column{
     min-width:0;
     min-height:0;
+
+    width:auto;
     height:100%;
     max-height:none;
+
     overflow-y:auto;
     overflow-x:hidden;
+
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .grid > .trade-column{
+    grid-column:1;
+  }
+
+  .grid > .calc-column{
+    grid-column:2;
+  }
+
+  .grid > .right-column{
+    grid-column:3;
   }
 }
 
-/* =====================================================
-   END V2.9.3 HEADER AUTHORITY
-   ===================================================== */
+/* =========================================================
+   END V2.9.4 AUTHORITY
+   ========================================================= */
