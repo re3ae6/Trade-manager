@@ -1641,12 +1641,10 @@ function renderTradingPlan(){
   else renderSimplePlannerSummary(summary);
   if(info) info.textContent = tradingPlan?.status === 'running' ? `برنامه ذخیره‌شده: ${tradingPlan.planName || 'برنامه فعلی'}` : '';
   const pause=document.getElementById('pauseSessionBtn');
-  const pauseTop=document.getElementById('pauseTopBtn');
   const resume=document.getElementById('resumeSessionBtn');
   const start=document.getElementById('startPlanBtn');
   const active=trades.length>0 && !sessionPaused;
   pause?.classList.toggle('hidden',!active);
-  pauseTop?.classList.toggle('hidden',!active);
   resume?.classList.toggle('hidden',!sessionPaused || trades.length===0);
   start?.classList.toggle('hidden',active || sessionPaused);
 }
