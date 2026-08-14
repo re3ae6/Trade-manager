@@ -762,8 +762,7 @@ body{
   overflow:hidden;
   direction:ltr;
 
-  align-self:end;
-  margin-bottom:5px;
+  align-self:center;
 }
 
 .titlebar > .sessionpill{
@@ -975,8 +974,6 @@ body{
   }
 
   .titlebar{
-    grid-template-columns:40px minmax(0,1fr) auto;
-
     width:100%;
     max-width:none;
 
@@ -989,22 +986,15 @@ body{
       0;
   }
 
-  .titlebar > .optionsmenu{
-    justify-self:center;
-    align-self:end;
-    margin-bottom:5px;
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
+  .titlebar > .sessionpill{
+    align-self:center;
+    margin:0;
   }
 
   .titlebar > .titlebar-center{
-    justify-self:center;
-    max-width:calc(100% - 8px);
-    margin-bottom:5px;
-  }
-
-  .titlebar > .sessionpill{
-    justify-self:end;
-    margin-right:2px;
-    margin-bottom:5px;
+    max-width:calc(100% - 76px);
   }
 
   .grid{
@@ -1085,9 +1075,7 @@ body{
   .titlebar{
     flex:0 0 auto;
 
-    grid-template-columns:40px minmax(0,1fr) auto;
-
-    height:calc(46px + env(safe-area-inset-top, 0px));
+    height:46px;
     min-height:calc(46px + env(safe-area-inset-top, 0px));
 
     padding:
@@ -1096,24 +1084,11 @@ body{
       0;
   }
 
-  .titlebar > .optionsmenu{
-    justify-self:center;
-    margin-bottom:5px;
-  }
-
-  .titlebar > .titlebar-center{
-    justify-self:center;
-    max-width:calc(100% - 8px);
-    gap:5px;
-    margin-bottom:5px;
-  }
-
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
   .titlebar > .sessionpill{
-    justify-self:end;
-    min-height:28px;
-    height:28px;
-    margin-right:2px;
-    margin-bottom:5px;
+    align-self:center;
+    margin:0;
   }
 
   .titlebar > .optionsmenu > summary{
@@ -1190,99 +1165,3 @@ body{
 /* =========================================================
    END V2.9.4 AUTHORITY
    ========================================================= */
-
-
-/* =========================================================
-   V2.9.6 — CENTERED HEADER GROUP
-   ---------------------------------------------------------
-   Menu + balance + mode + session form ONE centered group.
-   The visual header remains on the status-bar baseline.
-   Portrait height/safe-area contract is unchanged.
-   ========================================================= */
-
-.titlebar{
-  justify-content:center;
-}
-
-.titlebar > .optionsmenu{
-  flex:0 0 auto;
-  align-self:center;
-  width:30px;
-  height:28px;
-  margin:0;
-}
-
-.titlebar > .titlebar-center{
-  flex:0 1 auto;
-  min-width:0;
-  width:auto;
-  max-width:calc(100% - 76px);
-  margin:0;
-  gap:5px;
-  overflow:visible;
-  align-self:center;
-}
-
-.titlebar > .sessionpill{
-  flex:0 0 auto;
-  align-self:center;
-  min-width:0;
-  height:28px;
-  min-height:28px;
-  margin:0;
-  padding:0 8px;
-  color:var(--teal);
-  font-weight:800;
-}
-
-.titlebar-balance{
-  flex:0 1 auto;
-  min-width:0;
-  max-width:none;
-  overflow:visible;
-  text-overflow:clip;
-  white-space:nowrap;
-  font-size:13px;
-}
-
-.modetabs{
-  flex:0 0 auto;
-  padding:2px;
-  gap:1px;
-  border-radius:16px;
-}
-
-.modetabs button{
-  padding:5px 8px;
-  min-height:25px;
-  border-radius:13px;
-  font-size:11px;
-  line-height:1;
-}
-
-.titlebar > .optionsmenu > summary{
-  width:28px;
-  height:28px;
-  min-width:28px;
-  min-height:28px;
-}
-
-@media (orientation:landscape){
-  .titlebar{
-    height:46px;
-    min-height:46px;
-    padding-top:env(safe-area-inset-top,0px);
-  }
-
-  .titlebar > .optionsmenu,
-  .titlebar > .titlebar-center,
-  .titlebar > .sessionpill{
-    align-self:center;
-    margin:0;
-  }
-
-  .optionsmenu .optionpanel{
-    top:46px;
-    max-height:calc(100dvh - 46px);
-  }
-}
