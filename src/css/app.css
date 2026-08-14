@@ -1287,104 +1287,9 @@ body{
   }
 }
 
-/* FINAL HEADER + MENU AUTHORITY — c5a0ced */
-
-/* Header: fixed visual height, controls stay on one baseline */
-.titlebar{
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  position:relative !important;
-  height:46px !important;
-  min-height:46px !important;
-  padding:0 42px !important;
-}
-
-.titlebar > .titlebar-center{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  transform:translate(-50%,-50%) !important;
-  margin:0 !important;
-  align-self:center !important;
-  max-width:calc(100% - 84px) !important;
-}
-
-.titlebar > .optionsmenu{
-  position:absolute !important;
-  left:8px !important;
-  right:auto !important;
-  top:9px !important;
-  margin:0 !important;
-}
-
-.titlebar > .sessionpill{
-  position:absolute !important;
-  right:8px !important;
-  left:auto !important;
-  top:9px !important;
-  margin:0 !important;
-}
-
-/* Menu panel opens inward from the left-side menu */
-.optionsmenu[data-menu-side="left"] .optionpanel{
-  left:0 !important;
-  right:auto !important;
-  border-radius:0 0 14px 0 !important;
-}
-
-/* If menu is ever placed on the right, panel opens inward */
-.optionsmenu[data-menu-side="right"] .optionpanel{
-  left:auto !important;
-  right:0 !important;
-  border-radius:0 0 0 14px !important;
-}
-
-/* Tools: clean, compact and consistent */
-.optionsmenu .planner-tool-buttons{
-  display:grid !important;
-  grid-template-columns:1fr 1fr !important;
-  gap:8px !important;
-  margin-top:8px !important;
-}
-
-.optionsmenu .planner-tool-buttons > button{
-  width:100% !important;
-  min-height:42px !important;
-  padding:0 10px !important;
-  border-radius:8px !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  text-align:center !important;
-  font-weight:800 !important;
-}
-
-@media(max-width:600px){
-  .optionsmenu .planner-tool-buttons{
-    grid-template-columns:1fr !important;
-  }
-}
-
-@media(max-width:420px){
-  .titlebar{
-    padding:0 38px !important;
-  }
-
-  .titlebar > .titlebar-center{
-    max-width:calc(100% - 76px) !important;
-    gap:4px !important;
-  }
-
-  .titlebar-balance{
-    max-width:34vw !important;
-  }
-}
-
 /* =========================================================
-   FINAL HEADER AUTHORITY — APPROVED PORTRAIT + LANDSCAPE
-   Session + Balance/Mode + Menu = one centered group.
-   Menu/session intentionally pulled inward from screen edges.
+   FINAL HEADER AUTHORITY — CLEAN
+   Portrait + Landscape
    ========================================================= */
 
 .titlebar{
@@ -1393,144 +1298,45 @@ body{
   flex-direction:row !important;
   align-items:center !important;
   justify-content:center !important;
+  box-sizing:border-box !important;
+
   width:100% !important;
-  height:46px !important;
-  min-height:46px !important;
-  padding:0 !important;
-  gap:14px !important;
-  overflow:visible !important;
-}
-
-.titlebar > .sessionpill{
-  position:relative !important;
-  inset:auto !important;
-  order:1 !important;
-  flex:0 0 auto !important;
-  align-self:center !important;
-  width:auto !important;
-  height:28px !important;
-  min-height:28px !important;
-  margin:0 !important;
-  padding:0 8px !important;
-}
-
-.titlebar > .titlebar-center{
-  position:relative !important;
-  inset:auto !important;
-  transform:none !important;
-  order:2 !important;
-  flex:0 0 auto !important;
-  align-self:center !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:auto !important;
-  max-width:none !important;
   min-width:0 !important;
+
+  /* 46px visual header + Android safe-area above it */
+  height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+  min-height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+
   margin:0 !important;
-  gap:5px !important;
-  overflow:visible !important;
-}
+  padding:env(safe-area-inset-top, 0px) 4px 0 !important;
 
-.titlebar > .optionsmenu{
-  position:relative !important;
-  inset:auto !important;
-  order:3 !important;
-  flex:0 0 auto !important;
-  align-self:center !important;
-  width:28px !important;
-  height:28px !important;
-  min-width:28px !important;
-  min-height:28px !important;
-  margin:0 !important;
-  padding:0 !important;
-}
-
-.titlebar > .optionsmenu > summary{
-  width:28px !important;
-  height:28px !important;
-  min-width:28px !important;
-  min-height:28px !important;
-  margin:0 !important;
-  padding:0 !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-}
-
-.titlebar-balance{
-  flex:0 0 auto !important;
-  max-width:none !important;
-  white-space:nowrap !important;
-  overflow:visible !important;
-}
-
-@media (orientation:portrait){
-  .titlebar{
-    height:46px !important;
-    min-height:46px !important;
-    padding-top:env(safe-area-inset-top,0px) !important;
-  }
-}
-
-@media (orientation:landscape){
-  .titlebar{
-    height:46px !important;
-    min-height:46px !important;
-    padding-top:env(safe-area-inset-top,0px) !important;
-  }
-}
-
-@media (max-width:420px){
-  .titlebar{
-    gap:10px !important;
-  }
-
-  .titlebar > .sessionpill{
-    padding-left:6px !important;
-    padding-right:6px !important;
-  }
-
-  .titlebar > .titlebar-center{
-    gap:4px !important;
-  }
-}
-
-/* =========================================================
-   FINAL HEADER AUTHORITY — SESSION / PAUSE
-   One authority only. Portrait + Landscape.
-   ========================================================= */
-
-.titlebar{
-  position:relative !important;
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:100% !important;
-  height:46px !important;
-  min-height:46px !important;
-  padding:0 !important;
   gap:12px !important;
   overflow:visible !important;
+
+  transform:none !important;
 }
 
-/* Pause: header, icon only */
+/* Pause: ONLY in header, icon only */
 .titlebar > .pause-top-btn{
   position:relative !important;
   inset:auto !important;
   order:1 !important;
+
   flex:0 0 28px !important;
   width:28px !important;
   min-width:28px !important;
   height:28px !important;
   min-height:28px !important;
+
   margin:0 !important;
   padding:0 !important;
+
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
+
   line-height:1 !important;
+  font-size:15px !important;
 }
 
 /* Balance + mode */
@@ -1538,42 +1344,52 @@ body{
   position:relative !important;
   inset:auto !important;
   transform:none !important;
+
   order:2 !important;
   flex:0 0 auto !important;
-  align-self:center !important;
+
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
+
   width:auto !important;
-  max-width:none !important;
   min-width:0 !important;
+  max-width:none !important;
+
   margin:0 !important;
   gap:5px !important;
   overflow:visible !important;
 }
 
-/* Main menu */
+/* Main menu trigger */
 .titlebar > .optionsmenu{
   position:relative !important;
   inset:auto !important;
   order:3 !important;
+
   flex:0 0 28px !important;
   align-self:center !important;
+
   width:28px !important;
   height:28px !important;
   min-width:28px !important;
   min-height:28px !important;
+
   margin:0 !important;
   padding:0 !important;
 }
 
 .titlebar > .optionsmenu > summary{
+  box-sizing:border-box !important;
+
   width:28px !important;
   height:28px !important;
   min-width:28px !important;
   min-height:28px !important;
+
   margin:0 !important;
   padding:0 !important;
+
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -1586,14 +1402,17 @@ body{
   overflow:visible !important;
 }
 
-/* Session: bottom action, same visual family as Undo */
+/* Session belongs beside Clear + Undo.
+   Same button family, compact, no "Sess" text. */
 .subactions .session-subaction{
   width:auto !important;
   min-width:58px !important;
   height:38px !important;
   min-height:38px !important;
+
   margin:0 !important;
   padding:10px !important;
+
   font-weight:800 !important;
   white-space:nowrap !important;
 }
@@ -1602,21 +1421,27 @@ body{
   font-weight:900 !important;
 }
 
-/* Portrait: approximately 1px lower than status-bar baseline */
+
+/* Keep portrait and landscape geometry identical.
+   Only the safe-area inset changes naturally. */
 @media (orientation:portrait){
   .titlebar{
-    transform:translateY(1px) !important;
+    height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    min-height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    padding-top:env(safe-area-inset-top, 0px) !important;
+    transform:none !important;
   }
 }
 
-/* Landscape: approximately 2px higher */
 @media (orientation:landscape){
   .titlebar{
-    transform:translateY(-2px) !important;
+    height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    min-height:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    padding-top:env(safe-area-inset-top, 0px) !important;
+    transform:none !important;
   }
 }
 
-/* Small phones */
 @media (max-width:420px){
   .titlebar{
     gap:10px !important;
@@ -1624,5 +1449,86 @@ body{
 
   .titlebar > .titlebar-center{
     gap:4px !important;
+  }
+}
+
+/* =========================================================
+   FINAL MENU AUTHORITY — CLEAN
+   One geometry for portrait + landscape
+   ========================================================= */
+
+.titlebar > .optionsmenu{
+  position:relative !important;
+  inset:auto !important;
+  order:3 !important;
+  flex:0 0 28px !important;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  align-self:center !important;
+}
+
+.titlebar > .optionsmenu > summary{
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.optionsmenu .menu-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:5190 !important;
+}
+
+.optionsmenu .optionpanel{
+  position:fixed !important;
+  top:calc(46px + env(safe-area-inset-top, 0px)) !important;
+  left:0 !important;
+  right:auto !important;
+  bottom:auto !important;
+
+  width:min(300px, calc(100vw - 20px)) !important;
+  max-width:calc(100vw - 20px) !important;
+  height:auto !important;
+  max-height:calc(
+    100dvh - 46px - env(safe-area-inset-top, 0px)
+  ) !important;
+
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+
+  border-radius:0 0 14px 0 !important;
+  z-index:5200 !important;
+}
+
+@media (orientation:portrait){
+  .optionsmenu .optionpanel{
+    top:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    left:0 !important;
+    right:auto !important;
+    max-height:calc(
+      100dvh - 46px - env(safe-area-inset-top, 0px)
+    ) !important;
+  }
+}
+
+@media (orientation:landscape){
+  .optionsmenu .optionpanel{
+    top:calc(46px + env(safe-area-inset-top, 0px)) !important;
+    left:0 !important;
+    right:auto !important;
+    max-height:calc(
+      100dvh - 46px - env(safe-area-inset-top, 0px)
+    ) !important;
   }
 }
