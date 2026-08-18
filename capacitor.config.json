@@ -1,0 +1,13 @@
+{
+  "appId": "com.re3ae6.trademanager",
+  "appName": "Trade Manager",
+  "webDir": "www",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK",
+      "hidden": true,
+      "animation": "NONE"
+    }
+  }
+}

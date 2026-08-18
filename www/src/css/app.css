@@ -1,0 +1,2849 @@
+
+:root{
+  --bg:#171c26;
+  --panel:#232a38;
+  --panel2:#1c222f;
+  --header:#0c0f16;
+  --border:#3a4356;
+  --teal:#2bbfa4;
+  --teal-dark:#1a8f7a;
+  --orange:#f0a83c;
+  --red:#e3576a;
+  --text:#e8ecf3;
+  --muted:#8b93a7;
+  --mono:'SFMono-Regular',Consolas,'Roboto Mono',Menlo,monospace;
+}
+
+*{box-sizing:border-box;}
+
+/* This single utility class is referenced ~40 times across app.js and
+   index.html (classList.toggle('hidden', ...)) to show/hide panels,
+   buttons, and mode-specific sections — but it had no CSS rule at all
+   anywhere in this file, so nothing using it was ever actually hidden.
+   Adding it here, at the very top of the cascade, so nothing later can
+   accidentally out-specificity it into not hiding again. */
+.hidden{display:none !important;}
+.empty-history-state{text-align:center;padding:10px;}
+
+html{-webkit-text-size-adjust:100%;}
+*{-webkit-tap-highlight-color:transparent;}
+button,input,select{touch-action:manipulation; font-family:inherit;}
+button:disabled{opacity:.4; cursor:not-allowed;}
+
+/* ---------------- UNIFIED BUTTON SYSTEM ---------------- */
+button{ font-family:inherit; }
+.btn{
+  border:none; border-radius:8px; cursor:pointer; font-weight:700;
+  transition:filter .15s ease, transform .08s ease, background-color .15s ease, border-color .15s ease;
+}
+.btn:active:not(:disabled){ transform:scale(.97); }
+.btn:disabled{ transform:none; }
+.btn-secondary{
+  background:#3a4356; color:#fff; border:1px solid var(--border);
+  padding:12px 14px; font-size:13.5px;
+}
+.btn-secondary:hover:not(:disabled){ background:#454f64; border-color:#586179; }
+.btn-sm{ padding:7px; font-size:11.5px; border-radius:6px; }
+
+.actions button:hover:not(:disabled){ filter:brightness(1.08); }
+.modetabs button, .optionsmenu summary, .sessionpill,
+.histbtns button, .logbtn, #copyStakeBtn{
+  transition:filter .15s ease, transform .08s ease, background-color .15s ease;
+}
+.modetabs button:hover, .optionsmenu summary:hover, .sessionpill:hover,
+.histbtns button:hover:not(:disabled), .logbtn:hover:not(:disabled), #copyStakeBtn:hover:not(:disabled){ filter:brightness(1.1); }
+.sessionpill:active:not(:disabled), .optionsmenu summary:active:not(:disabled),
+.histbtns button:active:not(:disabled), .logbtn:active:not(:disabled), #copyStakeBtn:active:not(:disabled){ transform:scale(.97); }
+
+body{
+  margin:0;
+  background:#0d1017;
+  font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+  color:var(--text);
+  padding:24px;
+}
+
+.app{
+  max-width:1400px;
+  margin:0 auto;
+  background:var(--bg);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  border:1px solid #000;
+}
+
+
+
+/* ---------------- MODE TABS (merged into titlebar, segmented switch) ---------------- */
+.titlebar-center{display:flex; align-items:center; gap:12px;}
+.titlebar-balance{font-size:14px; font-weight:800; color:var(--teal); white-space:nowrap;}
+.modetabs{display:inline-flex; background:#1b212c; border:1px solid var(--border); border-radius:20px; padding:3px; gap:2px;}
+.modetabs button{
+  flex:0 0 auto; padding:7px 14px; border-radius:16px; border:none;
+  background:transparent; color:var(--muted); font-weight:800; font-size:12.5px; cursor:pointer;
+}
+.modetabs button.active{background:var(--teal); color:#062820;}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr .8fr;
+  gap:14px;
+  padding:16px;
+}
+.grid > .panel{margin-bottom:0;}
+
+/* ---------------- SECTION TABS (mobile-only "برنامه"/"آمار" switch) ----------------
+   Hidden by default (wide/landscape layouts show both columns side by side,
+   unchanged). Activated only inside the max-width:900px breakpoint below,
+   same breakpoint where .grid already stacks into a single column. */
+.sectiontabs{
+  display:none;
+  gap:6px;
+  padding:0 16px 10px;
+}
+.sectiontabs button{
+  flex:1;
+  min-height:42px;
+  border:1px solid var(--border);
+  background:#1b212c;
+  color:var(--muted);
+  font-weight:800;
+  font-size:13px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.sectiontabs button.active{
+  background:var(--teal);
+  border-color:transparent;
+  color:#062820;
+}
+
+/* ---------------- PANELS ---------------- */
+.panel{
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  border-radius:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
+  margin-bottom:14px;
+}
+.panel:last-child{margin-bottom:0;}
+.panel-title{
+  text-align:center;
+  background:#333c4e;
+  padding:8px;
+  border-radius:6px;
+  font-weight:700;
+  letter-spacing:.5px;
+  margin-bottom:10px;
+  font-size:12.5px;
+}
+
+/* ---------------- TABLE ---------------- */
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{position:sticky; top:0; z-index:2; background:#2c3444; padding:8px 4px; font-size:10.5px; color:var(--muted); text-transform:uppercase;}
+td{padding:6px 4px; text-align:center; border-bottom:1px solid #2a3140; font-family:var(--mono);}
+td:nth-child(2){font-family:inherit;}
+.badge{display:inline-block; width:26px; padding:3px 0; border-radius:4px; font-weight:700;}
+.badge.W{background:var(--teal); color:#08281f;}
+.badge.L{background:var(--red); color:#3a0812;}
+.badge.BE{background:#e8d58a; color:#3a3010;}
+tr.rowBE td{background:rgba(232,213,138,.08);}
+.btnBE{background:#e8d58a; color:#3a3010;}
+tr.rowW td{background:rgba(43,191,164,.08);}
+tr.rowL td{background:rgba(227,87,106,.06);}
+.neg{color:var(--red);}
+.pos{color:var(--teal);}
+.tablewrap{max-height:400px; overflow-y:auto;}
+.emptyrow td{color:var(--muted); padding:18px 4px; font-size:12.5px; font-family:inherit;}
+
+/* ---------------- INPUTS ---------------- */
+.row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 4px; font-size:13px; border-bottom:1px solid #2a3140; gap:6px;
+}
+.row:last-child{border-bottom:none;}
+.row label{color:var(--muted);}
+.row .hint{font-size:10px; color:var(--muted); display:block; margin-top:2px; max-width:220px;}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+.row input,.row select{
+  background:#2c3444; border:1px solid var(--border); color:#fff;
+  border-radius:5px; padding:5px 8px; width:120px; text-align:center; font-size:13px; font-family:var(--mono);
+  direction:ltr;
+}
+.row input:focus,.row select:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 2px rgba(43,191,164,.16);}
+.goalrow{display:flex; justify-content:space-between; align-items:center; padding:5px 4px; font-size:12.5px; border-bottom:1px solid #2a3140; gap:6px;}
+.goalrow:last-child{border-bottom:none;}
+.goalrow input,.goalrow select{width:70px; background:#2c3444; border:1px solid var(--border); color:#fff; border-radius:5px; padding:4px; text-align:center; font-size:12px;}
+.goalrow input:focus,.goalrow select:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 2px rgba(43,191,164,.16);}
+#initialCapital{width:150px;}
+.inline-field{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
+.inline-field input{width:90px;}
+.type-toggle{display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden;}
+.type-toggle label{margin:0; padding:5px 14px; cursor:pointer; color:var(--muted); font-size:13px; font-weight:700;}
+.type-toggle label input{display:none;}
+.type-toggle label.active{background:var(--teal); color:#062820;}
+.row.stakebox{border:1px solid var(--teal); border-radius:8px; padding:10px; margin:10px 0;}
+.stakebox label{color:var(--text); font-weight:700;}
+.stakewrap{display:flex; align-items:center; gap:8px;}
+#nextStakePreview{color:var(--teal); font-size:18px;}
+#copyStakeBtn{background:#3a4356; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; font-weight:700;}
+.row.row-tight{padding:8px 4px;}
+.row.row-center{justify-content:center;}
+#wlSummary{font-family:var(--mono); font-weight:800; letter-spacing:.5px;}
+.panel-title-accent{background:var(--teal-dark); color:#fff;}
+.small{font-size:11px;}
+.lossexplain{color:var(--orange); line-height:1.6; padding:0 4px 8px;}
+
+.actions{display:flex; gap:8px; margin-bottom:10px;}
+.actions button{flex:1; padding:14px 6px; border:none; border-radius:8px; font-weight:800; cursor:pointer; font-size:15px;}
+.btnW{background:var(--teal); color:#062820;}
+.btnL{background:var(--red); color:#2a0510;}
+
+/* ---------------- RISK LEVELS (masaniello) ---------------- */
+
+.planbox{display:flex; gap:8px; margin:4px 2px 10px;}
+.planbox .p{flex:1; background:var(--panel2); border:1px solid var(--border); border-radius:8px; text-align:center; padding:8px 4px;}
+.planbox .p .n{font-size:16px; font-weight:800; font-family:var(--mono);}
+.planbox .p .l{font-size:10px; color:var(--muted); margin-top:2px;}
+
+.guaranteeline{text-align:center; font-size:11px; color:var(--muted); margin:0 2px 10px; padding:7px 8px; background:var(--panel2); border:1px solid var(--border); border-radius:8px;}
+.guaranteeline b{color:var(--teal); font-family:var(--mono);}
+.guaranteeline.bad b{color:var(--red);}
+
+.status{background:#2c3444; color:#fff; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+.success{background:var(--teal); color:#062820; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:700; margin-bottom:8px;}
+
+.rowSub{padding:7px 2px; font-size:12px; color:var(--muted); border-bottom:1px solid #2a3140; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.rowSub:last-child{border-bottom:none;}
+.rowSub input{background:#252c3a; border:1px solid var(--border); color:#ccc; border-radius:5px; padding:5px 6px; width:70px; text-align:center; font-size:12px; font-family:var(--mono);}
+.rowSub span.val{color:#fff; font-weight:700; font-family:var(--mono);}
+details summary{cursor:pointer; color:var(--muted); font-size:12px; padding:6px 2px;}
+.note{font-size:10.5px; color:var(--muted); line-height:1.6; padding:6px 2px 2px;}
+.manualwrap{display:none;}
+.manualwrap.show{display:block;}
+.checkrow{display:flex; justify-content:space-between; align-items:center; padding:7px 2px; font-size:12px; color:var(--muted);}
+.manual-override{margin-top:8px;}
+.manual-override > summary{
+  cursor:pointer;font-size:11.5px;color:var(--muted);padding:6px 2px;
+  list-style:none;
+}
+.manual-override > summary::-webkit-details-marker{display:none;}
+.checkrow input[type=checkbox]{width:18px; height:18px;}
+
+.statsrow{display:flex; gap:8px; margin-bottom:4px; flex-wrap:wrap;}
+.statbox{flex:1; min-width:70px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; text-align:center; padding:8px 4px;}
+.statbox .n{font-size:15px; font-weight:800; font-family:var(--mono);}
+.statbox .l{font-size:9.5px; color:var(--muted); margin-top:2px;}
+
+/* ---------------- MOBILE ---------------- */
+@media(max-width:900px){
+  body{padding:0; padding-bottom:var(--safe-area-inset-bottom);}
+  .app{border-radius:0; max-width:100%;}
+  .grid{grid-template-columns:1fr; padding:8px; gap:8px;}
+
+  /* Activate the section-tab switch on narrow/portrait screens only */
+  .sectiontabs{display:flex; padding:0 0 8px;}
+  .grid > [data-section-panel]{display:none;}
+  .grid > [data-section-panel].section-active{display:block;}
+  .panel{padding:8px;}
+  .panel-title{font-size:11.5px; padding:7px;}
+  .row,.goalrow{font-size:12.5px; padding:6px 2px; flex-wrap:wrap;}
+  .row input,.row select{width:100px; font-size:13px; padding:6px;}
+  #initialCapital{width:130px;}
+  .goalrow input,.goalrow select{width:64px;}
+  table{font-size:12px;}
+  th{font-size:9px; padding:7px 3px; white-space:nowrap;}
+  td{padding:8px 3px; font-size:11.5px;}
+  .badge{width:24px; padding:4px 0; font-size:12px;}
+  .tablewrap{max-height:300px; overflow-x:auto; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .actions button{padding:11px 6px; font-size:13px;}
+  .subactions button{padding:10px 6px; font-size:12px;}
+  footer{font-size:10px; padding:12px 8px;}
+}
+@media(max-width:420px){
+  .row label,.goalrow label{font-size:11.5px;}
+  .row input,.row select{width:84px; font-size:12px;}
+  #initialCapital{width:108px;}
+  th{font-size:8px;}
+  td{font-size:10.5px;}
+}
+
+/* ---------------- TABLE POLISH ---------------- */
+table{
+  table-layout:fixed;
+}
+th, td{
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+table th:nth-child(1), table td:nth-child(1){width:8%;}
+table th:nth-child(2), table td:nth-child(2){width:14%;}
+table th:nth-child(3), table td:nth-child(3){width:22%;}
+table th:nth-child(4), table td:nth-child(4){width:22%;}
+table th:nth-child(5), table td:nth-child(5){width:34%;}
+
+/* ---------------- APP DIALOG ---------------- */
+.appdialog{
+  width:min(360px, calc(100% - 28px));
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 24px 70px rgba(0,0,0,.55);
+  direction:rtl;
+  text-align:right;
+}
+.appdialog-head{padding:12px 16px 8px;border-bottom:1px solid #2a3140;}
+.appdialog-head h2{margin:0;font-size:16px;}
+.appdialog-body{padding:12px 16px;white-space:pre-line;}
+.appdialog-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:10px 12px 12px;}
+.dialog-ok,.dialog-cancel{min-width:0;width:100%;min-height:42px;padding:8px 7px;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;}
+.dialog-ok{background:var(--teal);color:#062820;}
+.dialog-cancel{background:#333c4e;color:var(--text);border:1px solid var(--border);}
+.dialog-ok:hover,.dialog-cancel:hover{filter:brightness(1.08);}
+.tp-risk-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.tp-risk-card{min-width:0;padding:8px 5px;border:1px solid var(--border);border-radius:8px;text-align:center;background:#252c3a;font-size:10px;line-height:1.7;}
+.tp-risk-card b{font-family:var(--mono);font-size:13px;}
+.tp-risk-card span{color:var(--muted);}
+.tp-risk-title{font-weight:800;font-size:11px;margin-bottom:3px;}
+.tp-risk-card.risk-low .tp-risk-title{color:var(--teal);}
+.tp-risk-card.risk-medium .tp-risk-title{color:var(--orange);}
+.tp-risk-card.risk-high .tp-risk-title{color:var(--red);}
+@media(max-width:900px){.tp-risk-options{gap:5px;}.tp-risk-card{padding:7px 3px;font-size:9px;}}
+
+/* ---------------- ABOUT MODAL ---------------- */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(5,8,14,.72);
+  backdrop-filter:blur(4px);
+}
+.modal-backdrop.show{display:flex;}
+.aboutmodal{
+  width:min(420px, 100%);
+  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 24px 70px rgba(0,0,0,.55);
+  overflow:hidden;
+  direction:rtl;
+  text-align:right;
+}
+.aboutmodal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px 12px;
+  border-bottom:1px solid #2a3140;
+}
+.aboutmodal-head h2{
+  margin:0;
+  font-size:19px;
+  letter-spacing:.2px;
+}
+.aboutclose{
+  width:34px;
+  height:34px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:#333c4e;
+  color:var(--text);
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+.aboutclose:hover{filter:brightness(1.1);}
+.aboutmodal-body{
+  padding:20px 18px 10px;
+  text-align:center;
+}
+.aboutcredit{
+  color:var(--muted);
+  font-size:13px;
+}
+.aboutauthor{
+  color:var(--teal);
+  font-family:var(--mono);
+  font-size:22px;
+  font-weight:800;
+  margin-top:4px;
+}
+.aboutversion{
+  color:var(--muted);
+  font-family:var(--mono);
+  font-size:12px;
+  margin-top:18px;
+}
+.aboutmodal-actions{
+  padding:10px 18px 16px;
+  text-align:left;
+}
+.aboutok{
+  min-width:82px;
+  padding:9px 18px;
+  border:none;
+  border-radius:8px;
+  background:var(--teal);
+  color:#062820;
+  font-weight:800;
+  cursor:pointer;
+}
+.aboutok:hover{filter:brightness(1.08);}
+
+@media(max-width:900px){
+  .modal-backdrop{padding:14px;}
+  .aboutmodal{border-radius:14px;}
+  .aboutmodal-head{padding:13px 14px 10px;}
+  .aboutmodal-body{padding:16px 14px 8px;}
+  .aboutmodal-actions{padding:8px 14px 14px;}
+}
+.backupbox{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--panel2);
+}
+.backup-title{
+  font-weight:800;
+  font-size:12px;
+  margin-bottom:4px;
+}
+.backup-actions{margin:8px 0 0;}
+.backup-actions button{font-size:11px;padding:8px 6px;}
+#dashboardPanel .row{font-size:11.5px;}
+#dashboardPanel .statbox .n{font-size:14px;}
+
+
+/* ---------------- V2.3 DIALOG / COLLAPSIBLE POLISH ---------------- */
+.modal-backdrop{
+  z-index:9999;
+  overscroll-behavior:contain;
+}
+.modal-backdrop.show{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.appdialog,.aboutmodal{
+  position:relative;
+  max-height:min(88dvh,720px);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.dialog-alt{
+  min-width:0;
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#242b38;
+  color:var(--text);
+  font-weight:800;
+  cursor:pointer;
+}
+.dialog-alt:hover{filter:brightness(1.08);}
+.collapsible-panel{
+  padding:0;
+  overflow:hidden;
+}
+.collapsible-summary{
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.collapsible-summary::-webkit-details-marker{display:none;}
+.collapsible-summary::after{
+  content:'⌄';
+  font-size:16px;
+  opacity:.75;
+  transition:transform .2s ease;
+}
+.collapsible-panel[open] .collapsible-summary::after{transform:rotate(180deg);}
+.dashboard-body{padding:8px;}
+.about-backup{margin-top:14px;text-align:right;}
+#tpApplyBtn{width:100%;margin-top:8px;}
+.tp-risk-card.selectable{cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease;}
+.tp-risk-card.selectable:active{transform:scale(.99);}
+.tp-risk-card.selected{border-color:var(--teal);box-shadow:0 0 0 1px rgba(53,211,170,.25) inset;}
+.tp-risk-card.disabled{opacity:.55;}
+/* ---------------- V2.4 PLANNER / ACCESSIBILITY POLISH ---------------- */
+:root{--text:#f4f7fb;--muted:#b7c0d1;}
+body{color:var(--text);}
+.small{color:#b7c0d1;}
+label,.row label,.panel-title,.histsummary,details summary{color:var(--text);}
+input,select,textarea{color:var(--text);}
+::placeholder{color:#9fa9ba;opacity:1;}
+.simple-planner-block{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.masaniello-planner-block{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.planner-heading{font-weight:800;font-size:13px;margin-bottom:7px;}
+.planner-info{padding:7px 2px;line-height:1.7;color:#c9d1df;}
+.planner-summary{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:9px;line-height:1.8;margin-bottom:8px;}
+.planner-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.planner-edit-grid label{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--muted);}
+.planner-edit-grid input{width:76px;background:#252c3a;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px;text-align:center;font-family:var(--mono);}
+#startPlanBtn{width:100%;margin-top:4px;padding:11px;font-weight:800;background:var(--teal);color:#062820;border:none;border-radius:8px;}
+#pauseSessionBtn,#resumeSessionBtn{width:100%;margin-top:7px;padding:9px;font-weight:800;}
+.tp-risk-card{color:var(--text);}
+.tp-risk-card span{color:#b7c0d1;}
+@media(max-width:900px){.planner-edit-grid{gap:5px;}.planner-edit-grid input{width:68px;}}
+
+/* ---------------- V2.4.1 TARGET / LANDSCAPE POLISH ---------------- */
+.target-master{
+  padding:12px;
+}
+.target-master-fields{
+  padding:4px 2px 8px;
+}
+
+/* ---------------- MASTER CHIPS (Balance / Payout / Target) ---------------- */
+.master-chip-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.master-chip{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  height:46px;min-height:46px;
+  background:#232c3d;border:1px solid var(--teal-dark);border-radius:10px;
+  padding:0 10px;box-sizing:border-box;
+  direction:ltr;
+}
+.master-chip-affix{color:var(--teal);font-weight:900;font-size:15px;}
+.master-chip input{
+  background:transparent;border:0;color:#fff;
+  font-size:16px;font-weight:800;font-family:var(--mono);
+  text-align:center;width:100%;padding:0;direction:ltr;
+}
+.master-chip input:focus{outline:none;}
+.master-chip.type-toggle{
+  flex:0 0 auto;width:auto;padding:3px;gap:2px;border:1px solid var(--border);background:#1b212c;
+}
+.master-chip.type-toggle label{margin:0;padding:6px 12px;border-radius:8px;}
+.master-chip.type-toggle label.active{background:var(--teal);color:#062820;}
+.target-goal-row{display:flex;gap:8px;align-items:stretch;}
+.target-goal-row .master-chip:last-child{flex:1;}
+
+/* ---------------- ADVISOR: collapsed "?" badge, tap to expand ---------------- */
+.advisor-toggle{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;margin:2px auto 0;
+  border-radius:50%;border:1px solid var(--border);
+  background:#2c3444;color:var(--muted);font-weight:900;font-size:15px;cursor:pointer;
+}
+.advisor-toggle[data-state="warn"]{background:rgba(240,168,60,.18);border-color:var(--orange);color:var(--orange);}
+.advisor-toggle[data-state="danger"]{background:rgba(227,87,106,.18);border-color:var(--red);color:var(--red);}
+.advisor-toggle[data-state="ok"]{background:rgba(43,191,164,.16);border-color:var(--teal);color:var(--teal);}
+.advisor-strip.hidden{display:none;}
+
+/* ---------------- BOTTOM ACTION BUTTONS: consistent sizing/hierarchy ----------------
+   startPlanBtn is the one primary action; everything else (save/apply/
+   pause/resume) is a secondary, slightly smaller action. Authoritative
+   rule placed late in the cascade so it wins over older breakpoint-
+   specific padding values scattered earlier in the file. */
+#tpApplyBtn,#savePlanBtn,#pauseSessionBtn,#resumeSessionBtn{
+  padding:10px !important;font-size:12.5px !important;font-weight:700 !important;
+  border-radius:9px !important;
+}
+#startPlanBtn{
+  padding:13px !important;font-size:14px !important;font-weight:900 !important;
+  border-radius:10px !important;margin-top:8px !important;
+}
+#pauseSessionBtn,#resumeSessionBtn{margin-top:8px !important;}
+
+
+.target-final-row{
+  margin-top:4px;
+  padding-top:8px;
+  border-top:1px solid var(--border);
+}
+.target-final-row strong{
+  font-family:var(--mono);
+  font-size:16px;
+  color:var(--teal);
+}
+/* Keep planner action buttons identical in width, height and alignment. */
+#tradingPlanPanel > .subactions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px;
+  align-items:stretch;
+}
+#tradingPlanPanel > .subactions button{
+  width:100%;
+  min-width:0;
+  min-height:42px;
+  margin:0;
+  padding:10px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
+}
+.right-column{
+  min-width:0;
+}
+.trade-column,.calc-column,.right-column{
+  min-width:0;
+}
+
+/* ---------------- PORTRAIT TRADE PANEL UI POLISH ---------------- */
+
+/* Keep the first session/trade box, but start it directly with the action buttons. */
+.trade-column > .collapsible-summary{
+  display:none;
+}
+
+.trade-column > .trade-body{
+  padding-top:12px;
+}
+
+/* Win / BE / Lose — three equal buttons. */
+.trade-column > .trade-body > .actions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 10px;
+}
+
+.trade-column > .trade-body > .actions button{
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:11px 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Clear / Undo / Session — three equal buttons underneath. */
+.trade-column > .trade-body > .subactions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 10px;
+  align-items:stretch;
+}
+
+.trade-column > .trade-body > .subactions button{
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  margin:0;
+  padding:9px 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Session button follows the same compact visual system. */
+.trade-column > .trade-body > .subactions .sessionpill{
+  background:#3a4356;
+  color:#fff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* Compact pause control in the header: icon only. */
+.titlebar > .pause-top-titlebar{
+  flex:0 0 34px;
+  width:34px;
+  min-width:34px;
+  height:30px;
+  min-height:30px;
+  margin:0 0 0 10px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  line-height:1;
+  border-radius:8px;
+}
+
+@media(max-width:420px){
+  .titlebar > .pause-top-titlebar{
+    flex-basis:32px;
+    width:32px;
+    min-width:32px;
+    height:28px;
+    min-height:28px;
+    margin-left:8px;
+    font-size:15px;
+  }
+
+  .trade-column > .trade-body > .actions,
+  .trade-column > .trade-body > .subactions{
+    gap:7px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:42px;
+    padding:10px 4px;
+    font-size:13px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    min-height:39px;
+    padding:8px 3px;
+    font-size:11.5px;
+  }
+}
+
+
+/* ---------------- V2.5 PLAN RISK ANALYZER ---------------- */
+#analyzePlanBtn{
+  width:100%;
+  margin-top:7px;
+  min-height:40px;
+  font-weight:800;
+}
+.plan-analyzer-modal{
+  width:min(560px,calc(100vw - 24px));
+  max-height:min(760px,calc(100vh - 24px));
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+}
+.plan-analyzer-body{padding:12px;}
+.analyzer-status{padding:10px;border-radius:9px;font-weight:800;line-height:1.7;margin-bottom:10px;}
+.analyzer-good{background:rgba(53,211,170,.10);border:1px solid rgba(53,211,170,.35);color:var(--teal);}
+.analyzer-warn{background:rgba(255,190,80,.10);border:1px solid rgba(255,190,80,.35);color:#ffd18a;}
+.analyzer-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.analyzer-grid>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);}
+.analyzer-grid span{color:var(--muted);font-size:11px;}
+.analyzer-grid b{font-family:var(--mono);font-size:12px;}
+.analyzer-checks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;}
+.analyzer-checks>div{padding:8px;border-radius:8px;text-align:center;font-weight:800;font-size:11px;background:var(--panel2);}
+.analyzer-checks .ok{color:var(--teal);border:1px solid rgba(53,211,170,.3);}
+.analyzer-checks .bad{color:#ff9d9d;border:1px solid rgba(255,100,100,.3);}
+.analyzer-section-title{margin:12px 0 7px;font-weight:800;font-size:12px;}
+.analyzer-loss-list{border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.analyzer-loss-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+.analyzer-loss-row:last-child{border-bottom:0;}
+.analyzer-loss-row span{color:var(--muted);font-size:11px;}
+.analyzer-loss-row b,.analyzer-loss-row strong{text-align:center;font-family:var(--mono);font-size:11px;}
+.analyzer-note{margin-top:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,.025);color:var(--muted);font-size:10.5px;line-height:1.8;}
+@media(max-width:420px){
+  .analyzer-grid{grid-template-columns:1fr;}
+  .analyzer-checks{grid-template-columns:1fr;}
+}
+
+/* ---------------- PLANNER TOOLS ---------------- */
+.planner-tool-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.btn-analyze,.btn-scenario{
+  width:100%;
+  min-height:42px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-weight:800;
+  color:#fff;
+}
+.btn-analyze{background:#176b61;}
+.btn-scenario{background:#51406f;}
+.btn-analyze:hover,.btn-scenario:hover{filter:brightness(1.1);}
+
+.dashboard-section-title{
+  margin:14px 0 8px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+  font-weight:800;
+  color:var(--teal);
+}
+
+/* ---------------- SCENARIO SIMULATOR ---------------- */
+.scenario-modal{
+  width:min(760px,94vw);
+  max-height:88vh;
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
+.scenario-body{padding:14px 16px 18px;}
+.scenario-controls{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:10px;
+}
+.scenario-controls .btn{min-height:40px;}
+.scenario-input{
+  width:100%;
+  min-height:44px;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  font-size:15px;
+  direction:ltr;
+  text-align:left;
+  outline:none;
+}
+.scenario-input:focus{border-color:var(--teal);}
+.scenario-summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:12px 0;
+}
+.scenario-summary>div{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:9px;
+  min-width:0;
+}
+.scenario-summary span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px;}
+.scenario-summary b{font-size:14px;overflow-wrap:anywhere;}
+.scenario-table{
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.scenario-row{
+  display:grid;
+  grid-template-columns:42px 64px 1fr 1fr 1fr;
+  gap:8px;
+  align-items:center;
+  padding:9px 10px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.scenario-row:last-child{border-bottom:0;}
+.scenario-head{background:var(--panel2);color:var(--muted);font-size:11px;}
+.scenario-row.not-executed{opacity:.55;}
+.scenario-error{
+  margin-top:10px;
+  padding:12px;
+  border-radius:8px;
+  background:rgba(227,87,106,.12);
+  border:1px solid rgba(227,87,106,.4);
+}
+@media (max-width:600px){
+  .planner-tool-buttons{grid-template-columns:1fr;}
+  .scenario-controls{grid-template-columns:repeat(2,1fr);}
+  .scenario-summary{grid-template-columns:repeat(2,1fr);}
+  .scenario-row{grid-template-columns:32px 48px 1fr 1fr 1fr;font-size:12px;}
+}
+
+/* What-If Lab */
+.btn-whatif{background:var(--panel2);border:1px solid var(--teal);color:var(--text);}
+.whatif-modal{width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);}
+.whatif-body{padding:14px 16px 18px;}
+.whatif-intro{font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:12px;}
+.whatif-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px;}
+.whatif-controls label{display:grid;gap:5px;font-size:12px;color:var(--muted);}
+.whatif-controls select{width:100%;min-height:42px;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:10px;padding:0 10px;font:inherit;}
+.whatif-controls .btn{min-height:42px;white-space:nowrap;}
+.whatif-legend,.whatif-summary>div{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;align-items:center;}
+.whatif-legend{padding:8px 10px;background:var(--panel2);border-radius:10px 10px 0 0;font-size:12px;color:var(--muted);}
+.whatif-summary{border:1px solid var(--border);border-top:0;border-radius:0 0 10px 10px;overflow:hidden;}
+.whatif-summary>div{padding:9px 10px;border-top:1px solid var(--border);font-size:12px;}
+.whatif-summary>div:first-child{border-top:0;}
+.whatif-summary span{color:var(--muted);}
+.whatif-summary b{text-align:right;}
+.whatif-delta{margin-top:12px;padding:12px;border-radius:10px;background:var(--panel2);text-align:center;font-size:13px;}
+.whatif-delta.pos strong{color:var(--green);}
+.whatif-delta.neg strong{color:var(--red);}
+.whatif-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.whatif-status>div{padding:10px;border:1px solid var(--border);border-radius:10px;font-size:12px;}
+.whatif-status b{display:block;margin-top:4px;}
+.whatif-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.7;}
+@media(max-width:600px){.whatif-controls{grid-template-columns:1fr 1fr}.whatif-controls .btn{grid-column:1/-1}.whatif-status{grid-template-columns:1fr}.whatif-legend,.whatif-summary>div{grid-template-columns:1.1fr 1fr 1fr;font-size:11px}}
+
+/* ---------------- STRATEGY COMPARISON ----------------
+   .comparison-modal/.comparison-body/.comparison-grid/.comparison-card
+   were referenced by app.js but never had CSS rules, so their content
+   rendered as unstyled inline text — Persian (RTL) and English/$ values
+   (LTR) with no box boundaries between fields, running together. */
+.comparison-modal{
+  width:min(680px,calc(100vw - 24px));
+  max-height:calc(100vh - 32px);
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
+.comparison-body{padding:14px 16px 18px;}
+.comparison-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;}
+.comparison-card{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  display:grid;
+  gap:7px;
+}
+.comparison-card.invalid{border-color:rgba(227,87,106,.4);}
+.comparison-title{font-weight:800;font-size:14px;color:var(--teal);margin-bottom:2px;}
+.comparison-card>div{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  font-size:12px;
+}
+.comparison-card>div>span{color:var(--muted);white-space:nowrap;}
+.comparison-card>div>b{
+  font-family:var(--mono);
+  text-align:left;
+  direction:ltr;
+  unicode-bidi:isolate;
+}
+.comparison-card>.analyzer-bad{
+  background:rgba(227,87,106,.12);
+  border:1px solid rgba(227,87,106,.4);
+  border-radius:8px;
+  padding:6px 8px;
+  color:#ff9d9d;
+}
+@media(max-width:600px){.comparison-card{font-size:11px;}}
+
+/* ---------------- STRESS TEST ----------------
+   Same missing-CSS problem as Strategy Comparison: .stress-modal,
+   .stress-inputs, .stress-probabilities, .stress-grid and .stress-card
+   had no rules, so the scenario sequences and results ran together as
+   unstyled inline text. */
+.stress-modal{
+  width:min(680px,calc(100vw - 24px));
+  max-height:calc(100vh - 32px);
+  overflow:auto;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
+.stress-body{padding:14px 16px 18px;}
+.stress-inputs{display:grid;gap:10px;margin-bottom:14px;}
+.stress-inputs>label{display:grid;gap:6px;font-size:12px;color:var(--muted);}
+.stress-probabilities{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.stress-probabilities label{display:grid;gap:5px;font-size:12px;color:var(--muted);}
+.stress-probabilities input{
+  width:100%;
+  min-height:40px;
+  padding:0 10px;
+  border:1px solid var(--border);
+  background:var(--panel2);
+  color:var(--text);
+  border-radius:8px;
+  font:inherit;
+  direction:ltr;
+  text-align:center;
+}
+#stressRunBtn{width:100%;min-height:42px;}
+.stress-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+.stress-card{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  display:grid;
+  gap:6px;
+}
+.stress-card>strong{font-size:13px;color:var(--teal);}
+.stress-card>span{
+  font-family:var(--mono);
+  font-size:11.5px;
+  color:var(--muted);
+  direction:ltr;
+  unicode-bidi:isolate;
+  overflow-wrap:anywhere;
+}
+.stress-card>b{font-family:var(--mono);font-size:15px;direction:ltr;unicode-bidi:isolate;}
+.stress-card>small{font-size:11px;color:var(--muted);line-height:1.6;}
+@media(max-width:600px){.stress-probabilities{grid-template-columns:1fr;}}
+
+/* ---------------- SESSION LOG EXPORT ----------------
+   #logWrap/#logOutput/#copyBtn were referenced by app.js
+   (toggleLog/generateLog/copyLog) but had no markup or CSS at all,
+   so the feature was unreachable. Added minimal styling consistent
+   with the backup/history box above it. */
+.log-section{margin-top:10px;}
+.log-section>.logbtn{width:100%;}
+.logwrap{display:none;margin-top:8px;gap:8px;}
+.logwrap.show{display:grid;}
+.logoutput{
+  width:100%;
+  min-height:140px;
+  background:var(--panel2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px;
+  font-family:var(--mono);
+  font-size:10.5px;
+  direction:ltr;
+  text-align:left;
+  resize:vertical;
+}
+#copyBtn.copied{background:var(--teal); color:#062820; border-color:transparent;}
+
+/* =========================================================
+   V2.9.4 — HEADER + MOBILE VIEWPORT AUTHORITY
+   ---------------------------------------------------------
+   One geometry authority.
+   No legacy header positioning.
+   No duplicate orientation header rules.
+   Business logic untouched.
+   ========================================================= */
+
+/* ---------- Native viewport / safe-area contract ---------- */
+
+html,
+body{
+  width:100%;
+  min-width:0;
+  min-height:100%;
+}
+
+body{
+  padding:0;
+  overflow-x:hidden;
+}
+
+.app{
+  width:100%;
+  min-width:0;
+}
+
+/*
+ * Android/WebView may draw edge-to-edge because viewport-fit=cover
+ * is enabled. Keep the visual header height fixed, but reserve the
+ * system top inset ABOVE it.
+ */
+:root{
+  --header-content-height:46px;
+  --header-total-height:var(--header-content-height);
+  --safe-area-inset-top:env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+.titlebar{
+  box-sizing:border-box;
+  position:relative;
+  top:auto;
+  left:auto;
+  right:auto;
+  z-index:5000;
+  isolation:isolate;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  width:100%;
+  min-width:0;
+  height:var(--header-total-height);
+  min-height:var(--header-total-height);
+
+  margin:0;
+  padding:0 4px;
+
+  gap:0;
+  overflow:visible;
+
+  background:var(--header);
+  border-bottom:2px solid #000;
+}
+
+/* ---------- Header children ---------- */
+
+.titlebar > .optionsmenu{
+  position:relative;
+  z-index:5100;
+
+  flex:0 0 auto;
+  align-self:center;
+
+  width:30px;
+  height:28px;
+  margin:0;
+
+  transform:none;
+}
+
+.titlebar > .titlebar-center{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  flex:0 1 auto;
+  min-width:0;
+  width:auto;
+  max-width:calc(100% - 76px);
+
+  margin:0;
+  gap:5px;
+
+  overflow:hidden;
+  direction:ltr;
+
+  align-self:center;
+}
+
+.titlebar > .sessionpill{
+  position:relative;
+  z-index:5102;
+
+  flex:0 0 auto;
+  align-self:center;
+
+  min-width:0;
+  min-height:28px;
+  height:28px;
+
+  margin:0;
+  padding:0 8px;
+
+  transform:none;
+  direction:rtl;
+}
+
+/* ---------- Header controls ---------- */
+
+.titlebar > .optionsmenu > summary{
+  box-sizing:border-box;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  width:30px;
+  height:28px;
+  min-width:30px;
+  min-height:28px;
+
+  margin:0;
+  padding:0;
+
+  position:relative;
+  z-index:5102;
+
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+
+.titlebar > *,
+.titlebar button,
+.titlebar summary{
+  pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ---------- Header menu ---------- */
+
+.optionsmenu{
+  position:relative;
+  z-index:5100;
+  isolation:isolate;
+}
+
+.optionsmenu summary{
+  position:relative;
+  z-index:5102;
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+
+.optionsmenu .menu-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:5190;
+
+  margin:0;
+  padding:0;
+  border:none;
+  appearance:none;
+  cursor:pointer;
+
+  background:rgba(5,8,14,.72);
+  backdrop-filter:blur(4px);
+}
+
+.optionsmenu .optionpanel{
+  position:fixed;
+  z-index:5200;
+
+  top:calc(
+    var(--header-total-height) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+  );
+  left:0;
+  right:auto;
+  bottom:auto;
+
+  width:min(300px,calc(100vw - 20px));
+  max-width:calc(100vw - 20px);
+  max-height:calc(
+    100dvh - 46px
+  );
+
+  height:auto;
+
+  overflow-y:auto;
+  overflow-x:hidden;
+
+  border-radius:0 0 14px 0;
+}
+
+.optionsmenu .menu-section > summary{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+
+  gap:7px;
+  min-height:34px;
+  padding:6px 8px;
+
+  background:#2c3444;
+  border:1px solid var(--border);
+  border-radius:7px;
+}
+
+/* ---------- Header content ---------- */
+
+.titlebar-balance{
+  min-width:0;
+  max-width:100%;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ---------- Preserve existing contracts ---------- */
+
+#payout{
+  min-width:0;
+  width:100%;
+  max-width:130px;
+  text-align:center;
+  font-family:var(--mono);
+}
+
+#payout:invalid{
+  border-color:var(--border);
+  box-shadow:none;
+}
+
+#payout[aria-invalid="true"]{
+  border-color:var(--orange)!important;
+}
+
+.target-master-fields > .row{
+  min-width:0;
+}
+
+.target-master-fields > .row label{
+  white-space:nowrap;
+}
+
+.appdialog{
+  width:min(340px,calc(100vw - 34px));
+}
+
+.appdialog-head h2{
+  font-size:14px;
+  line-height:1.3;
+}
+
+.appdialog-body{
+  font-size:11px;
+  line-height:1.5;
+}
+
+.appdialog-actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+
+.dialog-ok,
+.dialog-cancel,
+.dialog-alt{
+  width:100%;
+  min-width:0;
+  min-height:36px;
+  padding:6px 4px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  text-align:center;
+  white-space:nowrap;
+  line-height:1.2;
+  font-size:10.5px;
+}
+
+/* =========================================================
+   PORTRAIT
+   ========================================================= */
+
+@media (orientation:portrait){
+
+  html,
+  body{
+    width:100%;
+    min-width:0;
+    overflow-x:hidden;
+  }
+
+  body{
+    padding:0;
+  }
+
+  .app{
+    width:100%;
+    max-width:none;
+    min-width:0;
+
+    margin:0;
+    border-radius:0;
+
+    padding-top:var(--safe-area-inset-top);
+    padding-bottom:var(--safe-area-inset-bottom);
+  }
+
+  .titlebar{
+    width:100%;
+    max-width:none;
+
+    height:var(--header-total-height);
+    min-height:var(--header-total-height);
+
+    padding:0 4px;
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
+  .titlebar > .sessionpill{
+    align-self:center;
+    margin:0;
+  }
+
+  .titlebar > .titlebar-center{
+    max-width:calc(100% - 76px);
+  }
+
+  .grid{
+    width:100%;
+    min-width:0;
+
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:14px;
+
+    margin-top:0;
+    padding:12px;
+    overflow:visible;
+  }
+
+  /*
+   * When Android transiently reveals the system bars, keep the scroll
+   * containers above the navigation bar instead of allowing their
+   * content to scroll underneath it.
+   */
+  html.system-bars-visible .grid > .trade-column,
+  html.system-bars-visible .grid > .calc-column,
+  html.system-bars-visible .grid > .right-column{
+    padding-bottom:var(--safe-area-inset-bottom);
+    scroll-padding-bottom:var(--safe-area-inset-bottom);
+  }
+
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    width:100%;
+    min-width:0;
+    min-height:0;
+
+    height:auto;
+    max-height:none;
+
+    overflow:visible;
+  }
+
+  .optionsmenu .optionpanel{
+    top:calc(
+      var(--header-total-height) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    );
+    left:0;
+    right:auto;
+
+    width:min(300px,calc(100vw - 20px));
+    max-height:calc(
+      100dvh - 46px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    );
+
+    border-radius:0 0 14px 0;
+  }
+}
+
+/* =========================================================
+   LANDSCAPE — one scroll contract
+   ========================================================= */
+
+@media (orientation:landscape){
+
+  html,
+  body{
+    width:100%;
+    height:100%;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+  }
+
+  body{
+    padding:0;
+  }
+
+  .app{
+    width:100%;
+    max-width:none;
+
+    height:calc(
+      100dvh
+      - var(--safe-area-inset-top)
+      - var(--safe-area-inset-bottom)
+    );
+    min-height:0;
+    min-width:0;
+
+    margin:0;
+
+    display:flex;
+    flex-direction:column;
+
+    overflow:hidden;
+    border-radius:0;
+
+    padding-top:var(--safe-area-inset-top);
+    padding-bottom:var(--safe-area-inset-bottom);
+  }
+
+  .titlebar{
+    flex:0 0 auto;
+
+    height:var(--header-total-height);
+    min-height:var(--header-total-height);
+
+    padding:0 4px;
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .titlebar-center,
+  .titlebar > .sessionpill{
+    align-self:center;
+    margin:0;
+  }
+
+  .titlebar > .optionsmenu > summary{
+    width:30px;
+    height:28px;
+    min-width:30px;
+    min-height:28px;
+  }
+
+  .optionsmenu .optionpanel{
+    top:calc(
+      var(--header-total-height) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    );
+    left:auto;
+    right:0;
+
+    width:min(300px,calc(100vw - 16px));
+    max-height:calc(
+      100dvh - 46px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    );
+
+    border-radius:0 0 0 14px;
+  }
+
+  .grid{
+    width:100%;
+    min-width:0;
+    min-height:0;
+
+    flex:1 1 auto;
+    height:auto;
+    margin-top:0;
+
+    display:grid;
+    /* Four persistent landscape columns: trade, plan, stats, long-term. */
+    grid-template-columns:1.4fr 1fr .8fr 1fr;
+    grid-template-rows:minmax(0,1fr);
+
+    gap:12px;
+    padding:12px;
+
+    overflow:hidden;
+    align-items:stretch;
+  }
+
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    min-width:0;
+    min-height:0;
+
+    width:auto;
+    height:100%;
+    max-height:none;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .grid > .trade-column{
+    grid-column:1;
+  }
+
+  .grid > .calc-column{
+    grid-column:2;
+  }
+
+  .grid > .right-column{
+    grid-column:3;
+  }
+
+  .grid > .calc-column[data-section-panel="longterm"]{
+    grid-column:4;
+  }
+}
+
+
+/* =========================================================
+   END V2.9.4 AUTHORITY
+   ========================================================= */
+
+/* =========================================================
+   V2.9.1 — PORTRAIT COCKPIT PHASE 1
+   Visual hierarchy only — NO trading logic changes.
+   ========================================================= */
+
+@media (orientation: portrait){
+
+  /* ---------- Main portrait spacing ---------- */
+
+  .grid{
+    gap:10px;
+    padding:10px;
+  }
+
+  .grid > .panel,
+  .grid > .calc-column > .panel,
+  .grid > .right-column > .panel{
+    margin-bottom:0;
+  }
+
+  /* ---------- Trade control card ---------- */
+
+  .trade-column{
+    border-radius:14px;
+    padding:12px;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+
+  .trade-column > .trade-body{
+    padding-top:2px;
+  }
+
+  /* ---------- Primary actions ---------- */
+
+  .trade-column > .trade-body > .actions{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    margin:0 0 9px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    width:100%;
+    min-width:0;
+    min-height:54px;
+    padding:10px 4px;
+    border-radius:10px;
+    font-size:16px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* ---------- Secondary actions ---------- */
+
+  .trade-column > .trade-body > .subactions{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    margin:0 0 9px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    width:100%;
+    min-width:0;
+    min-height:42px;
+    padding:8px 3px;
+    border-radius:9px;
+    font-size:11.5px;
+    line-height:1.15;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    white-space:nowrap;
+  }
+
+  /* ---------- Session button ---------- */
+
+  .trade-column > .trade-body > .subactions .sessionpill{
+    background:#3a4356;
+    color:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-weight:800;
+  }
+
+  /* ---------- Alert area ---------- */
+
+  .trade-column #alertBox{
+    margin:0 0 8px;
+  }
+
+  /* ---------- Trade history ---------- */
+
+  .trade-column > .trade-body > .tablewrap{
+    max-height:150px;
+    min-height:0;
+    overflow-y:auto;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:rgba(0,0,0,.08);
+  }
+
+  .trade-column > .trade-body > .tablewrap table{
+    font-size:11px;
+  }
+
+  .trade-column > .trade-body > .tablewrap th{
+    padding:6px 3px;
+    font-size:9px;
+  }
+
+  .trade-column > .trade-body > .tablewrap td{
+    padding:5px 3px;
+    font-size:10.5px;
+  }
+
+  /* ---------- Next stake — primary information ---------- */
+
+  .trade-column > .trade-body > .stakebox{
+    min-height:48px;
+    margin:9px 0 7px;
+    padding:8px 10px;
+    border-radius:9px;
+    border-color:var(--teal);
+    background:rgba(43,191,164,.055);
+  }
+
+  .trade-column > .trade-body > .stakebox label{
+    font-size:12px;
+  }
+
+  .trade-column > .trade-body > .stakebox #nextStakePreview{
+    font-size:17px;
+  }
+
+  .trade-column > .trade-body > .stakebox #copyStakeBtn{
+    padding:5px 7px;
+    font-size:10px;
+  }
+
+  /* ---------- Balance / P&L compact stats ---------- */
+
+  .trade-column > .trade-body > .row.row-tight{
+    padding:7px 4px;
+    min-height:32px;
+    font-size:11.5px;
+  }
+
+  .trade-column > .trade-body > .row.row-center{
+    padding:7px 4px 3px;
+    border-bottom:0;
+  }
+
+  .trade-column #wlSummary{
+    font-size:11px;
+  }
+
+  /* ---------- Target & Plan card ---------- */
+
+  .calc-column{
+    min-width:0;
+  }
+
+  .calc-column > #targetPanel{
+    border-radius:14px;
+    padding:11px;
+  }
+
+  .calc-column > #targetPanel > .collapsible-summary{
+    margin-bottom:9px;
+  }
+
+  .calc-column > #targetPanel .target-master-fields{
+    padding:0;
+  }
+
+  .calc-column > #targetPanel .target-master-fields > .row{
+    min-height:34px;
+    padding:6px 3px;
+    font-size:11.5px;
+  }
+
+  .calc-column > #targetPanel .target-master-fields > .row input{
+    max-width:110px;
+    font-size:11.5px;
+  }
+
+  .calc-column > #targetPanel .target-final-row{
+    padding-top:8px;
+    padding-bottom:8px;
+  }
+
+  /* Keep the risk advisor compact in portrait. */
+
+  .calc-column > #targetPanel .advisor-strip{
+    margin-top:6px;
+    padding:7px 8px;
+    min-height:0;
+  }
+
+  /* ---------- Trading plan ---------- */
+
+  .calc-column > #tradingPlanPanel{
+    border-radius:14px;
+    padding:11px;
+  }
+
+  .calc-column > #tradingPlanPanel > .panel-title{
+    margin-bottom:8px;
+  }
+
+  /* ---------- Reduce visual dominance of secondary panels ---------- */
+
+  .right-column .panel{
+    border-radius:14px;
+  }
+
+  /* ---------- Compact pause control ---------- */
+
+  .titlebar > .pause-top-titlebar{
+    flex:0 0 32px;
+    width:32px;
+    min-width:32px;
+    height:29px;
+    min-height:29px;
+    margin-left:7px;
+    padding:0;
+    border-radius:8px;
+    font-size:15px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+}
+
+/* =========================================================
+   Very small portrait screens
+   ========================================================= */
+
+@media (orientation:portrait) and (max-width:420px){
+
+  .grid{
+    padding:8px;
+    gap:8px;
+  }
+
+  .trade-column,
+  .calc-column > #targetPanel,
+  .calc-column > #tradingPlanPanel{
+    border-radius:12px;
+  }
+
+  .trade-column{
+    padding:9px;
+  }
+
+  .trade-column > .trade-body > .actions{
+    gap:6px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:50px;
+    font-size:15px;
+  }
+
+  .trade-column > .trade-body > .subactions{
+    gap:6px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    min-height:40px;
+    font-size:10.5px;
+    padding-left:2px;
+    padding-right:2px;
+  }
+
+  .trade-column > .trade-body > .tablewrap{
+    max-height:125px;
+  }
+
+  .trade-column > .trade-body > .tablewrap th{
+    font-size:8px;
+  }
+
+  .trade-column > .trade-body > .tablewrap td{
+    font-size:9.5px;
+  }
+
+  .trade-column > .trade-body > .stakebox{
+    margin-top:7px;
+  }
+
+}
+
+/* =========================================================
+   END V2.9.1 PORTRAIT COCKPIT PHASE 1
+   ========================================================= */
+
+
+/* =========================================================
+   MODERN MOBILE UI — PHASE 1
+   Presentation layer only. Trading engine untouched.
+   ========================================================= */
+
+@media (orientation: portrait) and (max-width: 700px){
+
+  body{
+    background:#000;
+    padding:10px 10px 0;
+  }
+
+  .app{
+    width:100%;
+    max-width:680px;
+    margin:0 auto;
+    border-radius:20px;
+    overflow:hidden;
+    border:1px solid #111820;
+    background:#0d1218;
+    box-shadow:0 12px 40px rgba(0,0,0,.65);
+  }
+
+  :root{
+    --modern-header-height:132px;
+  }
+
+  .titlebar{
+    height:var(--modern-header-height);
+    min-height:var(--modern-header-height);
+    padding:14px 18px 10px;
+    display:grid;
+    grid-template-columns:52px 1fr 52px;
+    grid-template-rows:58px 46px;
+    gap:0;
+    background:
+      radial-gradient(circle at 50% -40%,rgba(43,191,164,.08),transparent 55%),
+      linear-gradient(180deg,#0c1015,#0b1015);
+    border-bottom:0;
+  }
+
+  .titlebar > .optionsmenu{
+    grid-column:1;
+    grid-row:1;
+    width:48px;
+    height:48px;
+    align-self:center;
+    justify-self:start;
+  }
+
+  .titlebar > .optionsmenu > summary{
+    width:48px;
+    height:48px;
+    min-width:48px;
+    min-height:48px;
+    border:0;
+    background:transparent;
+    color:#f4f7fb;
+    font-size:0;
+  }
+
+  .titlebar > .optionsmenu > summary::before{
+    content:'';
+    width:30px;
+    height:22px;
+    display:block;
+    background:
+      linear-gradient(#f4f7fb,#f4f7fb) 0 0/30px 4px no-repeat,
+      linear-gradient(#f4f7fb,#f4f7fb) 0 9px/30px 4px no-repeat,
+      linear-gradient(#f4f7fb,#f4f7fb) 0 18px/30px 4px no-repeat;
+    border-radius:3px;
+  }
+
+  .titlebar > .titlebar-center{
+    grid-column:2;
+    grid-row:1;
+    width:100%;
+    max-width:none;
+    height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:visible;
+  }
+
+  .titlebar-balance{
+    display:none;
+  }
+
+  .titlebar > .titlebar-center .modetabs{
+    position:absolute;
+    left:18px;
+    right:18px;
+    bottom:10px;
+    width:auto;
+    height:46px;
+    padding:2px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    background:#090d12;
+    border:1px solid #1c2630;
+    border-radius:16px;
+  }
+
+  .modetabs button{
+    width:100%;
+    height:40px;
+    padding:0 8px;
+    border-radius:13px;
+    color:#b7c0d1;
+    background:transparent;
+    font-size:14px;
+    font-weight:800;
+  }
+
+  .modetabs button.active{
+    background:#08100f;
+    color:var(--teal);
+    box-shadow:inset 0 0 0 1px rgba(43,191,164,.38);
+  }
+
+  .titlebar > .pause-top-titlebar{
+    grid-column:3;
+    grid-row:1;
+    align-self:center;
+    justify-self:end;
+    width:48px;
+    min-width:48px;
+    height:48px;
+    min-height:48px;
+    margin:0;
+    padding:0;
+    border-radius:14px;
+    background:#0b1015;
+    border:1px solid var(--teal);
+    color:#f4f7fb;
+    font-size:21px;
+  }
+
+  .grid{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:10px;
+    background:#0b1015;
+  }
+
+  .grid > .trade-column,
+  .grid > .calc-column,
+  .grid > .right-column{
+    width:100%;
+    min-width:0;
+  }
+
+  .right-column{
+    display:none;
+  }
+
+  .trade-column{
+    background:linear-gradient(180deg,#151b21,#10161c);
+    border:1px solid #27313a;
+    border-radius:17px;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+  }
+
+  .trade-column > .trade-body{
+    padding:16px 14px 14px;
+  }
+
+  .trade-column .tablewrap{
+    display:none;
+  }
+
+  .trade-column #alertBox{
+    display:none;
+  }
+
+  .trade-column > .trade-body > .actions{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    margin:0 0 12px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:62px;
+    border-radius:13px;
+    font-size:16px;
+    font-weight:900;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+
+  .btnW{
+    background:linear-gradient(180deg,#1ecb86,#13b877);
+    color:#fff;
+  }
+
+  .btnBE{
+    background:linear-gradient(180deg,#f2b72f,#d99b18);
+    color:#fff;
+  }
+
+  .btnL{
+    background:linear-gradient(180deg,#e75b62,#d84750);
+    color:#fff;
+  }
+
+  .trade-column > .trade-body > .subactions{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:9px;
+    margin:0 0 14px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    min-height:48px;
+    border-radius:12px;
+    background:#202831;
+    border:1px solid #35404b;
+    color:#f4f7fb;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .trade-column > .trade-body > .subactions .sessionpill{
+    border-color:var(--teal);
+    color:var(--teal);
+    background:#10191a;
+  }
+
+  .trade-column .row.row-tight{
+    background:transparent;
+    border-bottom:1px solid #27313a;
+    padding:10px 4px;
+    font-size:13px;
+  }
+
+  .trade-column .row.row-tight label{
+    color:#aab4c2;
+  }
+
+  .trade-column #curBalance,
+  .trade-column #curPL{
+    font-size:17px;
+    font-family:var(--mono);
+    font-weight:900;
+  }
+
+  .trade-column #wlSummary{
+    width:100%;
+    padding:9px 6px;
+    border:1px solid #27313a;
+    border-radius:10px;
+    color:#b7c0d1;
+    font-size:11px;
+    text-align:center;
+    background:#0d1319;
+  }
+
+  .trade-column .stakebox{
+    margin:12px 0;
+    min-height:52px;
+    border-radius:12px;
+  }
+}
+
+/* =========================================================
+   PHASE 1A — FIX MOBILE LTR COMPONENT ORDER
+   UI ONLY — trading engine untouched
+   ========================================================= */
+
+@media (orientation: portrait) and (max-width: 700px){
+
+  /* The mobile cockpit layout is intentionally left-to-right.
+     Page-level RTL must not reverse component order. */
+
+  .titlebar{
+    direction:ltr;
+  }
+
+  .titlebar > .optionsmenu{
+    grid-column:1;
+  }
+
+  .titlebar > .titlebar-center{
+    grid-column:2;
+  }
+
+  .titlebar > .pause-top-titlebar{
+    grid-column:3;
+  }
+
+  .titlebar > .titlebar-center .modetabs{
+    direction:ltr;
+  }
+
+  .trade-column > .trade-body > .actions{
+    direction:ltr;
+  }
+
+  .trade-column > .trade-body > .subactions{
+    direction:ltr;
+  }
+
+  /* Keep labels/text readable while preserving button order. */
+  .trade-column > .trade-body > .actions button,
+  .trade-column > .trade-body > .subactions button{
+    direction:rtl;
+  }
+
+}
+
+/* =========================================================
+   PHASE 1B — SESSION CARD POLISH
+   Presentation only — engine untouched
+   ========================================================= */
+
+@media (orientation: portrait) and (max-width: 700px){
+
+  /* Session card */
+  .trade-column{
+    background:
+      linear-gradient(180deg,#151b21 0%,#11171d 100%);
+    border:1px solid #29343e;
+    border-radius:18px;
+    overflow:hidden;
+  }
+
+  /* Session / trades heading */
+  .trade-column > .collapsible-summary{
+    min-height:54px;
+    padding:0 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:linear-gradient(180deg,#12181e,#0f151b);
+    border-bottom:1px solid #26313a;
+    color:#f2f5f8;
+    font-size:15px;
+    font-weight:900;
+  }
+
+  .trade-column > .collapsible-summary .summary-hint{
+    color:#778392;
+    font-size:10px;
+    font-weight:700;
+  }
+
+  .trade-column > .trade-body{
+    padding:14px;
+  }
+
+  /* Result buttons */
+  .trade-column > .trade-body > .actions{
+    margin:0 0 12px;
+    gap:10px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:64px;
+    border-radius:14px;
+    font-size:17px;
+    font-weight:900;
+    letter-spacing:.2px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.13),
+      0 5px 14px rgba(0,0,0,.22);
+  }
+
+  /* Secondary controls */
+  .trade-column > .trade-body > .subactions{
+    margin:0 0 14px;
+    gap:9px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    min-height:50px;
+    border-radius:13px;
+    font-size:12px;
+    font-weight:850;
+    white-space:nowrap;
+  }
+
+  .trade-column > .trade-body > .subactions .sessionpill{
+    border:1px solid var(--teal);
+    background:#0d1918;
+    color:var(--teal);
+    box-shadow:inset 0 0 0 1px rgba(43,191,164,.12);
+  }
+
+  /* Current balance / P&L */
+  .trade-column .row.row-tight{
+    min-height:48px;
+    padding:8px 6px;
+    background:#0e141a;
+    border-bottom:1px solid #26313a;
+  }
+
+  .trade-column .row.row-tight label{
+    color:#9da8b7;
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .trade-column #curBalance,
+  .trade-column #curPL{
+    font-size:18px;
+    font-weight:900;
+    font-family:var(--mono);
+  }
+
+  /* W / BE / L summary */
+  .trade-column .row.row-tight.row-center{
+    min-height:42px;
+    margin-top:8px;
+    border:1px solid #27323c;
+    border-radius:11px;
+    background:#0b1117;
+  }
+
+  .trade-column #wlSummary{
+    color:#b8c2cf;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.2px;
+  }
+
+  /* Next stake */
+  .trade-column .stakebox{
+    margin:12px 0;
+    min-height:54px;
+    padding:0 12px;
+    border:1px solid rgba(43,191,164,.75);
+    border-radius:13px;
+    background:#0d1818;
+  }
+
+  .trade-column .stakebox label{
+    color:#aab5c3;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .trade-column #nextStakePreview{
+    color:var(--teal);
+    font-size:18px;
+    font-weight:900;
+    font-family:var(--mono);
+  }
+
+  .trade-column #copyStakeBtn{
+    min-height:32px;
+    padding:0 10px;
+    border-radius:9px;
+  }
+
+  /* Masaniello plan summary */
+  .trade-column #masaPlanBlock{
+    margin-top:12px;
+  }
+
+  .trade-column .planbox{
+    border:1px solid #29343e;
+    border-radius:13px;
+    background:#0d1319;
+    overflow:hidden;
+  }
+
+  .trade-column .planbox .p{
+    padding:10px 6px;
+  }
+
+  .trade-column .planbox .n{
+    font-size:18px;
+    font-weight:900;
+  }
+
+  .trade-column .planbox .l{
+    margin-top:3px;
+    color:#8995a5;
+    font-size:9px;
+    font-weight:700;
+  }
+
+  .trade-column .guaranteeline{
+    margin-top:8px;
+    border-radius:10px;
+    font-size:10px;
+  }
+
+}
+/* =========================================================
+   TRADE MANAGER — MOBILE COCKPIT PHASE 1C
+   Visual-only overrides for the approved mockup.
+   Trading-engine logic is untouched.
+   ========================================================= */
+
+@media (orientation: portrait) and (max-width: 700px){
+
+  body{padding:0;background:#000}
+
+  .app{
+    width:100%;max-width:none;margin:0;
+    border-radius:0;border-left:0;border-right:0;box-shadow:none;
+  }
+
+  .grid{
+    width:100%;box-sizing:border-box;
+    padding:10px 10px 18px;gap:12px;
+  }
+
+  .titlebar{
+    min-height:60px;height:60px;box-sizing:border-box;
+    padding:8px 14px;
+    grid-template-columns:44px minmax(0,1fr) 44px;
+    grid-template-rows:44px;
+    direction:ltr;
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .pause-top-titlebar{
+    width:40px;min-width:40px;height:40px;min-height:40px;
+    box-sizing:border-box;
+  }
+
+  .titlebar > .optionsmenu > summary{
+    width:48px;min-width:48px;height:40px;min-height:40px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px !important;font-weight:900;color:#f4f7fb;
+    letter-spacing:.3px;
+  }
+
+  .titlebar > .optionsmenu > summary::before{
+    content:none;
+  }
+
+  .titlebar > .pause-top-titlebar{
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;font-weight:900;border-radius:11px;
+  }
+
+  .titlebar > .titlebar-center{
+    grid-column:2;grid-row:1;position:relative;
+    height:40px;display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+
+  .titlebar-balance{display:none}
+
+  .titlebar > .titlebar-center .modetabs{
+    order:3;
+    position:static;
+    height:34px;
+    padding:2px;border-radius:11px;grid-template-columns:1fr 1fr;
+    width:auto;min-width:150px;
+  }
+
+  .titlebar > .titlebar-center .modetabs button{
+    height:28px;min-height:28px;border-radius:9px;
+    font-size:11.5px;font-weight:900;letter-spacing:.2px;
+  }
+
+  .trade-column{
+    width:100%;min-width:0;box-sizing:border-box;border-radius:16px;
+  }
+
+  .trade-column > .collapsible-summary{
+    min-height:50px;padding:0 14px;font-size:14px;
+  }
+
+  .trade-column > .trade-body{padding:12px}
+
+  .trade-column > .trade-body > .actions{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;margin:0 0 10px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-width:0;min-height:58px;height:58px;
+    padding:0 6px;border-radius:12px;
+    font-size:15px;font-weight:950;
+  }
+
+  .trade-column > .trade-body > .subactions{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;direction:ltr;margin:0 0 12px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    min-width:0;width:100%;min-height:46px;height:46px;
+    padding:0 4px;border-radius:11px;
+    font-size:0;font-weight:900;white-space:nowrap;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  #clearBtn::after{content:"▱  CLEAR";font-size:11px}
+  #undoBtn::after{content:"↶  UNDO";font-size:11px}
+
+  #sessionPill{
+    direction:ltr;border:1px solid var(--teal);
+    background:#0d1918;color:var(--teal);
+  }
+
+  /* Restore real trade history */
+  .trade-column .tablewrap{
+    display:block;width:100%;margin:0 0 12px;overflow-x:auto;
+    border:1px solid #27333d;border-radius:12px;background:#0b1117;
+  }
+
+  .trade-column table{
+    width:100%;min-width:430px;border-collapse:collapse;font-size:10px;
+  }
+
+  .trade-column th,.trade-column td{
+    padding:8px 6px;white-space:nowrap;
+    border-bottom:1px solid #202a33;text-align:center;
+  }
+
+  .trade-column th{
+    color:#7f8b9a;background:#101720;font-size:9px;font-weight:900;
+  }
+
+  .trade-column tbody tr:last-child td{border-bottom:0}
+
+  .trade-column .row.row-tight{
+    min-height:44px;box-sizing:border-box;padding:7px 8px;
+    border-bottom:1px solid #26313a;background:#0e141a;
+  }
+
+  .trade-column .row.row-tight label{
+    color:#9da8b7;font-size:11px;font-weight:800;
+  }
+
+  .trade-column #curBalance,
+  .trade-column #curPL{
+    font-size:16px;font-weight:950;
+  }
+
+  .trade-column .row.row-tight.row-center{
+    min-height:40px;margin-top:8px;
+    border:1px solid #27323c;border-radius:10px;background:#0b1117;
+  }
+
+  .trade-column #wlSummary{
+    font-size:10px;font-weight:900;
+    border:0;padding:0;background:transparent;border-radius:0;width:auto;
+  }
+
+  .trade-column .stakebox{
+    min-height:52px;margin:11px 0;padding:0 10px;
+    border:1px solid rgba(43,191,164,.78);
+    border-radius:12px;background:#0d1818;
+  }
+
+  .trade-column .stakebox label{font-size:11px;font-weight:800}
+  .trade-column #nextStakePreview{font-size:17px;font-weight:950}
+
+  .trade-column #masaPlanBlock{margin-top:10px}
+
+  .trade-column .planbox{border-radius:11px}
+  .trade-column .planbox .p{padding:8px 4px}
+  .trade-column .planbox .n{font-size:16px}
+  .trade-column .planbox .l{font-size:8px;line-height:1.3}
+
+  /* Target & Plan */
+  .calc-column{width:100%;min-width:0}
+  .target-master{width:100%;box-sizing:border-box}
+
+  .target-master .collapsible-summary,
+  #tradingPlanPanel > .collapsible-summary{
+    min-height:48px;padding:0 12px;font-size:13px;
+  }
+
+  .target-master-fields{padding:10px 12px}
+  .target-master-fields > .row{min-height:42px;padding:7px 0}
+  .advisor-strip{margin-top:8px;padding:8px 9px;border-radius:10px}
+
+  /* Simple mode: risk recommendation cards remain visible. */
+
+  /* Trading plan */
+  #tradingPlanPanel{width:100%}
+
+  #tradingPlanPanel > .panel-title:not(.collapsible-summary){
+    display:none;
+  }
+
+  #tradingPlanPanel .planner-summary{
+    padding:10px 12px;font-size:11px;line-height:1.6;
+  }
+
+  #tradingPlanPanel .planner-edit-grid{
+    gap:8px;padding:0 12px 8px;
+  }
+
+  #tradingPlanPanel .subactions{
+    grid-template-columns:1fr 1fr;padding:0 12px;
+  }
+
+  #tradingPlanPanel #startPlanBtn,
+  #tradingPlanPanel #pauseSessionBtn,
+  #tradingPlanPanel #resumeSessionBtn{
+    margin:0 12px 10px;width:calc(100% - 24px);
+  }
+}
+
+@media (orientation:portrait) and (min-width:390px) and (max-width:700px){
+
+  .grid{padding-left:12px;padding-right:12px}
+
+  .trade-column > .trade-body,
+  .target-master-fields{
+    padding-left:14px;padding-right:14px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:62px;height:62px;font-size:16px;
+  }
+}
+
+/* =========================================================
+   PHASE 1D — MOBILE COCKPIT CORRECTION
+   UI + payout input normalization only.
+   Trading engine formulas untouched.
+   ========================================================= */
+
+@media (orientation: portrait) and (max-width:700px){
+
+  /* ---------- HEADER ---------- */
+
+  .titlebar{
+    min-height:116px;
+    height:116px;
+    padding:10px 14px 7px;
+    grid-template-columns:48px minmax(0,1fr) 48px;
+    grid-template-rows:50px 40px;
+    gap:0;
+  }
+
+  .titlebar > .optionsmenu,
+  .titlebar > .pause-top-titlebar{
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+  }
+
+  .titlebar > .optionsmenu > summary{
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+  }
+
+  /* Pause: no green surrounding box */
+  .titlebar > .pause-top-titlebar{
+    border:0 !important;
+    outline:0 !important;
+    box-shadow:none !important;
+    background:transparent !important;
+    color:#f4f7fb;
+    font-size:20px;
+  }
+
+  /* Smaller gap before mode selector */
+  .titlebar > .titlebar-center .modetabs{
+    bottom:-37px;
+    height:38px;
+    border-radius:11px;
+  }
+
+  .titlebar > .titlebar-center .modetabs button{
+    height:32px;
+    min-height:32px;
+    font-size:12px;
+    border-radius:9px;
+  }
+
+  /* ---------- WATERMARK ---------- */
+
+  .app{
+    position:relative;
+    overflow:hidden;
+  }
+
+  .app::before,
+  .app::after{
+    position:absolute;
+    z-index:0;
+    pointer-events:none;
+    user-select:none;
+    content:"TRADE MANAGER";
+    color:rgba(43,191,164,.045);
+    font-size:46px;
+    font-weight:950;
+    letter-spacing:2px;
+    white-space:nowrap;
+    transform:rotate(-18deg);
+  }
+
+  .app::before{
+    top:330px;
+    left:-85px;
+  }
+
+  .app::after{
+    top:760px;
+    right:-110px;
+  }
+
+  .app > *{
+    position:relative;
+    z-index:1;
+  }
+
+  /*
+   * The watermark rule above targets every direct child of .app with equal
+   * specificity to the header's own z-index rule, and — since it appears
+   * later in the cascade — was silently collapsing .titlebar back down to
+   * z-index:1 (tied with .grid). That let the main trading columns paint
+   * over the open drawer/backdrop instead of the drawer staying on top.
+   * This selector is more specific, so it wins regardless of source order.
+   */
+  .app > .titlebar{
+    z-index:5000;
+  }
+
+  /* ---------- SESSION ---------- */
+
+  .trade-column > .trade-body{
+    padding:10px;
+  }
+
+  .trade-column > .trade-body > .actions{
+    gap:7px;
+    margin-bottom:8px;
+  }
+
+  .trade-column > .trade-body > .actions button{
+    min-height:56px;
+    height:56px;
+    padding:0 4px;
+    font-size:15px;
+    border-radius:11px;
+  }
+
+  /* ---------- SUB ACTIONS ---------- */
+
+  .trade-column > .trade-body > .subactions{
+    gap:7px;
+    margin-bottom:9px;
+  }
+
+  .trade-column > .trade-body > .subactions button{
+    height:43px;
+    min-height:43px;
+    border-radius:10px;
+    font-size:0;
+  }
+
+  #clearBtn::after{
+    content:"CLEAR";
+    font-size:10px;
+  }
+
+  #undoBtn::after{
+    content:"UNDO";
+    font-size:10px;
+  }
+
+  /* ---------- HISTORY TABLE ---------- */
+
+  .trade-column .tablewrap{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+    margin-bottom:9px;
+  }
+
+  .trade-column table{
+    width:100%;
+    min-width:0 !important;
+    table-layout:fixed;
+    font-size:9px;
+  }
+
+  .trade-column th,
+  .trade-column td{
+    padding:6px 3px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .trade-column th{
+    font-size:8px;
+  }
+
+  /* ---------- GENERAL COMPACTNESS ---------- */
+
+  .trade-column .row.row-tight{
+    min-height:40px;
+    padding:5px 7px;
+  }
+
+  .trade-column .row.row-tight label{
+    font-size:10px;
+  }
+
+  .trade-column #curBalance,
+  .trade-column #curPL{
+    font-size:15px;
+  }
+
+  .trade-column .stakebox{
+    min-height:49px;
+    margin:8px 0;
+    padding:0 8px;
+  }
+
+  .trade-column #nextStakePreview{
+    font-size:16px;
+  }
+
+  /* ---------- TARGET / PLAN ---------- */
+
+  .calc-column{
+    width:100%;
+    max-width:none;
+  }
+
+  .target-master,
+  #tradingPlanPanel{
+    width:100%;
+    max-width:none;
+  }
+
+  .target-master-fields{
+    padding:7px 9px;
+    row-gap:3px;
+  }
+
+  .target-master-fields > .row{
+    min-height:38px;
+    padding:5px 0;
+  }
+
+  #tradingPlanPanel .planner-summary{
+    padding:7px 9px;
+    font-size:10px;
+    line-height:1.45;
+  }
+
+  #tradingPlanPanel .planner-edit-grid{
+    gap:6px;
+    padding:0 9px 6px;
+  }
+
+  /* ---------- MODE-SPECIFIC CONTROLS ---------- */
+
+  /* Simple planner belongs ONLY to Simple */
+  #panelMasaniello .simple-planner-block{
+    display:none !important;
+  }
+
+  /* ---------- FALSE ADVISOR NOISE ---------- */
+
+  /*
+   * The advisor should not dominate the mobile layout.
+   * Real errors remain visible; normal/OK state becomes compact.
+   */
+  .advisor-strip[data-state="ok"]{
+    min-height:0;
+    margin-top:4px;
+    padding:4px 6px;
+    opacity:.75;
+  }
+
+  .advisor-strip[data-state="ok"] .advisor-copy span{
+    display:none;
+  }
+
+  .advisor-strip[data-state="warn"]{
+    margin-top:5px;
+    padding:6px 7px;
+    font-size:10px;
+  }
+
+}
+
+/* ---------- DESKTOP / ALL VIEWPORTS: mode isolation ---------- */
+
+#panelMasaniello .simple-planner-block{
+  display:none !important;
+}
+
