@@ -36,8 +36,7 @@
 - Manifest Android در وضعیت فعلی در Repo موجود نیست / بررسی شود؛ چیزی را از روی حدس ایجاد نکن.
 
 ## آخرین وضعیت Git
-آخرین Commit:
-5dc3e14 — Remove temporary AI work logs
+آخرین Commit: 64d9831 — fix: compact responsive UI and stress test controls
 
 Commitهای اخیر:
 - 5dc3e14 Remove temporary AI work logs
@@ -230,3 +229,14 @@ Commitهای اخیر:
   2. `git diff --check`
   3. diff واقعی فایل‌ها بررسی شود.
 - بعد از تست APK، نتیجه واقعی رفتار System Bars و safe-area در همین بخش ثبت شود.
+
+## وضعیت مستندات — آخرین به‌روزرسانی
+
+- آخرین Commit فعلی: `64d9831` — `fix: compact responsive UI and stress test controls`
+- `AI_CONTEXT.md` فایل اصلی Context پروژه است.
+- `ai_context.md` نسخه قدیمی/تکراری بود و حذف شده است.
+- `PROJECT_CHANGELOG.md` تاریخچه رسمی تغییرات پروژه است.
+- گزارش‌های Phase 18 تا Phase 21 به‌عنوان سوابق فنی نگه داشته می‌شوند.
+- تغییرات اخیر UI شامل compact responsive UI و Stress Test controls است.
+- منطق محاسباتی Simple، Masaniello، Planner، Recovery، Risk Engine و Session بدون تغییر عمدی در این UI pass باقی مانده است.
+- آخرین بررسی تست پروژه پیش از این cleanup: `npm test` با **87/87 PASS**.

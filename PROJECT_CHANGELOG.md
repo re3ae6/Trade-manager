@@ -1,3 +1,24 @@
+# 64d9831 — Compact Responsive UI & Stress Test Controls — 2026-08-19
+
+## Summary
+
+- Added compact responsive UI styling for the current Trade Manager interface.
+- Added the Stress Test helper controls and validation wiring.
+- Preserved the existing trading/calculation engines and their established behavior.
+- No push operation is performed by the documentation cleanup script.
+
+## Verification
+
+- `npm run check` — PASS
+- `npm test` — PASS (87/87)
+- `git diff --check` — PASS
+
+## Scope
+
+Documentation synchronization for the verified UI/stress-test pass. No trading formula or engine behavior was intentionally changed.
+
+---
+
 # V2.10.0 — Phase 21: Simple Risk Cards & Landscape Grid Fix — 2026-08-19
 
 ## Summary
