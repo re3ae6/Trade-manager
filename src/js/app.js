@@ -1443,13 +1443,43 @@ function openStressTesting(){
   modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
   const run=()=>{
     const customInput=document.getElementById('stressCustomInput');
+
+    const normalizeStressScenario = (value) => {
+      const raw = String(value ?? '')
+        .toUpperCase()
+        .replace(/→|->|>/g, ',')
+        .trim();
+
+      const tokens = raw
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      const valid = tokens.length > 0 &&
+        tokens.every(v => v === 'W' || v === 'L' || v === 'BE');
+
+      return {
+        valid,
+        value: valid ? tokens.join(',') : ''
+      };
+    };
+
+    const stressScenario = normalizeStressScenario(customInput?.value);
+
+    if (!stressScenario.valid) {
+      const results=document.getElementById('stressResults');
+      if(results){
+        results.innerHTML='<div class="scenario-error">⚠ سناریو نامعتبر است. فقط W، L و BE وارد کنید.</div>';
+      }
+      return;
+    }
     const custom=parseScenario(customInput?.value||'');
     const probs={
       win:Number(document.getElementById('stressWinProb')?.value)/100,
       loss:Number(document.getElementById('stressLossProb')?.value)/100,
       be:Number(document.getElementById('stressBEProb')?.value)/100
     };
-    const result=stressTestPlan({mode,capital:num('initialCapital'),payout:getValidPayout(),targetProfit:target.targetProfit,stopLossBalance:getStopLossBalance(),plan,minStake:MIN_STAKE,seed:42,trades:Math.max(8,Number(plan.n)||8),customResults:custom,probabilities:probs});
+    const result=stressTestPlan({mode,capital:num('initialCapital'),payout:getValidPayout(),targetProfit:target.targetProfit,stopLossBalance:getStopLossBalance(),plan,minStake:MIN_STAKE,seed:42,trades:Math.max(8,Number(plan.n)||8),customResults:stressScenario.value,probabilities:probs});
     const results=document.getElementById('stressResults');
     if(!results) return;
     if(!result.valid){ results.innerHTML=`<div class="scenario-error">⚠ ${result.reason==='invalid-probabilities'?'احتمال‌های Win / Loss / BE باید جمعاً 100٪ شوند.':'Stress Test قابل اجرا نیست.'}</div>`; return; }

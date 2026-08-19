@@ -417,7 +417,8 @@
     <div class="stress-body" id="stressTestingBody">
       <div class="stress-inputs">
         <label>سناریوی سفارشی
-          <input id="stressCustomInput" class="scenario-input" value="W → L → BE → L → W" aria-label="سناریوی سفارشی">
+          <div class="stress-field-help">سناریو را فقط با W، L و BE وارد کنید؛ مثال: W → L → BE → L → W</div>
+          <input id="stressCustomInput" class="scenario-input" value="W → L → BE → L → W" aria-label="سناریوی سفارشی" pattern="\s*(?:W|L|BE)(?:\s*(?:→|->|,)\s*(?:W|L|BE))*\s*" title="فقط W، L و BE وارد کنید">
         </label>
         <div class="stress-probabilities">
           <label>Win <input id="stressWinProb" type="number" min="0" max="100" step="1" value="50"></label>

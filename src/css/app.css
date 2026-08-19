@@ -2859,3 +2859,266 @@ body{
   display:none !important;
 }
 
+
+/* UI COMPACT PASS 2026-08-19 */
+
+/* Header/content spacing */
+.app > .grid{
+  margin-top:0 !important;
+}
+
+.grid{
+  padding-top:6px !important;
+}
+
+/* Compact all landscape columns */
+@media (orientation:landscape){
+
+  html,
+  body{
+    font-size:13px;
+  }
+
+  .grid{
+    gap:8px !important;
+    padding:6px 8px 8px !important;
+    grid-template-columns:
+      minmax(0,1.25fr)
+      minmax(0,1fr)
+      minmax(0,.9fr)
+      minmax(0,1fr) !important;
+  }
+
+  .grid > *,
+  .calc-column{
+    min-width:0 !important;
+  }
+
+  .panel{
+    padding:9px !important;
+  }
+
+  .panel-title,
+  .collapsible-summary{
+    min-height:34px !important;
+    padding:7px 9px !important;
+    font-size:12px !important;
+  }
+
+  label,
+  .row label{
+    font-size:11px !important;
+  }
+
+  input,
+  select,
+  textarea,
+  button{
+    font-size:12px !important;
+  }
+
+  input,
+  select{
+    min-height:34px !important;
+    padding:6px 8px !important;
+  }
+
+  .row{
+    min-height:34px !important;
+    gap:7px !important;
+  }
+
+  .row + .row{
+    margin-top:4px !important;
+  }
+
+  .master-chip{
+    padding:7px !important;
+  }
+
+  .master-chip strong{
+    font-size:13px !important;
+  }
+
+  .small,
+  .muted,
+  .hint,
+  .helper{
+    font-size:10px !important;
+    line-height:1.4 !important;
+  }
+
+  .grid .row label,
+  .grid .panel-title,
+  .grid .collapsible-summary{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* Target help button */
+  .target-goal-row > button{
+    width:26px !important;
+    height:26px !important;
+    min-width:26px !important;
+    min-height:26px !important;
+    padding:0 !important;
+    margin:0 0 0 4px !important;
+    font-size:12px !important;
+  }
+
+  /* Bottom action row */
+  #tradingPlanPanel .plan-actions,
+  #tradingPlanPanel .trading-actions,
+  #tradingPlanPanel .actions,
+  #tradingPlanPanel .button-row{
+    display:flex !important;
+    align-items:stretch !important;
+    gap:7px !important;
+    flex-wrap:nowrap !important;
+  }
+
+  #tradingPlanPanel #startPlanBtn,
+  #tradingPlanPanel #savePlanBtn,
+  #tradingPlanPanel #pauseSessionBtn,
+  #tradingPlanPanel #resumeSessionBtn{
+    width:auto !important;
+    min-width:0 !important;
+    margin-top:0 !important;
+    min-height:34px !important;
+    padding:7px 9px !important;
+  }
+
+  #tradingPlanPanel #startPlanBtn{
+    flex:1.35 1 0 !important;
+    font-size:11px !important;
+  }
+
+  #tradingPlanPanel #savePlanBtn{
+    flex:1 1 0 !important;
+  }
+
+  /* Header pause */
+  .titlebar > .pause-top-titlebar{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    min-height:32px !important;
+    padding:0 !important;
+    margin:0 4px !important;
+    font-size:14px !important;
+  }
+
+  /* Menu stays inside application */
+  .titlebar > .optionsmenu{
+    position:relative !important;
+    z-index:100 !important;
+  }
+
+  .optionsmenu .optionpanel{
+    position:absolute !important;
+    top:calc(100% + 6px) !important;
+    right:0 !important;
+    left:auto !important;
+    width:min(300px,calc(100vw - 24px)) !important;
+    max-height:min(70vh,520px) !important;
+    overflow:auto !important;
+    z-index:110 !important;
+  }
+
+  .optionsmenu .menu-nav-btn,
+  .optionsmenu button{
+    width:100% !important;
+    min-height:38px !important;
+    padding:8px 10px !important;
+    font-size:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  #whatIfBtn,
+  #aboutBtn{
+    width:100% !important;
+    min-height:38px !important;
+    padding:8px 10px !important;
+    font-size:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Stress Test */
+  .stress-modal{
+    width:min(620px,calc(100vw - 24px)) !important;
+    max-height:calc(100vh - 24px) !important;
+    overflow:auto !important;
+  }
+
+  .stress-body{
+    padding:11px 13px 14px !important;
+  }
+
+  .stress-inputs{
+    gap:7px !important;
+    margin-bottom:10px !important;
+  }
+
+  .stress-inputs > label{
+    font-size:11px !important;
+  }
+
+  #stressCustomInput{
+    min-height:38px !important;
+    padding:7px 9px !important;
+    font-family:var(--mono,monospace) !important;
+    direction:ltr !important;
+    text-align:left !important;
+  }
+
+  .stress-probabilities{
+    gap:6px !important;
+  }
+
+  .stress-probabilities label{
+    font-size:10px !important;
+  }
+
+  .stress-probabilities input{
+    min-height:34px !important;
+  }
+
+  #stressRunBtn{
+    min-height:38px !important;
+  }
+
+  .stress-card{
+    padding:8px !important;
+  }
+
+  .stress-card > strong{
+    font-size:12px !important;
+  }
+
+  .stress-card > span{
+    font-size:10px !important;
+  }
+
+  .stress-card > b{
+    font-size:13px !important;
+  }
+
+  .stress-card > small{
+    font-size:9px !important;
+  }
+}
+
+.stress-field-help{
+  font-size:10px;
+  line-height:1.5;
+  color:var(--muted);
+  margin:-2px 0 2px;
+}
+
+@media (orientation:landscape){
+  .stress-field-help{
+    font-size:9px;
+  }
+}
+
