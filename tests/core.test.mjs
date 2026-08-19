@@ -930,3 +930,29 @@ test('tpEditHint is fully removed after its producer was deleted (finding #15)',
   assert.ok(!/\bid=["']tpEditHint["']/i.test(html), 'tpEditHint must not remain in index.html');
   assert.ok(!/\btpEditHint\b/.test(app), 'tpEditHint must not remain referenced by app.js');
 });
+
+/* LOW_CAPITAL_FALLBACK_TESTS_V5 */
+
+test('Low-capital fallback creates executable plan for $5', () => {
+  const plans = buildSimplePlans(5, 85, 1, 1, 0);
+
+  const fallback = plans.find(
+    plan => plan.valid && plan.lowCapitalFallback
+  );
+
+  assert.ok(fallback);
+  assert.equal(fallback.n, 1);
+  assert.equal(fallback.k, 1);
+  assert.equal(fallback.stakesPreview.length, 1);
+  assert.ok(fallback.stakesPreview[0] >= 1);
+  assert.ok(fallback.stakesPreview[0] <= 5);
+});
+
+test('Low-capital fallback does not activate below the minimum required capital', () => {
+  const plans = buildSimplePlans(1, 85, 1, 1, 0);
+
+  assert.equal(
+    plans.some(plan => plan.valid && plan.lowCapitalFallback),
+    false
+  );
+});

@@ -67,8 +67,127 @@ export function buildSimplePlan(profile, capital, payoutPct, targetProfit, floor
   };
 }
 
+
+/*
+ * LOW_CAPITAL_FALLBACK_V5
+ *
+ * Narrow executable fallback for very small accounts.
+ *
+ * Normal Simple plans always have priority.
+ * This fallback is used only when ALL normal profiles fail.
+ *
+ * Safety:
+ * - capital <= 15
+ * - configured minimum stake is never reduced
+ * - stake never exceeds balance
+ * - configured stop loss is never crossed
+ * - no recovery / Martingale is introduced
+ */
+function buildLowCapitalFallbackPlans(
+  capital,
+  payoutPct,
+  targetProfit,
+  floor = 1,
+  stopLossBalance = 0
+) {
+  if (
+    !Number.isFinite(capital) ||
+    !Number.isFinite(payoutPct) ||
+    !Number.isFinite(targetProfit) ||
+    !Number.isFinite(floor) ||
+    !Number.isFinite(stopLossBalance) ||
+    capital <= 0 ||
+    capital > 15 ||
+    payoutPct <= 0 ||
+    payoutPct >= 100 ||
+    targetProfit <= 0 ||
+    floor <= 0 ||
+    stopLossBalance < 0 ||
+    stopLossBalance > capital
+  ) {
+    return [];
+  }
+
+  const payout = payoutPct / 100;
+
+  /*
+   * A single winning trade must at least cover the requested
+   * target profit. The configured minimum remains a hard floor.
+   */
+  const stake = Math.max(
+    floor,
+    targetProfit / payout
+  );
+
+  if (!Number.isFinite(stake)) return [];
+  if (stake > capital) return [];
+  if (capital - stake < stopLossBalance) return [];
+
+  return [{
+    risk: 'low',
+    n: 1,
+    k: 1,
+    losses: 0,
+    label: 'کم‌ریسک',
+    description: 'برنامه اضطراری برای سرمایه کم؛ حداقل یک معامله قابل اجرا',
+    valid: true,
+
+    profitPerWin: targetProfit,
+    maxStake: stake,
+
+    stopLossBalance,
+    stopLossAmount: Math.max(0, capital - stopLossBalance),
+
+    worstLoss: stake,
+    targetBalance: capital + targetProfit,
+
+    expectedFinal: capital + stake * payout,
+    stakesPreview: [stake],
+
+    lowCapitalFallback: true,
+    fallbackReason: 'normal-plans-unavailable',
+    fallbackCapital: capital
+  }];
+}
+
 export function buildSimplePlans(capital,payoutPct,targetProfit,floor=1,stopLossBalance=null){
-  return SIMPLE_PROFILES.map(profile => buildSimplePlan(profile,capital,payoutPct,targetProfit,floor,stopLossBalance));
+  const normalPlans = SIMPLE_PROFILES.map(profile =>
+    buildSimplePlan(
+      profile,
+      capital,
+      payoutPct,
+      targetProfit,
+      floor,
+      stopLossBalance
+    )
+  );
+
+  /*
+   * Preserve existing behavior whenever at least one normal
+   * executable plan exists.
+   */
+  if (normalPlans.some(plan => plan.valid)) {
+    return normalPlans;
+  }
+
+  /*
+   * Only when ALL normal plans fail do we offer the narrow
+   * low-capital executable fallback.
+   */
+  const safeStopLoss =
+    Number.isFinite(stopLossBalance) ? stopLossBalance : 0;
+
+  const fallbackPlans = buildLowCapitalFallbackPlans(
+    capital,
+    payoutPct,
+    targetProfit,
+    floor,
+    safeStopLoss
+  );
+
+  return fallbackPlans.length > 0
+    ? fallbackPlans
+    : normalPlans;
 }
 
 export function validateMasanielloCustom(capital,payoutPct,targetProfit,n,losses,floor=1){

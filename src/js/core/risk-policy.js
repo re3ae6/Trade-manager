@@ -40,7 +40,8 @@ export function calculateBoundedStake({
   capital,
   currentBalance,
   minStake = 1,
-  stopLossBalance = 0
+  stopLossBalance = 0,
+  allowLowCapitalMinStake = false
 }) {
   const policy = RISK_POLICIES[risk];
 
@@ -101,16 +102,34 @@ export function calculateBoundedStake({
    * A minimum stake larger than available capacity
    * must be rejected, never forced through the cap.
    */
-  if (minStake > effectiveCap) {
-    return {
-      stake: 0,
-      reason: 'minimum-stake-exceeds-capacity',
-      rawStake,
-      effectiveCap
-    };
+  let stakeCap = effectiveCap;
+
+  /*
+   * Normal behavior remains unchanged.
+   * Only an explicit low-capital caller may bypass the
+   * percentage cap for the configured minimum stake.
+   */
+  if (minStake > stakeCap) {
+    const lowCapitalAllowed =
+      allowLowCapitalMinStake === true &&
+      capital > 0 &&
+      capital <= 15 &&
+      minStake <= currentBalance &&
+      currentBalance - minStake >= stopLossBalance;
+
+    if (!lowCapitalAllowed) {
+      return {
+        stake: 0,
+        reason: 'minimum-stake-exceeds-capacity',
+        rawStake,
+        effectiveCap: stakeCap
+      };
+    }
+
+    stakeCap = minStake;
   }
 
-  let stake = Math.min(rawStake, effectiveCap);
+  let stake = Math.min(rawStake, stakeCap);
 
   if (stake < minStake) {
     stake = minStake;

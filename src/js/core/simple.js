@@ -33,7 +33,8 @@ export function calculateSimpleNextStake(
     risk,
     capital = balance,
     currentBalance = balance,
-    cumulativeLoss = streakLoss
+    cumulativeLoss = streakLoss,
+    allowLowCapitalMinStake = false
   } = options || {};
 
   if (risk) {
@@ -45,7 +46,8 @@ export function calculateSimpleNextStake(
       capital,
       currentBalance,
       minStake: floor,
-      stopLossBalance
+      stopLossBalance,
+      allowLowCapitalMinStake
     });
   }
 
