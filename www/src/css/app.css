@@ -1500,6 +1500,18 @@ body{
     /* Four persistent landscape columns: trade, plan, stats, long-term. */
     grid-template-columns:1.4fr 1fr .8fr 1fr;
     grid-template-rows:minmax(0,1fr);
+    /* Without `dense`, CSS Grid's default sparse packing places
+       .right-column (grid-column:3) into an *implicit second row*
+       once the auto-placement cursor passes column 4 (the long-term
+       column, later in this rule list but not later in DOM order vs
+       .right-column — sparse packing never backfills an earlier
+       column once the cursor has advanced). `dense` lets the algorithm
+       backfill column 3 in row 1 instead. Verified live in a real
+       browser render (915x412): without this, trade-column,
+       calc-column(plan), and calc-column(longterm) all collapse to
+       0 height even though their grid-column values are correctly
+       separated — only grid-column separation was not sufficient. */
+    grid-auto-flow:dense;
 
     gap:12px;
     padding:12px;

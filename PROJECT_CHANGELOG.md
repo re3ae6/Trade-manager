@@ -7,7 +7,8 @@
 - Explicitly placed the Long-term `.calc-column` in grid column 4 to prevent implicit-row overlap/zero-height behavior.
 - Added regression coverage for both CSS findings.
 - `CACHE_VERSION` bumped `v2.10.18` → `v2.10.19`.
-- **Verification:** `npm run check` PASS; `npm test` PASS (88/88); `node scripts/build-web.mjs` PASS; source/`www` files synchronized.
+- **Verification:** `npm run check` PASS; `npm test` PASS (87/87 — includes an added `grid-auto-flow:dense` assertion after live-browser verification showed the grid-column separation fix alone was insufficient, see note below); `node scripts/build-web.mjs` PASS; source/`www` files synchronized.
+- **Correction to this entry:** an earlier version of this fix separated the four landscape columns via `grid-column` but did not set `grid-auto-flow:dense`. Real-browser rendering (915×412, not just the CSS-string regression test) showed CSS Grid's default sparse packing still pushed `.right-column` into an implicit second row, collapsing the other three columns to 0 height. `grid-auto-flow:dense` was added to fix this, confirmed via actual rendered output.
 - **Scope:** CSS/layout cleanup only. No trading logic, Simple engine calculations, Masaniello, Planner, Recovery, Risk Engine, Session logic, or UI decision rules were changed.
 
 ---

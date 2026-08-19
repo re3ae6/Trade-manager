@@ -652,6 +652,10 @@ test('Simple mode keeps risk recommendation cards visible and landscape grid res
   const css = await fs.readFile(new URL('../src/css/app.css', import.meta.url), 'utf8');
   assert.equal(css.includes('#panelSimple .simple-planner-block{display:none}'), false);
   assert.match(css, /grid-template-columns:1\.4fr 1fr \.8fr 1fr;/);
+  // grid-column separation alone is not sufficient: without dense packing,
+  // sparse auto-placement pushes .right-column into an implicit second row
+  // (confirmed via real browser render at 915x412 — see PHASE21 report).
+  assert.match(css, /grid-auto-flow:dense;/);
   assert.match(css, /\.grid > \.calc-column\[data-section-panel=\"longterm\"\]\{\s*grid-column:4;/);
 });
 
