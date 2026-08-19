@@ -473,7 +473,7 @@ table th:nth-child(5), table td:nth-child(5){width:34%;}
 .collapsible-panel[open] .collapsible-summary::after{transform:rotate(180deg);}
 .dashboard-body{padding:8px;}
 .about-backup{margin-top:14px;text-align:right;}
-#tpApplyBtn{width:100%;margin-top:8px;}
+
 .tp-risk-card.selectable{cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease;}
 .tp-risk-card.selectable:active{transform:scale(.99);}
 .tp-risk-card.selected{border-color:var(--teal);box-shadow:0 0 0 1px rgba(53,211,170,.25) inset;}
@@ -548,7 +548,7 @@ input,select,textarea{color:var(--text);}
    pause/resume) is a secondary, slightly smaller action. Authoritative
    rule placed late in the cascade so it wins over older breakpoint-
    specific padding values scattered earlier in the file. */
-#tpApplyBtn,#savePlanBtn,#pauseSessionBtn,#resumeSessionBtn{
+#savePlanBtn,#pauseSessionBtn,#resumeSessionBtn{
   padding:10px !important;font-size:12.5px !important;font-weight:700 !important;
   border-radius:9px !important;
 }
