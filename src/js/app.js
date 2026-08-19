@@ -685,7 +685,16 @@ function simpleNextStake(){
   // Analyzer, which already divide by k the same way).
   const targetProfit = simplePlanK > 0 ? sessionTargetProfit / simplePlanK : sessionTargetProfit;
   return calculateSimpleNextStake({
-    payout, targetProfit, streakLoss, floor: MIN_STAKE, balance, stopLossBalance: getStopLossBalance()
+    payout,
+    targetProfit,
+    streakLoss,
+    floor: MIN_STAKE,
+    balance,
+    stopLossBalance: getStopLossBalance(),
+    risk: selectedPlannerRisk,
+    capital: num('initialCapital'),
+    currentBalance: balance,
+    cumulativeLoss: streakLoss
   });
 }
 
