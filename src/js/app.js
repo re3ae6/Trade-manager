@@ -694,7 +694,10 @@ function simpleNextStake(){
     risk: selectedPlannerRisk,
     capital: num('initialCapital'),
     currentBalance: balance,
-    cumulativeLoss: streakLoss
+    cumulativeLoss: streakLoss,
+    allowLowCapitalMinStake: selectedPlannerPlan?.lowCapitalFallback === true,
+    selectedPlan: selectedPlannerPlan,
+    tradeIndex: trades.length
   });
 }
 

@@ -34,8 +34,41 @@ export function calculateSimpleNextStake(
     capital = balance,
     currentBalance = balance,
     cumulativeLoss = streakLoss,
-    allowLowCapitalMinStake = false
+    allowLowCapitalMinStake = false,
+    selectedPlan = null,
+    tradeIndex = 0
   } = options || {};
+
+  /*
+   * Source-of-Truth override for a confirmed low-capital fallback plan.
+   *
+   * The Planner already computed and safety-checked the executable stake.
+   * For this narrow small-account case, honor the confirmed stake directly
+   * instead of applying the normal percentage-cap risk policy.
+   */
+  if (selectedPlan?.lowCapitalFallback === true) {
+    const planStake = selectedPlan.stakesPreview?.[tradeIndex];
+
+    if (
+      Number.isFinite(planStake) &&
+      planStake > 0 &&
+      Number.isFinite(capital) &&
+      capital > 0 &&
+      capital <= 15 &&
+      Number.isFinite(currentBalance) &&
+      planStake <= currentBalance &&
+      currentBalance - planStake >= stopLossBalance
+    ) {
+      return {
+        stake: planStake,
+        reason: 'ok',
+        rawStake: planStake,
+        effectiveCap: planStake,
+        projectedBalance: currentBalance - planStake,
+        lowCapitalFallback: true
+      };
+    }
+  }
 
   if (risk) {
     return calculateBoundedStake({

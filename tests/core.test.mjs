@@ -956,3 +956,61 @@ test('Low-capital fallback does not activate below the minimum required capital'
     false
   );
 });
+
+/* LIVE_FALLBACK_SOURCE_OF_TRUTH_REGRESSION */
+
+test('Live Simple stake honors the confirmed low-capital fallback plan instead of the normal risk-policy cap', () => {
+  const capital = 5;
+  const payoutPct = 92;
+  const targetProfit = 2;
+  const stopLossPct = 0.5;
+  const floor = 1;
+  const stopLossBalance = capital - capital * stopLossPct; // 2.5
+
+  const plans = buildSimplePlans(capital, payoutPct, targetProfit, floor, stopLossBalance);
+  const fallback = plans.find(plan => plan.valid && plan.lowCapitalFallback);
+  assert.ok(fallback, 'expected a low-capital fallback plan');
+
+  assert.equal(fallback.lowCapitalFallback, true);
+
+  assert.ok(Math.abs(fallback.stakesPreview[0] - 2.1739130434782608) < 1e-9);
+
+  const live = calculateSimpleNextStake({
+    payout: payoutPct / 100,
+    targetProfit: fallback.profitPerWin,
+    streakLoss: 0,
+    floor,
+    balance: capital,
+    stopLossBalance,
+    risk: 'low',
+    capital,
+    currentBalance: capital,
+    cumulativeLoss: 0,
+    selectedPlan: fallback,
+    tradeIndex: 0
+  });
+
+  assert.equal(live.reason, 'ok');
+  assert.ok(Math.abs(live.stake - 2.1739130434782608) < 1e-9);
+
+  assert.notEqual(live.stake, 1);
+  assert.notEqual(live.stake, 0.3);
+
+  assert.equal(live.reason === 'ok', true);
+
+  const normalLow = calculateSimpleNextStake({
+    payout: payoutPct / 100,
+    targetProfit: fallback.profitPerWin,
+    streakLoss: 0,
+    floor,
+    balance: capital,
+    stopLossBalance,
+    risk: 'low',
+    capital,
+    currentBalance: capital,
+    cumulativeLoss: 0
+  });
+
+  assert.equal(normalLow.reason, 'minimum-stake-exceeds-capacity');
+  assert.ok(Math.abs(normalLow.effectiveCap - 0.3) < 1e-9);
+});
