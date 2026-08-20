@@ -68,6 +68,38 @@ export function calculateSimpleNextStake(
         lowCapitalFallback: true
       };
     }
+
+    /*
+     * Low-capital fallback continuation.
+     *
+     * The planner intentionally guarantees only the first fallback
+     * trade. After that trade, do not switch to the normal target
+     * formula: it can demand a stake larger than the remaining
+     * stop-loss-safe capacity and incorrectly lock the session.
+     *
+     * If another minimum stake is still safe, allow it.
+     * This does not extend the original target guarantee and is not
+     * recovery/Martingale sizing.
+     */
+    if (
+      tradeIndex >= (selectedPlan.stakesPreview?.length ?? 0) &&
+      allowLowCapitalMinStake === true &&
+      Number.isFinite(floor) &&
+      floor > 0 &&
+      Number.isFinite(currentBalance) &&
+      currentBalance >= floor &&
+      currentBalance - floor >= stopLossBalance
+    ) {
+      return {
+        stake: floor,
+        reason: 'ok',
+        rawStake: floor,
+        effectiveCap: floor,
+        projectedBalance: currentBalance - floor,
+        lowCapitalFallback: true,
+        lowCapitalContinuation: true
+      };
+    }
   }
 
   if (risk) {

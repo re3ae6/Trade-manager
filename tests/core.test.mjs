@@ -1070,3 +1070,98 @@ test('Low-capital fallback does not activate below the minimum required capital'
     false
   );
 });
+
+test('Low-capital fallback allows a safe second minimum-stake trade after the one-trade preview is consumed', () => {
+  const result = calculateSimpleNextStake({
+    payout: 0.92,
+    targetProfit: 5,
+    streakLoss: 1,
+    floor: 1,
+    balance: 9,
+    stopLossBalance: 4,
+    allowLowCapitalMinStake: true,
+    selectedPlan: {
+      lowCapitalFallback: true,
+      stakesPreview: [1]
+    },
+    tradeIndex: 1
+  });
+
+  assert.equal(result.reason, 'ok');
+  assert.equal(result.stake, 1);
+  assert.equal(result.lowCapitalFallback, true);
+  assert.equal(result.lowCapitalContinuation, true);
+  assert.equal(result.projectedBalance, 8);
+});
+
+test('Low-capital fallback continuation refuses a minimum stake that crosses stop-loss', () => {
+  const result = calculateSimpleNextStake({
+    payout: 0.92,
+    targetProfit: 5,
+    streakLoss: 1,
+    floor: 1,
+    balance: 4,
+    stopLossBalance: 4,
+    allowLowCapitalMinStake: true,
+    selectedPlan: {
+      lowCapitalFallback: true,
+      stakesPreview: [1]
+    },
+    tradeIndex: 1
+  });
+
+  assert.notEqual(result.reason, 'ok');
+});
+
+test('Live Simple next-stake forwards low-capital continuation after the fallback preview is consumed', async () => {
+  const fs = await import('node:fs/promises');
+  const appSource = await fs.readFile(
+    new URL('../src/js/app.js', import.meta.url),
+    'utf8'
+  );
+
+  const fnMatch = appSource.match(
+    /function simpleNextStake\(\)\{[\s\S]*?\n\}/
+  );
+
+  assert.ok(fnMatch, 'simpleNextStake() must exist in app.js');
+
+  const fnBody = fnMatch[0];
+
+  assert.match(
+    fnBody,
+    /allowLowCapitalMinStake:\s*selectedPlannerPlan\?\.lowCapitalFallback\s*===\s*true/,
+    'Live Simple engine must enable low-capital continuation only for fallback plans'
+  );
+
+  assert.match(
+    fnBody,
+    /selectedPlan:\s*selectedPlannerPlan/,
+    'Live Simple engine must pass the confirmed planner plan to the stake engine'
+  );
+
+  assert.match(
+    fnBody,
+    /tradeIndex:\s*trades\.length/,
+    'Live Simple engine must pass the current trade index'
+  );
+});
+
+test('Low-capital continuation never activates for a normal Simple plan', () => {
+  const result = calculateSimpleNextStake({
+    payout: 0.92,
+    targetProfit: 5,
+    streakLoss: 1,
+    floor: 1,
+    balance: 9,
+    stopLossBalance: 4,
+    allowLowCapitalMinStake: false,
+    selectedPlan: {
+      lowCapitalFallback: false,
+      stakesPreview: [1]
+    },
+    tradeIndex: 1
+  });
+
+  assert.notEqual(result.lowCapitalContinuation, true);
+});

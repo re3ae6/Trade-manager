@@ -626,7 +626,10 @@ function applySetup(){
     streakLoss = 0;
     currentStreakCount = 0;
     const plans=buildSimplePlans(initialCapital,getPayoutPercent(),getWinProfitAmount(),MIN_STAKE,getStopLossBalance());
-    const p=selectedPlannerPlan?.valid ? selectedPlannerPlan : plans.find(x=>x.risk==='medium');
+    const p=selectedPlannerPlan?.valid ? selectedPlannerPlan
+  : plans.find(x=>x.risk==='medium' && x.valid)
+  || plans.find(x=>x.lowCapitalFallback === true && x.valid)
+  || (plans.length===1 && plans[0].valid ? plans[0] : undefined);
     simplePlanN=p?.n || 0;
     simplePlanK=p?.k || 0;
     return;
@@ -695,6 +698,8 @@ function getStopLossBalance(){
 function simpleNextStake(){
   const payout = getValidPayout();
   const sessionTargetProfit = getWinProfitAmount();
+
+
   // simplePlanK is the plan's win count; the engine needs the per-win
   // profit target, not the whole-session target (see Planner/Plan
   // Analyzer, which already divide by k the same way).
