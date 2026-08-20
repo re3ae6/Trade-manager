@@ -684,6 +684,21 @@ function simpleNextStake(){
   // profit target, not the whole-session target (see Planner/Plan
   // Analyzer, which already divide by k the same way).
   const targetProfit = simplePlanK > 0 ? sessionTargetProfit / simplePlanK : sessionTargetProfit;
+  // NOTE: no `risk` option is passed here. calculateSimpleNextStake()
+  // branches to a *different* stake formula (calculateBoundedStake, a
+  // risk-multiplier engine) whenever `risk` is truthy. The Planner,
+  // Plan Analyzer and Scenario Simulator all call calculateSimpleNextStake()
+  // WITHOUT `risk` (see core/planner.js, core/plan-analyzer.js,
+  // core/scenario-simulator.js) — that legacy formula is what computes the
+  // plan's n/k, stake preview, stop-loss budget and "guaranteed result" that
+  // the user reviews and confirms before starting a session. Passing `risk`
+  // here made the live trade engine size trade #1 (and every trade after)
+  // using a completely different formula than the one the confirmed plan
+  // was built and guaranteed on — e.g. for a $1000/85%/5%/20% high-risk
+  // plan, the plan promises an $8.40 first stake, but with `risk` wired in
+  // here the live app charged $21.43. Omitting `risk` keeps this engine
+  // consistent with the rest of the app so the live session actually
+  // follows the plan the user confirmed.
   return calculateSimpleNextStake({
     payout,
     targetProfit,
@@ -691,10 +706,6 @@ function simpleNextStake(){
     floor: MIN_STAKE,
     balance,
     stopLossBalance: getStopLossBalance(),
-    risk: selectedPlannerRisk,
-    capital: num('initialCapital'),
-    currentBalance: balance,
-    cumulativeLoss: streakLoss,
     allowLowCapitalMinStake: selectedPlannerPlan?.lowCapitalFallback === true,
     selectedPlan: selectedPlannerPlan,
     tradeIndex: trades.length
