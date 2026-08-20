@@ -991,6 +991,60 @@ test('tpEditHint is fully removed after its producer was deleted (finding #15)',
   assert.ok(!/\btpEditHint\b/.test(app), 'tpEditHint must not remain referenced by app.js');
 });
 
+// app.js is DOM-dependent and can't be imported as a module in this test
+// runner (see the other app.js source-text tests above), so these check the
+// actual shipped source of evaluateLockState()'s Simple branch: session
+// termination must be money-driven (balance - initialCapital >= target
+// profit), not trade/win-count-driven. Count-based termination wrongly ends
+// a session on BE-only trades (Test 1) or on a manually entered stake that
+// doesn't match the planner's N/K (Test 2), and must not lock on a stale
+// win-count target instead of the real monetary target.
+test('evaluateLockState() Simple branch is money-driven, not count-driven (BE / manual-stake / real-target regressions)', async () => {
+  const fs = await import('node:fs/promises');
+  const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
+  const fnMatch = appSource.match(/function evaluateLockState\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'evaluateLockState() must exist in app.js');
+  const fnBody = fnMatch[0];
+  const simpleBranchMatch = fnBody.match(/if\(mode === 'simple'\)\{[\s\S]*?\n\s*\}\s*else/);
+  assert.ok(simpleBranchMatch, "evaluateLockState()'s Simple branch must exist");
+  const simpleBranch = simpleBranchMatch[0];
+
+  // Test 1 & the general rule: no count-based termination conditions remain.
+  assert.ok(!/wins\s*>=\s*simplePlanK/.test(simpleBranch), 'Simple lock must not end on wins >= simplePlanK (BE trades would wrongly end N=10 plans)');
+  assert.ok(!/trades\.length\s*>=\s*simplePlanN/.test(simpleBranch), 'Simple lock must not end on trades.length >= simplePlanN (count-driven, not money-driven)');
+  assert.ok(!/losses\s*>\s*\(?\s*simplePlanN\s*-\s*simplePlanK/.test(simpleBranch), 'Simple lock must not end on losses > (simplePlanN - simplePlanK)');
+
+  // Required behavior: a single monetary target condition using existing
+  // helpers for balance, initial capital, and target profit.
+  assert.ok(/getUnifiedTarget\(\)\.targetProfit/.test(simpleBranch), "Simple lock must read target profit from the existing getUnifiedTarget() helper");
+  assert.ok(/balance\s*-\s*num\('initialCapital'\)/.test(simpleBranch), "Simple lock must compute profit as balance - num('initialCapital')");
+  assert.ok(/lockReason\s*=\s*'target'/.test(simpleBranch), "Reaching the monetary target must set lockReason = 'target'");
+
+  // checkStopLoss() must remain called, unchanged, at the top of the branch.
+  assert.ok(/checkStopLoss\(\);/.test(simpleBranch), 'checkStopLoss() must still be called from the Simple branch');
+
+  // simplePlanN/simplePlanK must still exist elsewhere in app.js (still used
+  // for stake planning) even though they no longer gate session termination.
+  assert.ok(/simplePlanN/.test(appSource) && /simplePlanK/.test(appSource), 'simplePlanN/simplePlanK must remain in app.js for planning use');
+});
+
+// Test 3 (real monetary target terminates) and Test 2 (manual small stake
+// does not terminate on N=1), expressed as arithmetic on the same formula
+// evaluateLockState() now uses, since app.js itself can't be imported here.
+test('Money-driven Simple lock formula matches required regression scenarios', () => {
+  const reachesTarget = (balance, initialCapital, targetProfit) =>
+    targetProfit > 0 && (balance - initialCapital) >= targetProfit;
+
+  // Test 1: BE-only trades leave balance/profit unchanged; must not lock.
+  assert.equal(reachesTarget(10, 10, 5), false, 'BE trades (balance === initialCapital) must not reach target');
+
+  // Test 2: manual $1 stake loss on an N=1/K=1 plan; must not lock.
+  assert.equal(reachesTarget(9, 10, 5), false, 'A small manual-stake loss must not terminate the session early');
+
+  // Test 3: real monetary target reached; must lock.
+  assert.equal(reachesTarget(15, 10, 5), true, 'Reaching the real monetary target must terminate the session');
+});
+
 /* LOW_CAPITAL_FALLBACK_TESTS_V5 */
 
 test('Low-capital fallback creates executable plan for $5', () => {

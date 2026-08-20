@@ -854,11 +854,8 @@ function applyTradeMath(result, precomputedStake){
 function evaluateLockState(){
   if(mode === 'simple'){
     checkStopLoss();
-    const wins=trades.filter(t=>t.result==='W').length;
-    const losses=trades.filter(t=>t.result==='L').length;
-    if(!locked && simplePlanK>0 && wins>=simplePlanK){ locked=true; lockReason='target'; setStatus('✅ برنامه Simple به تعداد برد هدف رسید.','ok'); }
-    else if(!locked && simplePlanN>0 && trades.length>=simplePlanN){ locked=true; lockReason='plan-complete'; setStatus('⚠ تعداد معاملات برنامه تمام شد.','warn'); }
-    else if(!locked && simplePlanN>0 && losses>(simplePlanN-simplePlanK)){ locked=true; lockReason='plan-impossible'; setStatus('⚠ باخت مجاز برنامه تمام شد.','warn'); }
+    const targetProfit=getUnifiedTarget().targetProfit;
+    if(!locked && targetProfit>0 && (balance - num('initialCapital'))>=targetProfit){ locked=true; lockReason='target'; setStatus('✅ برنامه Simple به تعداد برد هدف رسید.','ok'); }
     checkOptionalAlerts();
   } else {
     if(balance <= 0){
