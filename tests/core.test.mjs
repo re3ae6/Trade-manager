@@ -10,7 +10,7 @@ import { applyTradeOutcome, replayTradeResults, sessionEndAction } from '../src/
 import { computeSessionStatistics } from '../src/js/core/session-statistics.js';
 import { parseScenario, simulateScenario } from '../src/js/core/scenario-simulator.js';
 import { scoreRisk } from '../src/js/core/risk-engine.js';
-import { calculateRecoveryStake, simulateRecoverySequence } from '../src/js/core/recovery.js';
+import { calculateRecoveryStake, calculateBoundedRecoveryStake, simulateRecoverySequence } from '../src/js/core/recovery.js';
 import { compareStrategies } from '../src/js/core/strategy-comparison.js';
 import { buildStressScenario, stressTestPlan, stressTestRecovery } from '../src/js/core/stress-testing.js';
 
@@ -1071,7 +1071,10 @@ test('Low-capital fallback does not activate below the minimum required capital'
   );
 });
 
-test('Low-capital fallback allows a safe second minimum-stake trade after the one-trade preview is consumed', () => {
+test('Low-capital fallback continuation bounds the stake to remaining stop-loss capacity instead of blindly using the floor', () => {
+  // capacity = 9 - 4 = 5; required = (1 + 5) / 0.92 ≈ 6.52 > capacity,
+  // so the bounded engine must clamp to the largest safe stake (capacity)
+  // rather than either blindly using floor=1 or locking the session.
   const result = calculateSimpleNextStake({
     payout: 0.92,
     targetProfit: 5,
@@ -1088,10 +1091,109 @@ test('Low-capital fallback allows a safe second minimum-stake trade after the on
   });
 
   assert.equal(result.reason, 'ok');
-  assert.equal(result.stake, 1);
+  assert.equal(result.stake, 5);
+  assert.equal(result.fullRecovery, false);
   assert.equal(result.lowCapitalFallback, true);
   assert.equal(result.lowCapitalContinuation, true);
-  assert.equal(result.projectedBalance, 8);
+  assert.equal(result.projectedBalance, 4);
+});
+
+test('Low-capital fallback continuation performs full recovery when capacity allows it', () => {
+  // capacity = 20 - 4 = 16; required = (1 + 5) / 0.92 ≈ 6.52 <= capacity,
+  // so the bounded engine should recover in full, not clamp.
+  const result = calculateSimpleNextStake({
+    payout: 0.92,
+    targetProfit: 5,
+    streakLoss: 1,
+    floor: 1,
+    balance: 20,
+    stopLossBalance: 4,
+    allowLowCapitalMinStake: true,
+    selectedPlan: {
+      lowCapitalFallback: true,
+      stakesPreview: [1]
+    },
+    tradeIndex: 1
+  });
+
+  assert.equal(result.reason, 'ok');
+  assert.equal(result.stake, 6.52);
+  assert.equal(result.fullRecovery, true);
+  assert.equal(result.lowCapitalContinuation, true);
+});
+
+// Reference scenario: capital=$10, payout=85%, targetProfit=$1,
+// stopLossBalance=$5, minStake=$1.
+// Trade 1 (planner preview) = $1.18. This test walks the continuation
+// trades that follow, verifying full recovery, partial recovery (bounded
+// by capacity, no lock), and the eventual stop-loss lock directly against
+// calculateBoundedRecoveryStake().
+test('calculateBoundedRecoveryStake fully recovers when capacity allows (reference scenario, Trade 2 after one loss)', () => {
+  // After Trade 1 loses $1.18: balance = 10 - 1.18 = 8.82, accumulatedLoss = 1.18.
+  const result = calculateBoundedRecoveryStake({
+    currentBalance: 8.82,
+    payout: 0.85,
+    accumulatedLoss: 1.18,
+    targetProfit: 1,
+    stopLossBalance: 5,
+    minStake: 1
+  });
+
+  assert.equal(result.canRecover, true);
+  assert.equal(result.reason, 'ok');
+  assert.equal(result.stake, 2.56);
+  assert.equal(result.fullRecovery, true);
+});
+
+test('calculateBoundedRecoveryStake performs a bounded partial recovery without locking (reference scenario, Trade 3 after two losses)', () => {
+  // After Trade 1 ($1.18) and Trade 2 ($2.56) both lose:
+  // balance = 10 - 1.18 - 2.56 = 6.26, accumulatedLoss = 3.74.
+  const result = calculateBoundedRecoveryStake({
+    currentBalance: 6.26,
+    payout: 0.85,
+    accumulatedLoss: 3.74,
+    targetProfit: 1,
+    stopLossBalance: 5,
+    minStake: 1
+  });
+
+  assert.equal(result.canRecover, true);
+  assert.equal(result.reason, 'ok');
+  assert.equal(result.stake, 1.26);
+  assert.equal(result.fullRecovery, false);
+});
+
+test('calculateBoundedRecoveryStake locks once even the minimum stake is no longer stop-loss-safe (reference scenario, Trade 4 after three losses)', () => {
+  // After Trades 1-3 ($1.18, $2.56, $1.26) all lose:
+  // balance = 10 - 1.18 - 2.56 - 1.26 = 5.00, accumulatedLoss = 5.00.
+  const result = calculateBoundedRecoveryStake({
+    currentBalance: 5.00,
+    payout: 0.85,
+    accumulatedLoss: 5.00,
+    targetProfit: 1,
+    stopLossBalance: 5,
+    minStake: 1
+  });
+
+  assert.equal(result.canRecover, false);
+  assert.equal(result.stake, 0);
+  assert.equal(result.reason, 'stoploss');
+});
+
+test('calculateBoundedRecoveryStake leaves calculateRecoveryStake behavior untouched', () => {
+  // Same required-vs-capacity shortfall that calculateBoundedRecoveryStake
+  // handles by clamping to capacity; calculateRecoveryStake must still lock.
+  const legacy = calculateRecoveryStake({
+    balance: 6.26,
+    payout: 0.85,
+    accumulatedLoss: 3.74,
+    targetProfit: 1,
+    stopLossBalance: 5,
+    minStake: 1
+  });
+
+  assert.equal(legacy.canRecover, false);
+  assert.equal(legacy.reason, 'limit-exceeded');
 });
 
 test('Low-capital fallback continuation refuses a minimum stake that crosses stop-loss', () => {

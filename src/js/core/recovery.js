@@ -70,6 +70,64 @@ export function calculateRecoveryStake({
   };
 }
 
+/**
+ * Bounded recovery stake for the Simple low-capital fallback continuation.
+ *
+ * Unlike calculateRecoveryStake(), this never "locks" merely because the
+ * full recovery+target amount can't fit in the remaining stop-loss-safe
+ * capacity. Instead it stakes the largest amount that is still safe
+ * (capacity) and reports fullRecovery=false. It only refuses to trade
+ * (reason:'stoploss') when even the configured minimum stake no longer
+ * fits within capacity.
+ */
+export function calculateBoundedRecoveryStake({
+  currentBalance,
+  payout,
+  accumulatedLoss = 0,
+  targetProfit = 0,
+  stopLossBalance = 0,
+  minStake = 1
+}){
+  const B = Number(currentBalance);
+  const P = Number(payout);
+  const L = Math.max(0, Number(accumulatedLoss) || 0);
+  const T = Math.max(0, Number(targetProfit) || 0);
+  const SL = Math.max(0, Number(stopLossBalance) || 0);
+  const min = Math.max(0, Number(minStake) || 0);
+
+  if(!finite(B) || !finite(P) || P<=0){
+    return {valid:false,canRecover:false,stake:0,reason:'invalid-input'};
+  }
+
+  const capacity = B - SL;
+
+  if(capacity < min - 1e-9){
+    return {
+      valid:true,
+      canRecover:false,
+      stake:0,
+      capacity:round(capacity),
+      fullRecovery:false,
+      reason:'stoploss'
+    };
+  }
+
+  const required = (L + T) / P;
+  const desired = Math.max(min, required);
+  const stake = Math.min(desired, capacity);
+  const fullRecovery = desired <= capacity + 1e-9;
+
+  return {
+    valid:true,
+    canRecover:true,
+    stake:round(stake),
+    required:round(required),
+    capacity:round(capacity),
+    fullRecovery,
+    reason:'ok'
+  };
+}
+
 export function simulateRecoverySequence({
   capital,
   payout,

@@ -1,4 +1,5 @@
 import { calculateBoundedStake } from './risk-policy.js';
+import { calculateBoundedRecoveryStake } from './recovery.js';
 
 /**
  * Calculate the next Simple-mode stake.
@@ -77,25 +78,46 @@ export function calculateSimpleNextStake(
      * formula: it can demand a stake larger than the remaining
      * stop-loss-safe capacity and incorrectly lock the session.
      *
-     * If another minimum stake is still safe, allow it.
+     * Instead, size the next trade with the bounded recovery engine:
+     * it stakes the largest amount that still fits within the
+     * stop-loss-safe capacity (up to what's actually required to
+     * recover the accumulated loss plus target), and only refuses to
+     * trade once even the configured minimum stake no longer fits.
      * This does not extend the original target guarantee and is not
-     * recovery/Martingale sizing.
+     * unbounded recovery/Martingale sizing.
      */
     if (
       tradeIndex >= (selectedPlan.stakesPreview?.length ?? 0) &&
       allowLowCapitalMinStake === true &&
       Number.isFinite(floor) &&
       floor > 0 &&
-      Number.isFinite(currentBalance) &&
-      currentBalance >= floor &&
-      currentBalance - floor >= stopLossBalance
+      Number.isFinite(currentBalance)
     ) {
+      const bounded = calculateBoundedRecoveryStake({
+        currentBalance,
+        payout,
+        accumulatedLoss: cumulativeLoss,
+        targetProfit,
+        stopLossBalance,
+        minStake: floor
+      });
+
+      if (bounded.canRecover && bounded.stake > 0) {
+        return {
+          stake: bounded.stake,
+          reason: 'ok',
+          rawStake: bounded.stake,
+          effectiveCap: bounded.stake,
+          projectedBalance: currentBalance - bounded.stake,
+          fullRecovery: bounded.fullRecovery,
+          lowCapitalFallback: true,
+          lowCapitalContinuation: true
+        };
+      }
+
       return {
-        stake: floor,
-        reason: 'ok',
-        rawStake: floor,
-        effectiveCap: floor,
-        projectedBalance: currentBalance - floor,
+        stake: 0,
+        reason: bounded.reason || 'stoploss',
         lowCapitalFallback: true,
         lowCapitalContinuation: true
       };
