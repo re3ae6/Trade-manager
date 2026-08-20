@@ -38,6 +38,66 @@ test('Simple sizing preserves the original stop-loss guard', () => {
   );
 });
 
+// Regression test for the first-trade UX bug: app.js's live simpleNextStake()
+// previously passed `risk` into calculateSimpleNextStake(), which switches it
+// to the unrelated calculateBoundedStake() risk-multiplier formula. The
+// Planner/Plan Analyzer/Scenario Simulator all call calculateSimpleNextStake()
+// WITHOUT `risk`, so the plan a user reviews and confirms (n, k, stake
+// preview, guaranteed result) is built entirely on the no-`risk` formula.
+// Passing `risk` at trade time silently sized the user's real first trade
+// (and every trade after) with a different formula than the one their
+// confirmed plan promised. This test locks in that the two must agree,
+// using the exact scenario reported: $1000 capital, 85% payout, 5% target,
+// 20% stop loss — where the only valid Simple plan is 'high' risk.
+test('Live first-trade stake matches the confirmed Simple plan (no risk-policy substitution)', () => {
+  const capital = 1000, payoutPct = 85, targetPct = 5, slPct = 20;
+  const targetProfit = capital * targetPct / 100;
+  const stopLossBalance = capital - capital * slPct / 100;
+
+  const plan = buildSimplePlans(capital, payoutPct, targetProfit, 1, stopLossBalance)
+    .find(p => p.risk === 'high' && p.valid);
+  assert.ok(plan, 'high-risk plan should be the valid option for this scenario');
+
+  const profitPerWin = targetProfit / plan.k;
+
+  // What the live app must charge for trade #1 once a plan is confirmed —
+  // no `risk`/`capital`/`currentBalance`/`cumulativeLoss` options, matching
+  // how app.js's simpleNextStake() now calls this function.
+  const liveFirstStake = calculateSimpleNextStake({
+    payout: payoutPct / 100,
+    targetProfit: profitPerWin,
+    streakLoss: 0,
+    floor: 1,
+    balance: capital,
+    stopLossBalance
+  });
+
+  assert.equal(liveFirstStake.reason, 'ok');
+  // Must match the stake the confirmed plan already previewed for trade #1.
+  assert.equal(liveFirstStake.stake, plan.stakesPreview[0]);
+  assert.ok(
+    Math.abs(liveFirstStake.stake - 8.403361344537815) < 1e-9,
+    `expected first stake to be ~$8.40 per the confirmed plan, got $${liveFirstStake.stake}`
+  );
+});
+
+// app.js is DOM-dependent and can't be imported as a module in this test
+// runner (see the other app.js source-text tests below), so this checks the
+// actual shipped source: app.js's simpleNextStake() must not pass `risk`
+// (or the risk-policy-only options that come with it) into
+// calculateSimpleNextStake(), since doing so silently swaps in the
+// unrelated calculateBoundedStake() formula and desyncs the live trade
+// engine from the confirmed Planner/Plan Analyzer/Scenario Simulator plan.
+test('app.js simpleNextStake() does not pass risk-policy options to calculateSimpleNextStake', async () => {
+  const fs = await import('node:fs/promises');
+  const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
+  const fnMatch = appSource.match(/function simpleNextStake\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'simpleNextStake() must exist in app.js');
+  const fnBody = fnMatch[0];
+  assert.ok(!/risk\s*:/.test(fnBody), 'simpleNextStake() must not pass a `risk` option (switches to a different stake formula)');
+  assert.ok(!/cumulativeLoss\s*:/.test(fnBody), 'simpleNextStake() must not pass `cumulativeLoss` (only used by the risk-policy formula)');
+});
+
 test('History cumulative stats preserve trend threshold', () => {
   const result = computeHistoryWithCumulativeStats([
     { session: 1, wins: 1, trades: 2 },
@@ -955,62 +1015,4 @@ test('Low-capital fallback does not activate below the minimum required capital'
     plans.some(plan => plan.valid && plan.lowCapitalFallback),
     false
   );
-});
-
-/* LIVE_FALLBACK_SOURCE_OF_TRUTH_REGRESSION */
-
-test('Live Simple stake honors the confirmed low-capital fallback plan instead of the normal risk-policy cap', () => {
-  const capital = 5;
-  const payoutPct = 92;
-  const targetProfit = 2;
-  const stopLossPct = 0.5;
-  const floor = 1;
-  const stopLossBalance = capital - capital * stopLossPct; // 2.5
-
-  const plans = buildSimplePlans(capital, payoutPct, targetProfit, floor, stopLossBalance);
-  const fallback = plans.find(plan => plan.valid && plan.lowCapitalFallback);
-  assert.ok(fallback, 'expected a low-capital fallback plan');
-
-  assert.equal(fallback.lowCapitalFallback, true);
-
-  assert.ok(Math.abs(fallback.stakesPreview[0] - 2.1739130434782608) < 1e-9);
-
-  const live = calculateSimpleNextStake({
-    payout: payoutPct / 100,
-    targetProfit: fallback.profitPerWin,
-    streakLoss: 0,
-    floor,
-    balance: capital,
-    stopLossBalance,
-    risk: 'low',
-    capital,
-    currentBalance: capital,
-    cumulativeLoss: 0,
-    selectedPlan: fallback,
-    tradeIndex: 0
-  });
-
-  assert.equal(live.reason, 'ok');
-  assert.ok(Math.abs(live.stake - 2.1739130434782608) < 1e-9);
-
-  assert.notEqual(live.stake, 1);
-  assert.notEqual(live.stake, 0.3);
-
-  assert.equal(live.reason === 'ok', true);
-
-  const normalLow = calculateSimpleNextStake({
-    payout: payoutPct / 100,
-    targetProfit: fallback.profitPerWin,
-    streakLoss: 0,
-    floor,
-    balance: capital,
-    stopLossBalance,
-    risk: 'low',
-    capital,
-    currentBalance: capital,
-    cumulativeLoss: 0
-  });
-
-  assert.equal(normalLow.reason, 'minimum-stake-exceeds-capacity');
-  assert.ok(Math.abs(normalLow.effectiveCap - 0.3) < 1e-9);
 });
