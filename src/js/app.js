@@ -16,6 +16,7 @@ import { calculateRecoveryStake, simulateRecoverySequence } from './core/recover
 import { compareStrategies } from './core/strategy-comparison.js';
 import { stressTestPlan } from './core/stress-testing.js';
 import { PAYOUT_MIN, PAYOUT_MAX, normalizePayout, isValidPayout, payoutPercent } from './core/payout.js';
+import { parseManualStakeInput, validateManualFirstStake } from './core/manual-stake.js';
 
 /* =====================================================
    STATE (shared between both modes — only one mode's
@@ -94,6 +95,13 @@ let streakLoss = 0;
 let currentStreakCount = 0;
 let simplePlanN = 0, simplePlanK = 0;
 
+// Manual first-trade stake override (Simple mode only). Holds whatever raw
+// text the user has typed into the "مبلغ معامله بعدی" field BEFORE trade #1
+// is logged, so a refresh/pause/resume doesn't silently lose it. Once trade
+// #1 is committed, this is cleared and trades[0].amount becomes the single
+// source of truth — see logTrade()/applyTradeMath().
+let firstStakeOverrideRaw = '';
+
 // masaniello-mode-only runtime state
 let capital0 = 0, payout0 = 0, target0 = 0;
 let planned0 = 0, kRequired0 = 0;
@@ -122,7 +130,8 @@ function getPersistableState(){
       stopLossAlertPct: document.getElementById('stopLossAlertPct')?.value ?? '',
       manualToggle: document.getElementById('manualToggle')?.checked ?? false,
       manualN: document.getElementById('manualN')?.value ?? '',
-      manualK: document.getElementById('manualK')?.value ?? ''
+      manualK: document.getElementById('manualK')?.value ?? '',
+      firstStakeOverrideRaw
     }
   };
 }
@@ -158,6 +167,12 @@ function loadState(){
     nRemaining = saved.nRemaining || 0;
     kRemaining = saved.kRemaining || 0;
     const inp = saved.inputs || {};
+    // Only meaningful before trade #1 is logged; if a session was already
+    // in progress when saved, ignore it so it can't get mistaken for a
+    // pending edit on an unrelated later session.
+    firstStakeOverrideRaw = (trades.length === 0 && typeof inp.firstStakeOverrideRaw === 'string')
+      ? inp.firstStakeOverrideRaw
+      : '';
     if(inp.initialCapital) document.getElementById('initialCapital').value = inp.initialCapital;
     if(inp.payout) { document.getElementById('payout').value = inp.payout; normalizePayoutField(); }
 
@@ -775,7 +790,31 @@ function logTrade(result){
     return;
   }
 
-  applyTradeMath(result, r.stake);
+  let stakeToApply = r.stake;
+
+  // Simple mode, trade #1 only: the stake box is a live-editable input
+  // pre-filled with the Planner's suggestion. Whatever is currently in it
+  // (unchanged suggestion, or a value the user typed) is the real amount
+  // that gets logged. This never touches simple.js/planner.js/etc — the
+  // Planner still computes its own suggestion independently; this only
+  // decides what actually gets passed to applyTradeMath() for trade #1.
+  if(mode === 'simple' && trades.length === 0){
+    const stakeInput = document.getElementById('nextStakePreview');
+    const rawValue = stakeInput ? stakeInput.value : '';
+    if(rawValue !== ''){
+      const manualAmount = parseManualStakeInput(rawValue);
+      const validation = validateManualFirstStake(manualAmount, balance, getStopLossBalance());
+      if(!validation.valid){
+        showAlert(validation.message, 'alert');
+        render();
+        return;
+      }
+      stakeToApply = manualAmount;
+    }
+  }
+
+  applyTradeMath(result, stakeToApply);
+  firstStakeOverrideRaw = '';
   evaluateLockState();
   render();
   if(locked) promptSessionEnd();
@@ -849,7 +888,13 @@ function evaluateLockState(){
 // and guaranteed to match whatever applyTradeMath() actually does.
 function undoLastTrade(){
   if(trades.length === 0) return;
-  const history = trades.slice(0, -1).map(t => t.result);
+  // Keep each trade's original recorded amount, not just its result. This
+  // matters most for trade #1: it may be a manually-entered amount that the
+  // stake engine could never re-derive on its own (see the manual
+  // first-trade stake override). Replaying with the recorded amount for
+  // trade #1 makes undo correct regardless of whether trade #1 came from
+  // the Planner's suggestion or a manual override.
+  const history = trades.slice(0, -1).map(t => ({result: t.result, amount: t.amount}));
   const keepStart = sessionStartTime;
 
   trades = [];
@@ -868,7 +913,13 @@ function undoLastTrade(){
   }
   sessionStartTime = keepStart;
 
-  history.forEach(result => applyTradeMath(result));
+  history.forEach((h, idx) => {
+    // Trade #1's amount is replayed exactly as recorded (it may have been a
+    // manual override); every later trade is still recomputed live through
+    // the real engine from the replayed state, same as before.
+    if(idx === 0) applyTradeMath(h.result, h.amount);
+    else applyTradeMath(h.result);
+  });
   evaluateLockState();
   render();
 }
@@ -943,6 +994,7 @@ function resetTradesState(){
   streakLoss = 0;
   currentStreakCount = 0;
   locked = false;
+  firstStakeOverrideRaw = '';
   clearAlert();
   applySetup();
   if(mode === 'masaniello'){
@@ -2246,8 +2298,28 @@ function render(){
     }
   }
 
-  document.getElementById('nextStakePreview').textContent =
-    (locked || nextStakeResult.reason !== 'ok') ? '— قفل —' : money(nextStakeResult.stake);
+  const stakePreviewEl = document.getElementById('nextStakePreview');
+  if(stakePreviewEl){
+    // Only trade #1 in Simple mode is ever user-editable; every other
+    // state (masaniello, or Simple after trade #1) is a plain read-only
+    // preview, same as before this feature existed.
+    const editable = mode === 'simple' && trades.length === 0 && !locked && nextStakeResult.reason === 'ok';
+    stakePreviewEl.readOnly = !editable;
+    stakePreviewEl.classList.toggle('editable', editable);
+    if(locked || nextStakeResult.reason !== 'ok'){
+      stakePreviewEl.value = '— قفل —';
+    } else if(editable){
+      // Don't clobber the field while the user is actively typing in it,
+      // and don't stomp a pending value they already typed pre-refresh.
+      if(document.activeElement !== stakePreviewEl){
+        stakePreviewEl.value = firstStakeOverrideRaw !== ''
+          ? firstStakeOverrideRaw
+          : nextStakeResult.stake.toFixed(2);
+      }
+    } else {
+      stakePreviewEl.value = money(nextStakeResult.stake);
+    }
+  }
 
   renderDashboard();
   saveState();
@@ -2393,6 +2465,12 @@ function bindUI(){
   $('pauseTopBtn')?.addEventListener('click', pauseCurrentSession);
   $('savePlanBtn')?.addEventListener('click', saveSelectedPlan);
   $('copyStakeBtn')?.addEventListener('click', copyNextStake);
+  $('nextStakePreview')?.addEventListener('input', () => {
+    if(mode === 'simple' && trades.length === 0 && !locked){
+      firstStakeOverrideRaw = document.getElementById('nextStakePreview').value;
+      saveState();
+    }
+  });
 
   $('initialCapital')?.addEventListener('input', onSetupChange);
   $('mainTargetValue')?.addEventListener('input', onSetupChange);

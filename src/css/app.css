@@ -187,7 +187,8 @@ tr.rowL td{background:rgba(227,87,106,.06);}
 .row.stakebox{border:1px solid var(--teal); border-radius:8px; padding:10px; margin:10px 0;}
 .stakebox label{color:var(--text); font-weight:700;}
 .stakewrap{display:flex; align-items:center; gap:8px;}
-#nextStakePreview{color:var(--teal); font-size:18px;}
+#nextStakePreview{color:var(--teal); font-size:18px; font-weight:700; background:transparent; border:none; outline:none; font-family:inherit; width:auto; max-width:120px; padding:0; cursor:default;}
+#nextStakePreview.editable{cursor:text; border-bottom:1px dashed var(--teal); padding:0 2px;}
 #copyStakeBtn{background:#3a4356; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; font-weight:700;}
 .row.row-tight{padding:8px 4px;}
 .row.row-center{justify-content:center;}
