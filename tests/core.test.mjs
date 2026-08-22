@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from '../src/js/core/masaniello.js';
+import { computePlan, guaranteedWorstCaseFinal, masanielloStake } from '../src/js/core/masaniello-plan-engine.js';
 import { calculateSimpleNextStake } from '../src/js/core/simple.js';
 import { computeHistoryWithCumulativeStats, buildHistoryCSV } from '../src/js/core/history.js';
 import { resolvePlanTarget, computeTradingPlanStats, computeTradingPlanRiskOptions, migrateTradingPlan } from '../src/js/core/trading-plan.js';
@@ -88,14 +88,14 @@ test('Live first-trade stake matches the confirmed Simple plan (no risk-policy s
 // calculateSimpleNextStake(), since doing so silently swaps in the
 // unrelated calculateBoundedStake() formula and desyncs the live trade
 // engine from the confirmed Planner/Plan Analyzer/Scenario Simulator plan.
-test('app.js simpleNextStake() does not pass risk-policy options to calculateSimpleNextStake', async () => {
+test('app.js Lite next-stake is delegated to the Lite public engine', async () => {
   const fs = await import('node:fs/promises');
   const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
-  const fnMatch = appSource.match(/function simpleNextStake\(\)\{[\s\S]*?\n\}/);
-  assert.ok(fnMatch, 'simpleNextStake() must exist in app.js');
-  const fnBody = fnMatch[0];
-  assert.ok(!/risk\s*:/.test(fnBody), 'simpleNextStake() must not pass a `risk` option (switches to a different stake formula)');
-  assert.ok(!/cumulativeLoss\s*:/.test(fnBody), 'simpleNextStake() must not pass `cumulativeLoss` (only used by the risk-policy formula)');
+  const fnMatch = appSource.match(/function liteNextStake\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'liteNextStake() must exist in app.js');
+  assert.match(fnMatch[0], /buildLitePlan\(/);
+  assert.match(fnMatch[0], /calculateLiteNextStake\(/);
+  assert.doesNotMatch(fnMatch[0], /calculateSimpleNextStake/);
 });
 
 test('History cumulative stats preserve trend threshold', () => {
@@ -999,33 +999,19 @@ test('tpEditHint is fully removed after its producer was deleted (finding #15)',
 // a session on BE-only trades (Test 1) or on a manually entered stake that
 // doesn't match the planner's N/K (Test 2), and must not lock on a stale
 // win-count target instead of the real monetary target.
-test('evaluateLockState() Simple branch is money-driven, not count-driven (BE / manual-stake / real-target regressions)', async () => {
+test('evaluateLockState() Lite branch is money-driven and preserves BE neutrality', async () => {
   const fs = await import('node:fs/promises');
   const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
   const fnMatch = appSource.match(/function evaluateLockState\(\)\{[\s\S]*?\n\}/);
   assert.ok(fnMatch, 'evaluateLockState() must exist in app.js');
-  const fnBody = fnMatch[0];
-  const simpleBranchMatch = fnBody.match(/if\(mode === 'simple'\)\{[\s\S]*?\n\s*\}\s*else/);
-  assert.ok(simpleBranchMatch, "evaluateLockState()'s Simple branch must exist");
-  const simpleBranch = simpleBranchMatch[0];
-
-  // Test 1 & the general rule: no count-based termination conditions remain.
-  assert.ok(!/wins\s*>=\s*simplePlanK/.test(simpleBranch), 'Simple lock must not end on wins >= simplePlanK (BE trades would wrongly end N=10 plans)');
-  assert.ok(!/trades\.length\s*>=\s*simplePlanN/.test(simpleBranch), 'Simple lock must not end on trades.length >= simplePlanN (count-driven, not money-driven)');
-  assert.ok(!/losses\s*>\s*\(?\s*simplePlanN\s*-\s*simplePlanK/.test(simpleBranch), 'Simple lock must not end on losses > (simplePlanN - simplePlanK)');
-
-  // Required behavior: a single monetary target condition using existing
-  // helpers for balance, initial capital, and target profit.
-  assert.ok(/getUnifiedTarget\(\)\.targetProfit/.test(simpleBranch), "Simple lock must read target profit from the existing getUnifiedTarget() helper");
-  assert.ok(/balance\s*-\s*num\('initialCapital'\)/.test(simpleBranch), "Simple lock must compute profit as balance - num('initialCapital')");
-  assert.ok(/lockReason\s*=\s*'target'/.test(simpleBranch), "Reaching the monetary target must set lockReason = 'target'");
-
-  // checkStopLoss() must remain called, unchanged, at the top of the branch.
-  assert.ok(/checkStopLoss\(\);/.test(simpleBranch), 'checkStopLoss() must still be called from the Simple branch');
-
-  // simplePlanN/simplePlanK must still exist elsewhere in app.js (still used
-  // for stake planning) even though they no longer gate session termination.
-  assert.ok(/simplePlanN/.test(appSource) && /simplePlanK/.test(appSource), 'simplePlanN/simplePlanK must remain in app.js for planning use');
+  const liteBranchMatch = fnMatch[0].match(/if\(mode === 'lite'\)\{[\s\S]*?\n\s*\}\s*else/);
+  assert.ok(liteBranchMatch, "evaluateLockState()'s Lite branch must exist");
+  const branch=liteBranchMatch[0];
+  assert.match(branch,/checkStopLoss\(\);/);
+  assert.match(branch,/getUnifiedTarget\(\)\.targetProfit/);
+  assert.match(branch,/balance\s*-\s*num\('initialCapital'\)/);
+  assert.match(branch,/lockReason\s*=\s*'target'/);
+  assert.doesNotMatch(branch,/wins\s*>=|trades\.length\s*>=/);
 });
 
 // Test 3 (real monetary target terminates) and Test 2 (manual small stake
@@ -1215,38 +1201,15 @@ test('Low-capital fallback continuation refuses a minimum stake that crosses sto
   assert.notEqual(result.reason, 'ok');
 });
 
-test('Live Simple next-stake forwards low-capital continuation after the fallback preview is consumed', async () => {
+test('Live Lite next-stake uses the confirmed Lite plan and engine', async () => {
   const fs = await import('node:fs/promises');
-  const appSource = await fs.readFile(
-    new URL('../src/js/app.js', import.meta.url),
-    'utf8'
-  );
-
-  const fnMatch = appSource.match(
-    /function simpleNextStake\(\)\{[\s\S]*?\n\}/
-  );
-
-  assert.ok(fnMatch, 'simpleNextStake() must exist in app.js');
-
-  const fnBody = fnMatch[0];
-
-  assert.match(
-    fnBody,
-    /allowLowCapitalMinStake:\s*selectedPlannerPlan\?\.lowCapitalFallback\s*===\s*true/,
-    'Live Simple engine must enable low-capital continuation only for fallback plans'
-  );
-
-  assert.match(
-    fnBody,
-    /selectedPlan:\s*selectedPlannerPlan/,
-    'Live Simple engine must pass the confirmed planner plan to the stake engine'
-  );
-
-  assert.match(
-    fnBody,
-    /tradeIndex:\s*trades\.length/,
-    'Live Simple engine must pass the current trade index'
-  );
+  const appSource = await fs.readFile(new URL('../src/js/app.js', import.meta.url), 'utf8');
+  const fnMatch = appSource.match(/function liteNextStake\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'liteNextStake() must exist in app.js');
+  const fnBody=fnMatch[0];
+  assert.match(fnBody,/selectedPlannerPlan\?\.valid\?selectedPlannerPlan:buildLitePlan/);
+  assert.match(fnBody,/calculateLiteNextStake/);
+  assert.doesNotMatch(fnBody,/calculateSimpleNextStake|allowLowCapitalMinStake|selectedPlan:/);
 });
 
 test('Low-capital continuation never activates for a normal Simple plan', () => {

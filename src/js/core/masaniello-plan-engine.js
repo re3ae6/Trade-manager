@@ -104,3 +104,58 @@ export function computePlan(risk, C, payoutPct, target, floor){
   }
   return {n,k};
 }
+
+/**
+ * Build a complete Masaniello plan description.
+ *
+ * This is the public planning boundary of the new engine.
+ * It does not mutate application state and does not depend on UI code.
+ */
+export function buildPlan({ risk, capital, payoutPct, targetProfit, floor = 1 }) {
+  if (
+    !['low', 'medium', 'high'].includes(risk) ||
+    !Number.isFinite(capital) ||
+    !Number.isFinite(payoutPct) ||
+    !Number.isFinite(targetProfit) ||
+    !Number.isFinite(floor) ||
+    capital <= 0 ||
+    payoutPct <= 0 ||
+    targetProfit <= 0 ||
+    floor <= 0
+  ) {
+    return null;
+  }
+
+  const plan = computePlan(
+    risk,
+    capital,
+    payoutPct,
+    targetProfit,
+    floor
+  );
+
+  if (!plan) return null;
+
+  const Q = 1 + payoutPct / 100;
+  const worstCaseFinal = guaranteedWorstCaseFinal(
+    capital,
+    plan.n,
+    plan.k,
+    Q
+  );
+
+  if (!Number.isFinite(worstCaseFinal)) return null;
+
+  return {
+    risk,
+    n: plan.n,
+    k: plan.k,
+    losses: plan.n - plan.k,
+    capital,
+    payoutPct,
+    targetProfit,
+    targetBalance: capital + targetProfit,
+    worstCaseFinal,
+    floor
+  };
+}

@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(new URL('..',import.meta.url).pathname);
+const app=fs.readFileSync(path.join(root,'src/js/app.js'),'utf8');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+test('UI exposes Masaniello and Lite-Masaniello tabs',()=>{assert.match(html,/modeBtnMasaniello/);assert.match(html,/modeBtnLite/);assert.match(html,/>Masaniello<\/button>/);assert.match(html,/>Lite-Masaniello<\/button>/);assert.doesNotMatch(html,/modeBtnSimple|panelSimple|simplePlanner/);});
+test('Lite UI imports its public engine and not the removed Simple engine',()=>{assert.match(app,/core-lite-masaniello\/index\.js/);assert.doesNotMatch(app,/from '\.\/core\/simple\.js'/);});
+test('Lite flow dispatches plan, stake, scenario and stress work to Lite engine',()=>{assert.match(app,/buildLitePlan\(/);assert.match(app,/calculateLiteNextStake\(/);assert.match(app,/simulateLitePlan\(/);assert.match(app,/simulateLiteScenario\(/);assert.match(app,/stressTestLitePlan\(/);});
+test('Original Masaniello flow remains on original engine modules',()=>{assert.match(app,/buildMasanielloPlans\(/);assert.match(app,/masanielloStake\(/);assert.match(app,/applyTradeOutcome\(/);});
+test('No active Simple mode remains',()=>{assert.doesNotMatch(app,/setMode\('simple'\)/);assert.match(app,/let mode = 'masaniello'/);});

@@ -26,7 +26,7 @@
     <div class="titlebar-center">
       <strong class="titlebar-balance" id="titlebarBalance" aria-live="polite">-</strong>
       <div class="modetabs">
-        <button id="modeBtnSimple">Simple</button>
+        <button id="modeBtnLite">Lite-Masaniello</button>
         <button id="modeBtnMasaniello">Masaniello</button>
       </div>
     </div>
@@ -47,9 +47,9 @@
           </div>
         </details>
         <div class="menu-settings-label">تنظیمات</div>
-        <div class="goalrow simple-only"><label for="stopLossAlertPct">درصد هشدار حد ضرر</label><input id="stopLossAlertPct" type="number" min="1" max="100" value="80"></div>
-        <div class="goalrow simple-only"><label>هشدار پایان سشن</label><button class="toggle off" id="t-sessionEnd">OFF</button></div>
-        <div class="goalrow simple-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade">OFF</button></div>
+        <div class="goalrow lite-only"><label for="stopLossAlertPct">درصد هشدار حد ضرر</label><input id="stopLossAlertPct" type="number" min="1" max="100" value="80"></div>
+        <div class="goalrow lite-only"><label>هشدار پایان سشن</label><button class="toggle off" id="t-sessionEnd">OFF</button></div>
+        <div class="goalrow lite-only"><label>هشدار باخت نزدیک</label><button class="toggle off" id="t-lowTrade">OFF</button></div>
         <div class="goalrow"><label>کپی خودکار موجودی</label><button class="toggle" id="t-autoCopy">ON</button></div>
         <div class="goalrow"><label>ریست شمارنده سشن</label><button id="resetSessionCounterBtn" class="btn btn-secondary btn-sm" type="button">Reset</button></div>
         <div class="menu-nav-grid">
@@ -190,8 +190,8 @@
           </div>
         </div>
 
-        <!-- ===================== SIMPLE MODE ===================== -->
-        <div id="panelSimple">
+        <!-- ===================== LITE-MASANIELLO MODE ===================== -->
+        <div id="panelLite">
           <div class="row">
             <label>Win P/L</label><span id="winProfit">-</span>
           </div>
@@ -205,10 +205,10 @@
             <span class="inline-field"><b id="maxLossLimit">-</b><span class="small">باخت پیاپی</span></span>
           </div>
           <div id="lossLimitExplain" class="small lossexplain hidden"></div>
-          <div id="simplePlannerBlock" class="simple-planner-block">
-            <div class="planner-heading">پیشنهاد برنامه Simple</div>
-            <div id="simplePlannerOptions" class="tp-risk-options" aria-live="polite"></div>
-            <div id="simplePlannerInfo" class="small planner-info">یک برنامه را انتخاب کنید.</div>
+          <div id="litePlannerBlock" class="simple-planner-block">
+            <div class="planner-heading">پیشنهاد برنامه Lite-Masaniello</div>
+            <div id="litePlannerOptions" class="tp-risk-options" aria-live="polite"></div>
+            <div id="litePlannerInfo" class="small planner-info">یک برنامه را انتخاب کنید.</div>
           </div>
         </div>
 

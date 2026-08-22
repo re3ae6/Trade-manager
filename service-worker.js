@@ -11,7 +11,7 @@ const APP_SHELL = [
   './src/js/core/format.js',
   './src/js/core/history.js',
   './src/js/core/analytics.js',
-  './src/js/core/masaniello.js',
+  './src/js/core/masaniello-plan-engine.js',
   './src/js/core/simple.js',
   './src/js/core/trading-plan.js',
   './src/js/core/plan-analyzer.js',

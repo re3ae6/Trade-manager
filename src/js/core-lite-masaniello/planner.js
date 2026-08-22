@@ -1,4 +1,4 @@
-import { computePlan, masanielloStake, guaranteedWorstCaseFinal } from './masaniello-plan-engine.js';
+import { computePlan, buildLitePlan, masanielloStake, guaranteedWorstCaseFinal } from './masaniello-plan-engine.js';
 import { calculateSimpleNextStake } from './simple.js';
 
 const SIMPLE_PROFILES = [
@@ -6,6 +6,17 @@ const SIMPLE_PROFILES = [
   { risk: 'medium', n: 15, k: 10, label: 'ریسک متوسط', description: 'تعادل بین تعداد معاملات و فشار ریسک' },
   { risk: 'high', n: 10, k: 7, label: 'پرریسک', description: 'معاملات کمتر، فشار هر معامله بیشتر' }
 ];
+
+
+export function buildMasanielloLitePlan(capital, payoutPct, targetProfit, floor = 1) {
+  return buildLitePlan({
+    capital,
+    payoutPct,
+    targetProfit,
+    floor,
+    maxN: 12
+  });
+}
 
 export function buildMasanielloPlans(capital, payoutPct, targetProfit, floor = 1){
   if(!Number.isFinite(capital) || !Number.isFinite(payoutPct) || !Number.isFinite(targetProfit) || capital <= 0 || payoutPct <= 0 || targetProfit <= 0) return [];
